@@ -6,6 +6,10 @@ import Marketplace from '@/pages/Marketplace'
 import ItemDetail from '@/pages/ItemDetail'
 import CreateListing from '@/pages/CreateListing'
 import Profile from '@/pages/Profile'
+import ResultsPage from '@/pages/ResultsPage'
+import AboutPage from '@/pages/AboutPage'
+import MainFeaturePage from '@/pages/MainFeaturePage'
+import NotFoundPage from '@/pages/NotFoundPage'
 
 function App() {
   return (
@@ -19,9 +23,13 @@ function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/marketplace" element={<Marketplace />} />
+          <Route path="/results" element={<ResultsPage />} />
+          <Route path="/about" element={<AboutPage />} />
+          <Route path="/profile" element={<Profile />} />
           <Route path="/item/:id" element={<ItemDetail />} />
           <Route path="/create-listing" element={<CreateListing />} />
-          <Route path="/profile" element={<Profile />} />
+          <Route path="/:feature" element={<MainFeaturePage />} />
+          <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </Layout>
     </motion.div>
