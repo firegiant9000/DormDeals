@@ -1,7 +1,7 @@
 import { SearchFilters, SearchResponse, Item, User } from '../types';
 
 // Base API configuration
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
 // Generic API request function
 async function apiRequest<T>(
@@ -13,6 +13,12 @@ async function apiRequest<T>(
   const defaultHeaders = {
     'Content-Type': 'application/json',
   };
+
+  // Add auth token if available
+  const token = localStorage.getItem('auth_token');
+  if (token) {
+    defaultHeaders['Authorization'] = `Bearer ${token}`;
+  }
 
   const config: RequestInit = {
     ...options,

@@ -1,3 +1,4 @@
+import MainFeaturePage from './pages/MainFeaturePage';
 import { Routes, Route } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import Layout from '@/components/Layout'
@@ -17,11 +18,13 @@ function App() {
     >
       <Layout>
         <Routes>
-          <Route path="/" element={<Home />} />
+          <Route path="/" element={<MainFeaturePage />} />  {/* Now the homepage */}
           <Route path="/marketplace" element={<Marketplace />} />
           <Route path="/item/:id" element={<ItemDetail />} />
           <Route path="/create-listing" element={<CreateListing />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/home" element={<Home />} />  {/* Optional: keep Home at different path */}
+          {/* Remove the /main-feature route since it's now the homepage */}
         </Routes>
       </Layout>
     </motion.div>
