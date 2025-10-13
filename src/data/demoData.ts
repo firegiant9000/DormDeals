@@ -1,0 +1,535 @@
+import { 
+  User, 
+  Listing, 
+  ItemDetail, 
+  CartItem, 
+  WishlistItem, 
+  Message, 
+  Chat, 
+  Review, 
+  Order, 
+  Transaction,
+  ItemCategory, 
+  ItemCondition, 
+  ListingStatus, 
+  MessageType, 
+  OrderStatus, 
+  TransactionStatus,
+  DeliveryMethod,
+  Notification,
+  NotificationType
+} from '../types';
+
+// Demo Users
+export const demoUsers: User[] = [
+  {
+    id: 'user-1',
+    email: 'sarah.chen@university.edu',
+    name: 'Sarah Chen',
+    major: 'Computer Science',
+    profilePicture: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face',
+    school: 'University of California',
+    joinDate: new Date('2023-08-15'),
+    rating: 4.8,
+    reviewCount: 23
+  },
+  {
+    id: 'user-2',
+    email: 'mike.rodriguez@university.edu',
+    name: 'Mike Rodriguez',
+    major: 'Business Administration',
+    profilePicture: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
+    school: 'University of California',
+    joinDate: new Date('2023-09-02'),
+    rating: 4.6,
+    reviewCount: 15
+  },
+  {
+    id: 'user-3',
+    email: 'emma.wilson@university.edu',
+    name: 'Emma Wilson',
+    major: 'Psychology',
+    profilePicture: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face',
+    school: 'University of California',
+    joinDate: new Date('2023-07-20'),
+    rating: 4.9,
+    reviewCount: 31
+  },
+  {
+    id: 'user-4',
+    email: 'alex.kim@university.edu',
+    name: 'Alex Kim',
+    major: 'Engineering',
+    profilePicture: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
+    school: 'University of California',
+    joinDate: new Date('2023-08-30'),
+    rating: 4.7,
+    reviewCount: 19
+  },
+  {
+    id: 'user-5',
+    email: 'jessica.martinez@university.edu',
+    name: 'Jessica Martinez',
+    major: 'Biology',
+    profilePicture: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&h=150&fit=crop&crop=face',
+    school: 'University of California',
+    joinDate: new Date('2023-09-10'),
+    rating: 4.5,
+    reviewCount: 12
+  }
+];
+
+// Demo Listings
+export const demoListings: Listing[] = [
+  {
+    id: 'listing-1',
+    title: 'Calculus Textbook - Stewart 8th Edition',
+    description: 'Essential Calculus: Early Transcendentals, 8th Edition by James Stewart. Used for Calculus I and II. Book is in excellent condition with minimal highlighting. Perfect for students taking calculus courses.',
+    price: 45,
+    originalPrice: 120,
+    condition: ItemCondition.GOOD,
+    category: ItemCategory.TEXTBOOKS,
+    images: [
+      'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=400&h=300&fit=crop',
+      'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=300&fit=crop'
+    ],
+    seller: demoUsers[0],
+    location: 'North Campus Dorm',
+    pickupAvailable: true,
+    deliveryAvailable: true,
+    deliveryFee: 5,
+    createdAt: new Date('2024-01-15'),
+    updatedAt: new Date('2024-01-15'),
+    status: ListingStatus.ACTIVE,
+    views: 45,
+    likes: 12,
+    isLiked: false,
+    isInCart: false,
+    isInWishlist: false
+  },
+  {
+    id: 'listing-2',
+    title: 'MacBook Air M2 - 13 inch',
+    description: '2022 MacBook Air with M2 chip, 8GB RAM, 256GB SSD. Barely used, still under warranty. Comes with original charger and box. Perfect for students who need reliable computing power.',
+    price: 850,
+    originalPrice: 1199,
+    condition: ItemCondition.LIKE_NEW,
+    category: ItemCategory.ELECTRONICS,
+    images: [
+      'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=400&h=300&fit=crop',
+      'https://images.unsplash.com/photo-1541807084-5c52b6b3adef?w=400&h=300&fit=crop'
+    ],
+    seller: demoUsers[1],
+    location: 'South Campus Apartments',
+    pickupAvailable: true,
+    deliveryAvailable: false,
+    createdAt: new Date('2024-01-12'),
+    updatedAt: new Date('2024-01-12'),
+    status: ListingStatus.ACTIVE,
+    views: 128,
+    likes: 28,
+    isLiked: true,
+    isInCart: false,
+    isInWishlist: true
+  },
+  {
+    id: 'listing-3',
+    title: 'IKEA Desk Chair - Ergonomic',
+    description: 'Comfortable ergonomic office chair from IKEA. Great for long study sessions. Adjustable height and lumbar support. Moving out of dorm, need to sell quickly.',
+    price: 35,
+    originalPrice: 89,
+    condition: ItemCondition.GOOD,
+    category: ItemCategory.FURNITURE,
+    images: [
+      'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400&h=300&fit=crop',
+      'https://images.unsplash.com/photo-1506439773649-6e0eb8cfb237?w=400&h=300&fit=crop'
+    ],
+    seller: demoUsers[2],
+    location: 'East Campus Dorm',
+    pickupAvailable: true,
+    deliveryAvailable: true,
+    deliveryFee: 8,
+    createdAt: new Date('2024-01-10'),
+    updatedAt: new Date('2024-01-10'),
+    status: ListingStatus.ACTIVE,
+    views: 67,
+    likes: 15,
+    isLiked: false,
+    isInCart: true,
+    isInWishlist: false
+  },
+  {
+    id: 'listing-4',
+    title: 'Nike Air Max 270 - Size 9',
+    description: 'Nike Air Max 270 in black and white. Worn only a few times, still in great condition. Size 9, perfect for running or casual wear.',
+    price: 65,
+    originalPrice: 150,
+    condition: ItemCondition.LIKE_NEW,
+    category: ItemCategory.CLOTHING,
+    images: [
+      'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&h=300&fit=crop',
+      'https://images.unsplash.com/photo-1606107557195-0e29a4b5b4aa?w=400&h=300&fit=crop'
+    ],
+    seller: demoUsers[3],
+    location: 'West Campus Dorm',
+    pickupAvailable: true,
+    deliveryAvailable: true,
+    deliveryFee: 3,
+    createdAt: new Date('2024-01-08'),
+    updatedAt: new Date('2024-01-08'),
+    status: ListingStatus.ACTIVE,
+    views: 89,
+    likes: 22,
+    isLiked: true,
+    isInCart: false,
+    isInWishlist: false
+  },
+  {
+    id: 'listing-5',
+    title: 'Organic Chemistry Lab Kit',
+    description: 'Complete organic chemistry lab kit with safety goggles, lab coat, and all necessary equipment. Used for CHEM 201. Everything in excellent condition.',
+    price: 25,
+    originalPrice: 75,
+    condition: ItemCondition.GOOD,
+    category: ItemCategory.SUPPLIES,
+    images: [
+      'https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=400&h=300&fit=crop',
+      'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=400&h=300&fit=crop'
+    ],
+    seller: demoUsers[4],
+    location: 'Central Campus',
+    pickupAvailable: true,
+    deliveryAvailable: false,
+    createdAt: new Date('2024-01-05'),
+    updatedAt: new Date('2024-01-05'),
+    status: ListingStatus.ACTIVE,
+    views: 34,
+    likes: 8,
+    isLiked: false,
+    isInCart: false,
+    isInWishlist: true
+  },
+  {
+    id: 'listing-6',
+    title: 'Psychology Textbook - Myers 12th Edition',
+    description: 'Psychology in Everyday Life, 12th Edition by David Myers. Comprehensive psychology textbook used for PSYC 101. Some highlighting but all pages intact.',
+    price: 30,
+    originalPrice: 95,
+    condition: ItemCondition.FAIR,
+    category: ItemCategory.TEXTBOOKS,
+    images: [
+      'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=400&h=300&fit=crop'
+    ],
+    seller: demoUsers[2],
+    location: 'North Campus Dorm',
+    pickupAvailable: true,
+    deliveryAvailable: true,
+    deliveryFee: 4,
+    createdAt: new Date('2024-01-03'),
+    updatedAt: new Date('2024-01-03'),
+    status: ListingStatus.ACTIVE,
+    views: 56,
+    likes: 11,
+    isLiked: false,
+    isInCart: false,
+    isInWishlist: false
+  },
+  {
+    id: 'listing-7',
+    title: 'Basketball - Spalding Official',
+    description: 'Official Spalding basketball, size 7. Used for intramural games. Good condition with minimal wear. Perfect for pickup games or practice.',
+    price: 20,
+    originalPrice: 35,
+    condition: ItemCondition.GOOD,
+    category: ItemCategory.SPORTS,
+    images: [
+      'https://images.unsplash.com/photo-1546519638-68e109498ffc?w=400&h=300&fit=crop'
+    ],
+    seller: demoUsers[1],
+    location: 'South Campus Apartments',
+    pickupAvailable: true,
+    deliveryAvailable: true,
+    deliveryFee: 5,
+    createdAt: new Date('2024-01-01'),
+    updatedAt: new Date('2024-01-01'),
+    status: ListingStatus.ACTIVE,
+    views: 42,
+    likes: 9,
+    isLiked: false,
+    isInCart: false,
+    isInWishlist: false
+  },
+  {
+    id: 'listing-8',
+    title: 'Graphing Calculator - TI-84 Plus',
+    description: 'Texas Instruments TI-84 Plus CE graphing calculator. Essential for math and science courses. Works perfectly, comes with USB cable.',
+    price: 80,
+    originalPrice: 120,
+    condition: ItemCondition.LIKE_NEW,
+    category: ItemCategory.ELECTRONICS,
+    images: [
+      'https://images.unsplash.com/photo-1587145820266-a5951ee6f620?w=400&h=300&fit=crop'
+    ],
+    seller: demoUsers[0],
+    location: 'North Campus Dorm',
+    pickupAvailable: true,
+    deliveryAvailable: true,
+    deliveryFee: 3,
+    createdAt: new Date('2023-12-28'),
+    updatedAt: new Date('2023-12-28'),
+    status: ListingStatus.ACTIVE,
+    views: 73,
+    likes: 18,
+    isLiked: true,
+    isInCart: false,
+    isInWishlist: false
+  },
+  {
+    id: 'listing-9',
+    title: 'Coffee Maker - Keurig K-Mini',
+    description: 'Keurig K-Mini single-serve coffee maker. Perfect for dorm rooms. Compact size, works great. Includes sample K-cups.',
+    price: 40,
+    originalPrice: 79,
+    condition: ItemCondition.GOOD,
+    category: ItemCategory.ELECTRONICS,
+    images: [
+      'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=400&h=300&fit=crop'
+    ],
+    seller: demoUsers[3],
+    location: 'West Campus Dorm',
+    pickupAvailable: true,
+    deliveryAvailable: true,
+    deliveryFee: 6,
+    createdAt: new Date('2023-12-25'),
+    updatedAt: new Date('2023-12-25'),
+    status: ListingStatus.ACTIVE,
+    views: 91,
+    likes: 24,
+    isLiked: false,
+    isInCart: true,
+    isInWishlist: false
+  },
+  {
+    id: 'listing-10',
+    title: 'Study Desk Lamp - LED',
+    description: 'Adjustable LED desk lamp with USB charging port. Perfect for late-night studying. Multiple brightness levels and color temperatures.',
+    price: 15,
+    originalPrice: 35,
+    condition: ItemCondition.LIKE_NEW,
+    category: ItemCategory.FURNITURE,
+    images: [
+      'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=300&fit=crop'
+    ],
+    seller: demoUsers[4],
+    location: 'Central Campus',
+    pickupAvailable: true,
+    deliveryAvailable: true,
+    deliveryFee: 2,
+    createdAt: new Date('2023-12-22'),
+    updatedAt: new Date('2023-12-22'),
+    status: ListingStatus.ACTIVE,
+    views: 38,
+    likes: 7,
+    isLiked: false,
+    isInCart: false,
+    isInWishlist: false
+  }
+];
+
+// Demo Cart Items
+export const demoCartItems: CartItem[] = [
+  {
+    id: 'cart-1',
+    listing: demoListings[2], // IKEA Desk Chair
+    quantity: 1,
+    addedAt: new Date('2024-01-14')
+  },
+  {
+    id: 'cart-2',
+    listing: demoListings[8], // Coffee Maker
+    quantity: 1,
+    addedAt: new Date('2024-01-13')
+  }
+];
+
+// Demo Wishlist Items
+export const demoWishlistItems: WishlistItem[] = [
+  {
+    id: 'wishlist-1',
+    listing: demoListings[1], // MacBook Air
+    addedAt: new Date('2024-01-12')
+  },
+  {
+    id: 'wishlist-2',
+    listing: demoListings[3], // Nike Air Max
+    addedAt: new Date('2024-01-10')
+  },
+  {
+    id: 'wishlist-3',
+    listing: demoListings[4], // Organic Chemistry Lab Kit
+    addedAt: new Date('2024-01-08')
+  }
+];
+
+// Demo Messages
+export const demoMessages: Message[] = [
+  {
+    id: 'msg-1',
+    senderId: 'user-1',
+    receiverId: 'user-2',
+    listingId: 'listing-1',
+    content: 'Hi! Is the calculus textbook still available?',
+    timestamp: new Date('2024-01-15T10:30:00'),
+    isRead: true,
+    type: MessageType.TEXT
+  },
+  {
+    id: 'msg-2',
+    senderId: 'user-2',
+    receiverId: 'user-1',
+    listingId: 'listing-1',
+    content: 'Yes, it is! Would you like to meet up to see it?',
+    timestamp: new Date('2024-01-15T10:35:00'),
+    isRead: true,
+    type: MessageType.TEXT
+  },
+  {
+    id: 'msg-3',
+    senderId: 'user-1',
+    receiverId: 'user-2',
+    listingId: 'listing-1',
+    content: 'Perfect! Can we meet at the library tomorrow at 2 PM?',
+    timestamp: new Date('2024-01-15T10:40:00'),
+    isRead: false,
+    type: MessageType.TEXT
+  }
+];
+
+// Demo Chats
+export const demoChats: Chat[] = [
+  {
+    id: 'chat-1',
+    participants: [demoUsers[0], demoUsers[1]],
+    listing: demoListings[0],
+    lastMessage: demoMessages[2],
+    unreadCount: 1,
+    createdAt: new Date('2024-01-15T10:30:00'),
+    updatedAt: new Date('2024-01-15T10:40:00')
+  }
+];
+
+// Demo Reviews
+export const demoReviews: Review[] = [
+  {
+    id: 'review-1',
+    reviewerId: 'user-2',
+    revieweeId: 'user-1',
+    listingId: 'listing-1',
+    rating: 5,
+    comment: 'Great seller! Book was exactly as described and Sarah was very responsive.',
+    createdAt: new Date('2024-01-16'),
+    isVerified: true
+  },
+  {
+    id: 'review-2',
+    reviewerId: 'user-3',
+    revieweeId: 'user-1',
+    listingId: 'listing-8',
+    rating: 4,
+    comment: 'Calculator works perfectly. Quick transaction and good communication.',
+    createdAt: new Date('2024-01-10'),
+    isVerified: true
+  }
+];
+
+// Demo Orders
+export const demoOrders: Order[] = [
+  {
+    id: 'order-1',
+    buyerId: 'user-2',
+    sellerId: 'user-1',
+    listingId: 'listing-1',
+    totalAmount: 45,
+    status: OrderStatus.DELIVERED,
+    paymentMethod: 'Credit Card',
+    deliveryMethod: DeliveryMethod.PICKUP,
+    createdAt: new Date('2024-01-15'),
+    updatedAt: new Date('2024-01-16'),
+    estimatedDelivery: new Date('2024-01-16'),
+    actualDelivery: new Date('2024-01-16')
+  }
+];
+
+// Demo Transactions
+export const demoTransactions: Transaction[] = [
+  {
+    id: 'txn-1',
+    orderId: 'order-1',
+    amount: 45,
+    status: TransactionStatus.COMPLETED,
+    paymentMethod: 'Credit Card',
+    createdAt: new Date('2024-01-15'),
+    completedAt: new Date('2024-01-16')
+  }
+];
+
+// Demo Notifications
+export const demoNotifications: Notification[] = [
+  {
+    id: 'notif-1',
+    userId: 'user-1',
+    type: NotificationType.MESSAGE,
+    title: 'New Message',
+    message: 'Mike Rodriguez sent you a message about your listing',
+    isRead: false,
+    createdAt: new Date('2024-01-15T10:40:00'),
+    actionUrl: '/messages/chat-1',
+    relatedId: 'chat-1'
+  },
+  {
+    id: 'notif-2',
+    userId: 'user-1',
+    type: NotificationType.LISTING_INTEREST,
+    title: 'Listing Interest',
+    message: 'Someone liked your MacBook Air listing',
+    isRead: true,
+    createdAt: new Date('2024-01-14T15:30:00'),
+    actionUrl: '/listings/listing-2',
+    relatedId: 'listing-2'
+  }
+];
+
+// Demo Item Details (extended listings with more information)
+export const demoItemDetails: ItemDetail[] = demoListings.map(listing => ({
+  ...listing,
+  specifications: {
+    'Brand': 'Various',
+    'Model': 'Various',
+    'Year': '2023-2024',
+    'Condition': listing.condition,
+    'Location': listing.location
+  },
+  tags: ['student', 'college', 'dorm', 'textbook', 'electronics', 'furniture'],
+  availability: 'Available now',
+  contactInfo: {
+    email: listing.seller.email,
+    phone: '+1 (555) 123-4567'
+  }
+}));
+
+// Export all demo data as a single object for easy access
+export const demoData = {
+  users: demoUsers,
+  listings: demoListings,
+  itemDetails: demoItemDetails,
+  cartItems: demoCartItems,
+  wishlistItems: demoWishlistItems,
+  messages: demoMessages,
+  chats: demoChats,
+  reviews: demoReviews,
+  orders: demoOrders,
+  transactions: demoTransactions,
+  notifications: demoNotifications
+};
+
+export default demoData;
