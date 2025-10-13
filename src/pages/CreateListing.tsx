@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { Upload, X, Camera, DollarSign, Tag, FileText } from 'lucide-react'
+import { X, Camera, DollarSign } from 'lucide-react'
 
 const CreateListing = () => {
   const [formData, setFormData] = useState({

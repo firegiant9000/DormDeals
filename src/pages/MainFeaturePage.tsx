@@ -11,7 +11,7 @@ import {
   SearchFilters,
   Item
 } from '../types';
-import { searchItems, addToCart, addToWishlist } from '../services/apiService';
+import { searchItems } from '../services/apiService';
 import { mockItems } from '../data/mockData';
 import { formatCurrency, formatRelativeTime } from '../utils/helpers';
 
@@ -35,6 +35,10 @@ const MainFeaturePage: React.FC = () => {
   const [errors, setErrors] = useState<FormError[]>([]);
   const [showFilters, setShowFilters] = useState(false);
   const [featuredItems, setFeaturedItems] = useState<Item[]>([]);
+  const [cartItems, setCartItems] = useState<any[]>([]);
+  const [wishlistItems, setWishlistItems] = useState<any[]>([]);
+  const [showCart, setShowCart] = useState(false);
+  const [showWishlist, setShowWishlist] = useState(false);
 
   // Validation rules
   const validateForm = (): FormError[] => {
@@ -130,8 +134,12 @@ const MainFeaturePage: React.FC = () => {
   // Handle quick actions
   const handleAddToCart = async (itemId: string) => {
     try {
-      await addToCart(itemId);
-      // You could add a toast notification here
+      // Find the item in featured items
+      const item = featuredItems.find(item => item.id === itemId);
+      if (item) {
+        setCartItems(prev => [...prev, item]);
+        // You could add a toast notification here
+      }
     } catch (error) {
       console.error('Failed to add to cart:', error);
     }
@@ -139,8 +147,12 @@ const MainFeaturePage: React.FC = () => {
 
   const handleAddToWishlist = async (itemId: string) => {
     try {
-      await addToWishlist(itemId);
-      // You could add a toast notification here
+      // Find the item in featured items and add to wishlist
+      const item = featuredItems.find(item => item.id === itemId);
+      if (item) {
+        setWishlistItems(prev => [...prev, item]);
+        // You could add a toast notification here
+      }
     } catch (error) {
       console.error('Failed to add to wishlist:', error);
     }
@@ -170,6 +182,38 @@ const MainFeaturePage: React.FC = () => {
 
             {/* Navigation */}
             <nav className="flex items-center space-x-4">
+              {/* Cart Button */}
+              <button
+                onClick={() => setShowCart(!showCart)}
+                className="relative flex items-center space-x-2 text-gray-700 hover:text-primary-600 transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m6-5v6a2 2 0 01-2 2H9a2 2 0 01-2-2v-6m8 0V9a2 2 0 00-2-2H9a2 2 0 00-2 2v4.01" />
+                </svg>
+                <span className="hidden sm:inline">Cart</span>
+                {cartItems.length > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-primary-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                    {cartItems.length}
+                  </span>
+                )}
+              </button>
+
+              {/* Wishlist Button */}
+              <button
+                onClick={() => setShowWishlist(!showWishlist)}
+                className="relative flex items-center space-x-2 text-gray-700 hover:text-primary-600 transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                </svg>
+                <span className="hidden sm:inline">Wishlist</span>
+                {wishlistItems.length > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-primary-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                    {wishlistItems.length}
+                  </span>
+                )}
+              </button>
+
               <button
                 onClick={() => navigate('/profile')}
                 className="flex items-center space-x-2 text-gray-700 hover:text-primary-600 transition-colors"
@@ -457,7 +501,8 @@ const MainFeaturePage: React.FC = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
-                className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow duration-300"
+                className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow duration-300 cursor-pointer flex flex-col"
+                onClick={() => navigate(`/listing/${item.id}`, { state: { listing: item } })}
               >
                 <div className="aspect-w-16 aspect-h-9 bg-gray-200">
                   <img
@@ -466,25 +511,31 @@ const MainFeaturePage: React.FC = () => {
                     className="w-full h-48 object-cover"
                   />
                 </div>
-                <div className="p-4">
+                <div className="p-4 flex flex-col h-full">
                   <div className="flex justify-between items-start mb-2">
                     <h4 className="font-semibold text-gray-900 line-clamp-2">{item.title}</h4>
                     <span className="text-lg font-bold text-primary-600">{formatCurrency(item.price)}</span>
                   </div>
-                  <p className="text-sm text-gray-600 mb-3 line-clamp-2">{item.description}</p>
+                  <p className="text-sm text-gray-600 mb-3 line-clamp-3 flex-grow">{item.description}</p>
                   <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
                     <span className="bg-gray-100 px-2 py-1 rounded text-xs">{item.category}</span>
                     <span>{formatRelativeTime(item.posted)}</span>
                   </div>
-                  <div className="flex space-x-2">
+                  <div className="flex space-x-2 mt-auto">
                     <button
-                      onClick={() => handleAddToCart(item.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleAddToCart(item.id);
+                      }}
                       className="flex-1 bg-primary-600 text-white py-2 px-3 rounded text-sm font-medium hover:bg-primary-700 transition-colors"
                     >
                       Add to Cart
                     </button>
                     <button
-                      onClick={() => handleAddToWishlist(item.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleAddToWishlist(item.id);
+                      }}
                       className="p-2 border border-gray-300 rounded hover:bg-gray-50 transition-colors"
                     >
                       <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -534,6 +585,177 @@ const MainFeaturePage: React.FC = () => {
           </div>
         </div>
       </main>
+
+      {/* Cart Sidebar */}
+      {showCart && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-end">
+          <motion.div
+            initial={{ x: '100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '100%' }}
+            className="bg-white w-96 h-full shadow-xl overflow-y-auto"
+          >
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold text-gray-900">Shopping Cart</h2>
+                <button
+                  onClick={() => setShowCart(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+            
+            <div className="p-6">
+              {cartItems.length === 0 ? (
+                <div className="text-center py-8">
+                  <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m6-5v6a2 2 0 01-2 2H9a2 2 0 01-2-2v-6m8 0V9a2 2 0 00-2-2H9a2 2 0 00-2 2v4.01" />
+                  </svg>
+                  <p className="text-gray-500">Your cart is empty</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {cartItems.map((item) => (
+                    <div key={item.id} className="flex gap-4 p-4 border border-gray-200 rounded-lg">
+                      <div className="w-16 h-16 bg-gray-200 rounded-lg flex-shrink-0">
+                        {item.images && item.images.length > 0 ? (
+                          <img
+                            src={item.images[0]}
+                            alt={item.title}
+                            className="w-full h-full object-cover rounded-lg"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
+                            No Image
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-medium text-gray-900 text-sm line-clamp-2">
+                          {item.title}
+                        </h3>
+                        <p className="text-primary-600 font-semibold">
+                          ${item.price}
+                        </p>
+                        <div className="flex items-center gap-2 mt-2">
+                          <button
+                            onClick={() => {
+                              setCartItems(cartItems.filter(cartItem => cartItem.id !== item.id));
+                            }}
+                            className="text-red-600 hover:text-red-700 text-sm"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  <div className="border-t border-gray-200 pt-4">
+                    <div className="flex justify-between items-center mb-4">
+                      <span className="text-lg font-semibold text-gray-900">Total:</span>
+                      <span className="text-lg font-semibold text-primary-600">
+                        ${cartItems.reduce((sum, item) => sum + item.price, 0).toFixed(2)}
+                      </span>
+                    </div>
+                    <button className="w-full bg-primary-600 text-white py-3 rounded-lg hover:bg-primary-700 transition-colors">
+                      Proceed to Checkout
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Wishlist Sidebar */}
+      {showWishlist && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-end">
+          <motion.div
+            initial={{ x: '100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '100%' }}
+            className="bg-white w-96 h-full shadow-xl overflow-y-auto"
+          >
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold text-gray-900">Wishlist</h2>
+                <button
+                  onClick={() => setShowWishlist(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+            
+            <div className="p-6">
+              {wishlistItems.length === 0 ? (
+                <div className="text-center py-8">
+                  <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                  </svg>
+                  <p className="text-gray-500">Your wishlist is empty</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {wishlistItems.map((item) => (
+                    <div key={item.id} className="flex gap-4 p-4 border border-gray-200 rounded-lg">
+                      <div className="w-16 h-16 bg-gray-200 rounded-lg flex-shrink-0">
+                        {item.images && item.images.length > 0 ? (
+                          <img
+                            src={item.images[0]}
+                            alt={item.title}
+                            className="w-full h-full object-cover rounded-lg"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
+                            No Image
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-medium text-gray-900 text-sm line-clamp-2">
+                          {item.title}
+                        </h3>
+                        <p className="text-primary-600 font-semibold">
+                          ${item.price}
+                        </p>
+                        <div className="flex items-center gap-2 mt-2">
+                          <button
+                            onClick={() => {
+                              setCartItems([...cartItems, item]);
+                            }}
+                            className="text-primary-600 hover:text-primary-700 text-sm"
+                          >
+                            Add to Cart
+                          </button>
+                          <span className="text-gray-300">•</span>
+                          <button
+                            onClick={() => {
+                              setWishlistItems(wishlistItems.filter(wishlistItem => wishlistItem.id !== item.id));
+                            }}
+                            className="text-red-600 hover:text-red-700 text-sm"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </motion.div>
+        </div>
+      )}
+
     </div>
   );
 };

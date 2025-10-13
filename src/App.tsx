@@ -9,6 +9,7 @@ import Profile from '@/pages/Profile'
 import ResultsPage from '@/pages/ResultsPage'
 import AboutPage from '@/pages/AboutPage'
 import MainFeaturePage from '@/pages/MainFeaturePage'
+import ListingDetailPage from '@/pages/ListingDetailPage'
 import NotFoundPage from '@/pages/NotFoundPage'
 
 function App() {
@@ -27,6 +28,7 @@ function App() {
           <Route path="/about" element={<AboutPage />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/item/:id" element={<ItemDetail />} />
+          <Route path="/listing/:id" element={<ListingDetailPage />} />
           <Route path="/create-listing" element={<CreateListing />} />
           <Route path="/home" element={<Home />} />
           <Route path="/:feature" element={<MainFeaturePage />} />

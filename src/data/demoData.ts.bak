@@ -30,8 +30,11 @@ export const demoUsers: User[] = [
     profilePicture: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face',
     school: 'University of California',
     joinDate: new Date('2023-08-15'),
+    joinedDate: '2023-08-15',
     rating: 4.8,
-    reviewCount: 23
+    reviewCount: 23,
+    totalSales: 15,
+    isVerified: true
   },
   {
     id: 'user-2',
@@ -41,8 +44,11 @@ export const demoUsers: User[] = [
     profilePicture: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
     school: 'University of California',
     joinDate: new Date('2023-09-02'),
+    joinedDate: '2023-09-02',
     rating: 4.6,
-    reviewCount: 15
+    reviewCount: 15,
+    totalSales: 8,
+    isVerified: false
   },
   {
     id: 'user-3',
@@ -52,8 +58,11 @@ export const demoUsers: User[] = [
     profilePicture: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face',
     school: 'University of California',
     joinDate: new Date('2023-07-20'),
+    joinedDate: '2023-07-20',
     rating: 4.9,
-    reviewCount: 31
+    reviewCount: 31,
+    totalSales: 22,
+    isVerified: true
   },
   {
     id: 'user-4',
@@ -63,8 +72,11 @@ export const demoUsers: User[] = [
     profilePicture: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
     school: 'University of California',
     joinDate: new Date('2023-08-30'),
+    joinedDate: '2023-08-30',
     rating: 4.7,
-    reviewCount: 19
+    reviewCount: 19,
+    totalSales: 12,
+    isVerified: true
   },
   {
     id: 'user-5',
@@ -74,8 +86,11 @@ export const demoUsers: User[] = [
     profilePicture: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&h=150&fit=crop&crop=face',
     school: 'University of California',
     joinDate: new Date('2023-09-10'),
+    joinedDate: '2023-09-10',
     rating: 4.5,
-    reviewCount: 12
+    reviewCount: 12,
+    totalSales: 5,
+    isVerified: false
   }
 ];
 
@@ -105,7 +120,9 @@ export const demoListings: Listing[] = [
     likes: 12,
     isLiked: false,
     isInCart: false,
-    isInWishlist: false
+    isInWishlist: false,
+    posted: '2024-01-15',
+    tags: ['textbook', 'calculus', 'stewart', 'math']
   },
   {
     id: 'listing-2',
