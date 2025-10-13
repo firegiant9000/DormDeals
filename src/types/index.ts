@@ -5,10 +5,16 @@ export interface User {
   name: string;
   major?: string;
   profilePicture?: string;
+  profileImage?: string;
+  phone?: string;
+  location?: string;
   school: string;
-  joinDate: Date;
+  joinDate: Date | string;
+  joinedDate: string;
   rating: number;
   reviewCount: number;
+  totalSales: number;
+  isVerified: boolean;
 }
 
 // Search and Filter Types
@@ -17,11 +23,14 @@ export interface SearchFilters {
   category?: ItemCategory;
   priceMin?: number;
   priceMax?: number;
+  minPrice?: number;
+  maxPrice?: number;
   condition?: ItemCondition;
   location?: string;
   sortBy?: SortOption;
   pickupOnly?: boolean;
   deliveryAvailable?: boolean;
+  pickupMethod?: PickupMethod;
 }
 
 export interface SearchInput {
@@ -31,7 +40,7 @@ export interface SearchInput {
 }
 
 // Item and Listing Types
-export interface Listing {
+export interface Item {
   id: string;
   title: string;
   description: string;
@@ -47,12 +56,19 @@ export interface Listing {
   deliveryFee?: number;
   createdAt: Date;
   updatedAt: Date;
-  status: ListingStatus;
+  posted: string;
+  status: ItemStatus | ListingStatus;
   views: number;
   likes: number;
   isLiked?: boolean;
   isInCart?: boolean;
   isInWishlist?: boolean;
+  tags: string[];
+  pickupMethod?: PickupMethod;
+}
+
+export interface Listing extends Item {
+  // Listing extends Item with additional properties
 }
 
 export interface ItemDetail extends Listing {
@@ -68,15 +84,17 @@ export interface ItemDetail extends Listing {
 // Cart and Wishlist Types
 export interface CartItem {
   id: string;
-  listing: Listing;
+  listing?: Listing;
+  item?: Item;
   quantity: number;
-  addedAt: Date;
+  addedAt: Date | string;
 }
 
 export interface WishlistItem {
   id: string;
-  listing: Listing;
-  addedAt: Date;
+  listing?: Listing;
+  item?: Item;
+  addedAt: Date | string;
 }
 
 // Search Results Types
@@ -89,6 +107,15 @@ export interface SearchResults {
   hasPreviousPage: boolean;
   filters: SearchFilters;
   suggestions?: string[];
+}
+
+export interface SearchResponse {
+  items: Item[];
+  totalCount: number;
+  currentPage: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
 }
 
 // API Response Types
@@ -114,9 +141,12 @@ export interface Message {
   senderId: string;
   receiverId: string;
   listingId?: string;
+  itemId?: string;
   content: string;
-  timestamp: Date;
+  message?: string;
+  timestamp: Date | string;
   isRead: boolean;
+  read?: boolean;
   type: MessageType;
 }
 
@@ -135,10 +165,12 @@ export interface Review {
   id: string;
   reviewerId: string;
   revieweeId: string;
-  listingId: string;
+  listingId?: string;
+  itemId?: string;
   rating: number;
   comment: string;
-  createdAt: Date;
+  createdAt: Date | string;
+  timestamp?: string;
   isVerified: boolean;
 }
 
@@ -179,6 +211,9 @@ export enum ItemCategory {
   SUPPLIES = 'supplies',
   FOOD = 'food',
   SERVICES = 'services',
+  APPLIANCES = 'Appliances',
+  KITCHEN = 'Kitchen',
+  DECOR = 'Decor',
   OTHER = 'other'
 }
 
@@ -196,6 +231,19 @@ export enum ListingStatus {
   PENDING = 'pending',
   DRAFT = 'draft',
   EXPIRED = 'expired'
+}
+
+export enum ItemStatus {
+  ACTIVE = 'Active',
+  SOLD = 'Sold',
+  PENDING = 'Pending',
+  DRAFT = 'Draft'
+}
+
+export enum PickupMethod {
+  PICKUP = 'Pickup Only',
+  DELIVERY = 'Delivery Only',
+  BOTH = 'Both Available'
 }
 
 export enum SortOption {
@@ -253,6 +301,22 @@ export interface CreateListingForm {
   tags: string[];
 }
 
+export interface SearchFormData {
+  query: string;
+  category: string;
+  minPrice: string;
+  maxPrice: string;
+  condition: string;
+  pickupMethod: string;
+  location: string;
+  sortBy: SortOption;
+}
+
+export interface FormError {
+  field: string;
+  message: string;
+}
+
 export interface UpdateProfileForm {
   name: string;
   major?: string;
@@ -279,4 +343,11 @@ export enum NotificationType {
   LISTING_INTEREST = 'listing_interest',
   REVIEW = 'review',
   SYSTEM = 'system'
+}
+
+// Category type for API responses
+export interface Category {
+  id: string;
+  name: string;
+  count: number;
 }

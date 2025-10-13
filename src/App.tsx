@@ -21,13 +21,14 @@ function App() {
     >
       <Layout>
         <Routes>
-          <Route path="/" element={<Home />} />
+          <Route path="/" element={<MainFeaturePage />} />  {/* Now the homepage */}
           <Route path="/marketplace" element={<Marketplace />} />
           <Route path="/results" element={<ResultsPage />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/item/:id" element={<ItemDetail />} />
           <Route path="/create-listing" element={<CreateListing />} />
+          <Route path="/home" element={<Home />} />
           <Route path="/:feature" element={<MainFeaturePage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
