@@ -1,198 +1,220 @@
-import { Category, Condition } from '@/utils/helpers'
+import { Item, User } from '../types';
 
-// Mock user data
-export const mockUser = {
-  id: '1',
-  name: 'John Doe',
-  email: 'john.doe@louisiana.edu',
-  phone: '(555) 123-4567',
-  location: 'UL Campus',
-  joinedDate: '2023-08-15',
-  rating: 4.8,
-  totalSales: 12,
-  profileImage: null,
-  isVerified: true
-}
-
-// Mock items data
-export const mockItems = [
+// Mock users
+export const mockUsers: User[] = [
   {
     id: '1',
-    title: 'MacBook Pro 13" 2020',
-    description: 'Selling my MacBook Pro 13" from 2020. It\'s been well taken care of and works perfectly. Comes with charger and original box. Perfect for students who need a reliable laptop for their studies.',
-    price: 800,
-    originalPrice: 1200,
-    category: 'Electronics' as Category,
-    condition: 'Good' as Condition,
-    images: ['/api/placeholder/600/400'],
-    seller: mockUser,
-    posted: '2024-01-15T10:30:00Z',
+    name: 'John Doe',
+    email: 'john@example.com',
+    rating: 4.8,
+    totalSales: 15,
+    isVerified: true,
+    school: 'University of Louisiana',
+    joinDate: '2023-01-15',
+    joinedDate: '2023-01-15',
+    reviewCount: 12
+  },
+  {
+    id: '2',
+    name: 'Jane Smith',
+    email: 'jane@example.com',
+    rating: 4.9,
+    totalSales: 23,
+    isVerified: true,
+    school: 'University of Louisiana',
+    joinDate: '2022-09-01',
+    joinedDate: '2022-09-01',
+    reviewCount: 18
+  },
+  {
+    id: '3',
+    name: 'Mike Johnson',
+    email: 'mike@example.com',
+    rating: 4.6,
+    totalSales: 8,
+    isVerified: false,
+    school: 'University of Louisiana',
+    joinDate: '2023-08-20',
+    joinedDate: '2023-08-20',
+    reviewCount: 5
+  }
+];
+
+// Mock items
+export const mockItems: Item[] = [
+  {
+    id: '1',
+    title: 'MacBook Pro 13-inch M2',
+    description: 'Excellent condition MacBook Pro with M2 chip. Perfect for students. Includes original charger and box. No scratches or dents. Used for one semester only.',
+    price: 1200,
+    originalPrice: 1599,
+    condition: 'LIKE_NEW' as any,
+    category: 'ELECTRONICS' as any,
+    images: [
+      'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=500',
+      'https://images.unsplash.com/photo-1541807084-5c52b6b3adef?w=500',
+      'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=500'
+    ],
+    seller: mockUsers[0],
+    location: 'Lafayette, LA',
+    pickupAvailable: true,
+    deliveryAvailable: true,
+    deliveryFee: 5,
+    createdAt: new Date('2024-01-15'),
+    updatedAt: new Date('2024-01-15'),
+    posted: '2024-01-15',
+    status: 'ACTIVE' as any,
     views: 45,
-    status: 'Active',
-    tags: ['Laptop', 'Apple', 'Student', 'Computer'],
-    location: 'UL Campus'
+    likes: 8,
+    isLiked: false,
+    isInCart: false,
+    isInWishlist: false,
+    tags: ['laptop', 'macbook', 'm2', 'student', 'electronics'],
+    pickupMethod: 'BOTH' as any
   },
   {
     id: '2',
     title: 'Calculus Textbook - Stewart 8th Edition',
-    description: 'Calculus: Early Transcendentals by James Stewart, 8th Edition. Book is in excellent condition with minimal highlighting. Perfect for Calculus I and II courses.',
-    price: 50,
+    description: 'Calculus: Early Transcendentals 8th Edition by James Stewart. Great condition, minimal highlighting. Perfect for MATH 2500.',
+    price: 80,
     originalPrice: 200,
-    category: 'Books' as Category,
-    condition: 'Excellent' as Condition,
-    images: ['/api/placeholder/600/400'],
-    seller: {
-      ...mockUser,
-      id: '2',
-      name: 'Sarah Smith',
-      email: 'sarah.smith@louisiana.edu'
-    },
-    posted: '2024-01-10T14:20:00Z',
-    views: 23,
-    status: 'Active',
-    tags: ['Textbook', 'Math', 'Calculus', 'Stewart'],
-    location: 'UL Campus'
+    condition: 'GOOD' as any,
+    category: 'TEXTBOOKS' as any,
+    images: [
+      'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=500',
+      'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500'
+    ],
+    seller: mockUsers[1],
+    location: 'Lafayette, LA',
+    pickupAvailable: true,
+    deliveryAvailable: false,
+    deliveryFee: undefined,
+    createdAt: new Date('2024-01-10'),
+    updatedAt: new Date('2024-01-10'),
+    posted: '2024-01-10',
+    status: 'ACTIVE' as any,
+    views: 32,
+    likes: 5,
+    isLiked: false,
+    isInCart: false,
+    isInWishlist: false,
+    tags: ['textbook', 'calculus', 'math', 'stewart'],
+    pickupMethod: 'PICKUP' as any
   },
   {
     id: '3',
-    title: 'Mini Fridge - 3.2 Cu Ft',
-    description: 'Compact mini fridge perfect for dorm rooms. Features adjustable shelves and a small freezer compartment. Great condition, cleaned and ready to use.',
-    price: 120,
-    originalPrice: 180,
-    category: 'Appliances' as Category,
-    condition: 'Good' as Condition,
-    images: ['/api/placeholder/600/400'],
-    seller: {
-      ...mockUser,
-      id: '3',
-      name: 'Mike Johnson',
-      email: 'mike.johnson@louisiana.edu'
-    },
-    posted: '2024-01-12T09:15:00Z',
-    views: 67,
-    status: 'Active',
-    tags: ['Fridge', 'Dorm', 'Compact', 'Appliance'],
-    location: 'UL Campus'
+    title: 'Dorm Room Desk Chair',
+    description: 'Comfortable ergonomic desk chair perfect for studying. Adjustable height, good back support. Moving out of dorm, must sell.',
+    price: 45,
+    originalPrice: 120,
+    condition: 'GOOD' as any,
+    category: 'FURNITURE' as any,
+    images: [
+      'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=500',
+      'https://images.unsplash.com/photo-1506439773649-6e0eb8cfb237?w=500'
+    ],
+    seller: mockUsers[2],
+    location: 'Lafayette, LA',
+    pickupAvailable: true,
+    deliveryAvailable: true,
+    deliveryFee: 10,
+    createdAt: new Date('2024-01-08'),
+    updatedAt: new Date('2024-01-08'),
+    posted: '2024-01-08',
+    status: 'ACTIVE' as any,
+    views: 28,
+    likes: 3,
+    isLiked: false,
+    isInCart: false,
+    isInWishlist: false,
+    tags: ['chair', 'desk', 'furniture', 'dorm', 'study'],
+    pickupMethod: 'BOTH' as any
   },
   {
     id: '4',
     title: 'Coffee Maker - Keurig K-Mini',
-    description: 'Keurig K-Mini single serve coffee maker. Perfect for busy students who need their morning coffee. Includes reusable K-cup for eco-friendly brewing.',
+    description: 'Compact Keurig K-Mini coffee maker. Perfect for dorm rooms. Includes reusable K-cup. Works great, just upgraded to a bigger model.',
     price: 35,
     originalPrice: 80,
-    category: 'Appliances' as Category,
-    condition: 'Excellent' as Condition,
-    images: ['/api/placeholder/600/400'],
-    seller: {
-      ...mockUser,
-      id: '4',
-      name: 'Emily Davis',
-      email: 'emily.davis@louisiana.edu'
-    },
-    posted: '2024-01-08T16:45:00Z',
-    views: 34,
-    status: 'Sold',
-    tags: ['Coffee', 'Keurig', 'K-Mini', 'Beverage'],
-    location: 'UL Campus'
+    condition: 'LIKE_NEW' as any,
+    category: 'APPLIANCES' as any,
+    images: [
+      'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=500',
+      'https://images.unsplash.com/photo-1559056199-641a0ac8b55e?w=500'
+    ],
+    seller: mockUsers[0],
+    location: 'Lafayette, LA',
+    pickupAvailable: true,
+    deliveryAvailable: true,
+    deliveryFee: 5,
+    createdAt: new Date('2024-01-05'),
+    updatedAt: new Date('2024-01-05'),
+    posted: '2024-01-05',
+    status: 'ACTIVE' as any,
+    views: 41,
+    likes: 7,
+    isLiked: false,
+    isInCart: false,
+    isInWishlist: false,
+    tags: ['coffee', 'keurig', 'appliance', 'dorm', 'kitchen'],
+    pickupMethod: 'BOTH' as any
   },
   {
     id: '5',
-    title: 'Office Chair - Ergonomic',
-    description: 'Comfortable ergonomic office chair perfect for long study sessions. Adjustable height and lumbar support. Great for dorm room or apartment.',
-    price: 75,
-    originalPrice: 150,
-    category: 'Furniture' as Category,
-    condition: 'Good' as Condition,
-    images: ['/api/placeholder/600/400'],
-    seller: {
-      ...mockUser,
-      id: '5',
-      name: 'Alex Chen',
-      email: 'alex.chen@louisiana.edu'
-    },
-    posted: '2024-01-05T11:30:00Z',
-    views: 28,
-    status: 'Active',
-    tags: ['Chair', 'Ergonomic', 'Office', 'Study'],
-    location: 'UL Campus'
+    title: 'Basketball - Wilson NCAA Official',
+    description: 'Wilson NCAA Official basketball. Used for intramural games. Good condition, still holds air well. Moving and can\'t take it with me.',
+    price: 25,
+    originalPrice: 50,
+    condition: 'GOOD' as any,
+    category: 'SPORTS' as any,
+    images: [
+      'https://images.unsplash.com/photo-1546519638-68e109498ffc?w=500',
+      'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=500'
+    ],
+    seller: mockUsers[1],
+    location: 'Lafayette, LA',
+    pickupAvailable: true,
+    deliveryAvailable: false,
+    deliveryFee: undefined,
+    createdAt: new Date('2024-01-03'),
+    updatedAt: new Date('2024-01-03'),
+    posted: '2024-01-03',
+    status: 'ACTIVE' as any,
+    views: 19,
+    likes: 2,
+    isLiked: false,
+    isInCart: false,
+    isInWishlist: false,
+    tags: ['basketball', 'sports', 'wilson', 'ncaa', 'outdoor'],
+    pickupMethod: 'PICKUP' as any
   },
   {
     id: '6',
-    title: 'Psychology Textbook - Myers 12th Edition',
-    description: 'Psychology by David Myers, 12th Edition. Used for PSYC 100. Book is in good condition with some highlighting and notes in margins.',
-    price: 40,
-    originalPrice: 120,
-    category: 'Books' as Category,
-    condition: 'Good' as Condition,
-    images: ['/api/placeholder/600/400'],
-    seller: {
-      ...mockUser,
-      id: '6',
-      name: 'Jessica Wilson',
-      email: 'jessica.wilson@louisiana.edu'
-    },
-    posted: '2024-01-03T13:20:00Z',
-    views: 19,
-    status: 'Active',
-    tags: ['Psychology', 'Textbook', 'Myers', 'Social Science'],
-    location: 'UL Campus'
+    title: 'Graphing Calculator - TI-84 Plus CE',
+    description: 'Texas Instruments TI-84 Plus CE graphing calculator. Perfect for calculus, statistics, and engineering classes. Includes USB cable and manual.',
+    price: 90,
+    originalPrice: 150,
+    condition: 'LIKE_NEW' as any,
+    category: 'ELECTRONICS' as any,
+    images: [
+      'https://images.unsplash.com/photo-1596495578065-6e0763fa1178?w=500',
+      'https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=500'
+    ],
+    seller: mockUsers[2],
+    location: 'Lafayette, LA',
+    pickupAvailable: true,
+    deliveryAvailable: true,
+    deliveryFee: 5,
+    createdAt: new Date('2024-01-01'),
+    updatedAt: new Date('2024-01-01'),
+    posted: '2024-01-01',
+    status: 'ACTIVE' as any,
+    views: 67,
+    likes: 12,
+    isLiked: false,
+    isInCart: false,
+    isInWishlist: false,
+    tags: ['calculator', 'ti-84', 'graphing', 'math', 'engineering'],
+    pickupMethod: 'BOTH' as any
   }
-]
-
-// Mock categories
-export const mockCategories = [
-  { id: '1', name: 'Electronics', count: 15 },
-  { id: '2', name: 'Books', count: 42 },
-  { id: '3', name: 'Appliances', count: 23 },
-  { id: '4', name: 'Furniture', count: 18 },
-  { id: '5', name: 'Clothing', count: 31 },
-  { id: '6', name: 'Sports & Recreation', count: 12 },
-  { id: '7', name: 'Other', count: 8 }
-]
-
-// Mock messages
-export const mockMessages = [
-  {
-    id: '1',
-    senderId: '2',
-    receiverId: '1',
-    itemId: '1',
-    message: 'Hi! Is the MacBook still available?',
-    timestamp: '2024-01-15T14:30:00Z',
-    read: false
-  },
-  {
-    id: '2',
-    senderId: '1',
-    receiverId: '2',
-    itemId: '1',
-    message: 'Yes, it is! Would you like to see it in person?',
-    timestamp: '2024-01-15T14:35:00Z',
-    read: true
-  },
-  {
-    id: '3',
-    senderId: '2',
-    receiverId: '1',
-    itemId: '1',
-    message: 'That would be great! When are you available?',
-    timestamp: '2024-01-15T14:40:00Z',
-    read: false
-  }
-]
-
-// Mock favorites
-export const mockFavorites = [
-  {
-    id: '1',
-    userId: '1',
-    itemId: '3',
-    addedAt: '2024-01-12T10:00:00Z'
-  },
-  {
-    id: '2',
-    userId: '1',
-    itemId: '5',
-    addedAt: '2024-01-13T15:30:00Z'
-  }
-]
+];

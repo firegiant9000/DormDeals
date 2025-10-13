@@ -3,7 +3,7 @@ export const APP_NAME = 'DormDeals'
 export const APP_VERSION = '1.0.0'
 
 // API Configuration
-export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api'
+export const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3001/api'
 
 // Categories
 export const CATEGORIES = [
