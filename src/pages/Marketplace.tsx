@@ -1,54 +1,19 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { Search, Grid, List } from 'lucide-react'
+import { Search, Grid, List, Heart, ShoppingCart } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { mockItems } from '../data/mockData'
+import { formatCurrency } from '../utils/helpers'
+import { useShop } from '@/context/ShopContext'
 
 const Marketplace = () => {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [searchQuery, setSearchQuery] = useState('')
+  const { addToCart, addToWishlist, removeFromCart, removeFromWishlist, isInCart, isInWishlist } = useShop()
+  const navigate = useNavigate()
 
-  // Mock data - replace with actual data fetching
-  const items = [
-    {
-      id: 1,
-      title: 'MacBook Pro 13"',
-      price: 800,
-      category: 'Electronics',
-      condition: 'Good',
-      image: '/api/placeholder/300/200',
-      seller: 'John Doe',
-      posted: '2 days ago'
-    },
-    {
-      id: 2,
-      title: 'Calculus Textbook',
-      price: 50,
-      category: 'Books',
-      condition: 'Excellent',
-      image: '/api/placeholder/300/200',
-      seller: 'Sarah Smith',
-      posted: '1 week ago'
-    },
-    {
-      id: 3,
-      title: 'Mini Fridge',
-      price: 120,
-      category: 'Appliances',
-      condition: 'Good',
-      image: '/api/placeholder/300/200',
-      seller: 'Mike Johnson',
-      posted: '3 days ago'
-    },
-    {
-      id: 4,
-      title: 'Coffee Maker',
-      price: 35,
-      category: 'Appliances',
-      condition: 'Excellent',
-      image: '/api/placeholder/300/200',
-      seller: 'Emily Davis',
-      posted: '5 days ago'
-    }
-  ]
+  // Use app-wide mock items for richer data and images
+  const items = mockItems
 
   const categories = ['All', 'Electronics', 'Books', 'Appliances', 'Furniture', 'Clothing']
 
@@ -115,30 +80,55 @@ const Marketplace = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: index * 0.1 }}
               className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
+              onClick={() => navigate(`/listing/${item.id}`, { state: { listing: item } })}
             >
               <div className={`${viewMode === 'list' ? 'flex' : ''}`}>
                 {/* Image */}
-                <div className={`${viewMode === 'list' ? 'w-48 h-32' : 'h-48'} bg-gray-200 flex items-center justify-center`}>
-                  <div className="text-gray-400">Image Placeholder</div>
+                <div className={`${viewMode === 'list' ? 'w-48 h-32' : 'h-48'} bg-gray-200`}> 
+                  <img
+                    src={item.images[0] || '/api/placeholder/400/300'}
+                    alt={item.title}
+                    className={`${viewMode === 'list' ? 'w-48 h-32' : 'w-full h-48'} object-cover`}
+                    loading="lazy"
+                  />
                 </div>
 
                 {/* Content */}
                 <div className={`p-4 ${viewMode === 'list' ? 'flex-1' : ''}`}>
-                  <h3 className="font-semibold text-gray-900 mb-2">{item.title}</h3>
-                  <p className="text-2xl font-bold text-primary-600 mb-2">${item.price}</p>
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <h3 className="font-semibold text-gray-900 line-clamp-2 mr-2">{item.title}</h3>
+                    <span className="text-lg font-bold text-primary-600">{formatCurrency(item.price)}</span>
+                  </div>
                   <div className="flex justify-between text-sm text-gray-500 mb-2">
-                    <span>{item.category}</span>
+                    <span className="bg-gray-100 px-2 py-1 rounded">{item.category}</span>
                     <span>{item.condition}</span>
                   </div>
-                  <div className="text-sm text-gray-500">
-                    <p>Sold by {item.seller}</p>
-                    <p>{item.posted}</p>
+                  <div className="text-sm text-gray-500 mb-3">
+                    <p>{item.location}</p>
+                  </div>
+                  <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                    <button
+                      onClick={() => { if (!isInCart(item.id)) addToCart(item); else removeFromCart(item.id) }}
+                      className={`flex-1 py-2 px-3 rounded text-sm font-medium inline-flex items-center justify-center gap-2 ${isInCart(item.id) ? 'border border-red-300 text-red-700 hover:bg-red-50' : 'bg-primary-600 text-white hover:bg-primary-700 transition-colors'}`}
+                    >
+                      <ShoppingCart className="w-4 h-4" />
+                      {isInCart(item.id) ? 'Remove from Cart' : 'Add to Cart'}
+                    </button>
+                    <button
+                      onClick={() => { if (!isInWishlist(item.id)) addToWishlist(item); else removeFromWishlist(item.id) }}
+                      className={`p-2 border rounded transition-colors ${isInWishlist(item.id) ? 'border-red-300 text-red-600 hover:bg-red-50' : 'border-gray-300 hover:bg-gray-50'}`}
+                      aria-label="Toggle wishlist"
+                    >
+                      <Heart className={`w-4 h-4 ${isInWishlist(item.id) ? 'text-red-600' : 'text-gray-600'}`} />
+                    </button>
                   </div>
                 </div>
               </div>
             </motion.div>
           ))}
         </div>
+
+        {/* Global drawers are rendered at App root via ShopDrawers */}
 
         {/* Empty State */}
         {items.length === 0 && (

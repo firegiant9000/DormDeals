@@ -1,6 +1,7 @@
 import { Routes, Route } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import Layout from '@/components/Layout'
+import { ShopProvider, ShopDrawers } from '@/context/ShopContext'
 import Home from '@/pages/Home'
 import Marketplace from '@/pages/Marketplace'
 import ItemDetail from '@/pages/ItemDetail'
@@ -20,8 +21,9 @@ function App() {
       transition={{ duration: 0.5 }}
       className="min-h-screen bg-gray-50"
     >
-      <Layout>
-        <Routes>
+      <ShopProvider>
+        <Layout>
+          <Routes>
           <Route path="/" element={<MainFeaturePage />} />  {/* Now the homepage */}
           <Route path="/marketplace" element={<Marketplace />} />
           <Route path="/results" element={<ResultsPage />} />
@@ -33,8 +35,10 @@ function App() {
           <Route path="/home" element={<Home />} />
           <Route path="/:feature" element={<MainFeaturePage />} />
           <Route path="*" element={<NotFoundPage />} />
-        </Routes>
-      </Layout>
+          </Routes>
+        </Layout>
+        <ShopDrawers />
+      </ShopProvider>
     </motion.div>
   )
 }

@@ -12,6 +12,7 @@ import {
   Share2
 } from 'lucide-react';
 import { Item, User as UserType } from '../types';
+import { useShop } from '@/context/ShopContext';
 import { formatCurrency, formatRelativeTime } from '../utils/helpers';
 
 const ListingDetailPage: React.FC = () => {
@@ -23,6 +24,7 @@ const ListingDetailPage: React.FC = () => {
   const [listing, setListing] = useState<Item | null>(location.state?.listing || null);
   const [loading, setLoading] = useState(!listing);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const { addToCart, addToWishlist, removeFromCart, removeFromWishlist, openCart, openWishlist, isInCart, isInWishlist } = useShop();
 
   // Scroll to top when component mounts
   useEffect(() => {
@@ -81,17 +83,13 @@ const ListingDetailPage: React.FC = () => {
   }, [id, listing]);
 
   const handleAddToCart = () => {
-    if (listing) {
-      // You could add a toast notification here
-      console.log('Added to cart:', listing.title);
-    }
+    if (!listing) return;
+    if (!isInCart(listing.id)) addToCart(listing); else openCart();
   };
 
   const handleAddToWishlist = () => {
-    if (listing) {
-      // You could add a toast notification here
-      console.log('Added to wishlist:', listing.title);
-    }
+    if (!listing) return;
+    if (!isInWishlist(listing.id)) addToWishlist(listing); else openWishlist();
   };
 
   const handleContactSeller = () => {
@@ -139,7 +137,7 @@ const ListingDetailPage: React.FC = () => {
             
             <div className="flex items-center space-x-4">
               <button
-                onClick={handleAddToWishlist}
+                onClick={openWishlist}
                 className="flex items-center space-x-2 text-gray-700 hover:text-primary-600 transition-colors"
               >
                 <Heart className="w-5 h-5" />
@@ -147,11 +145,11 @@ const ListingDetailPage: React.FC = () => {
               </button>
               
               <button
-                onClick={handleAddToCart}
+                onClick={openCart}
                 className="flex items-center space-x-2 bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors"
               >
                 <ShoppingCart className="w-5 h-5" />
-                <span>Add to Cart</span>
+                <span>Cart</span>
               </button>
             </div>
           </div>
@@ -314,19 +312,19 @@ const ListingDetailPage: React.FC = () => {
             {/* Action Buttons */}
             <div className="flex space-x-4">
               <button
-                onClick={handleAddToCart}
-                className="flex-1 bg-primary-600 text-white py-3 rounded-lg hover:bg-primary-700 transition-colors flex items-center justify-center space-x-2"
+                onClick={() => { if (!isInCart(listing.id)) handleAddToCart(); else removeFromCart(listing.id); }}
+                className={`flex-1 py-3 rounded-lg flex items-center justify-center space-x-2 ${isInCart(listing.id) ? 'border border-red-300 text-red-700 hover:bg-red-50' : 'bg-primary-600 text-white hover:bg-primary-700 transition-colors'}`}
               >
                 <ShoppingCart className="w-5 h-5" />
-                <span>Add to Cart</span>
+                <span>{isInCart(listing.id) ? 'Remove from Cart' : 'Add to Cart'}</span>
               </button>
               
               <button
-                onClick={handleAddToWishlist}
-                className="flex-1 border border-gray-300 text-gray-700 py-3 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center space-x-2"
+                onClick={() => { if (!isInWishlist(listing.id)) handleAddToWishlist(); else removeFromWishlist(listing.id); }}
+                className={`flex-1 py-3 rounded-lg flex items-center justify-center space-x-2 ${isInWishlist(listing.id) ? 'border border-red-300 text-red-600 hover:bg-red-50' : 'border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors'}`}
               >
                 <Heart className="w-5 h-5" />
-                <span>Add to Wishlist</span>
+                <span>{isInWishlist(listing.id) ? 'Remove from Wishlist' : 'Add to Wishlist'}</span>
               </button>
               
               <button className="p-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
@@ -336,6 +334,7 @@ const ListingDetailPage: React.FC = () => {
           </div>
         </div>
       </main>
+      {/* Global drawers are rendered at App root via ShopDrawers */}
     </div>
   );
 };
