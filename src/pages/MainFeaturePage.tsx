@@ -11,9 +11,9 @@ import {
   SearchFilters,
   Item
 } from '../types';
-import { searchItems } from '../services/apiService';
 import { mockItems } from '../data/mockData';
 import { formatCurrency, formatRelativeTime } from '../utils/helpers';
+import { useShop } from '@/context/ShopContext';
 
 const MainFeaturePage: React.FC = () => {
   const navigate = useNavigate();
@@ -35,10 +35,18 @@ const MainFeaturePage: React.FC = () => {
   const [errors, setErrors] = useState<FormError[]>([]);
   const [showFilters, setShowFilters] = useState(false);
   const [featuredItems, setFeaturedItems] = useState<Item[]>([]);
-  const [cartItems, setCartItems] = useState<any[]>([]);
-  const [wishlistItems, setWishlistItems] = useState<any[]>([]);
-  const [showCart, setShowCart] = useState(false);
-  const [showWishlist, setShowWishlist] = useState(false);
+  const {
+    cartItems,
+    wishlistItems,
+    addToCart,
+    addToWishlist,
+    removeFromCart,
+    removeFromWishlist,
+    openCart,
+    openWishlist,
+    isInCart,
+    isInWishlist
+  } = useShop();
 
   // Validation rules
   const validateForm = (): FormError[] => {
@@ -70,6 +78,30 @@ const MainFeaturePage: React.FC = () => {
     return newErrors;
   };
 
+  // Unified category labels (8 categories)
+  const CATEGORY_LABELS = [
+    'Furniture',
+    'Electronics',
+    'Textbooks',
+    'Clothing',
+    'Kitchen',
+    'Decor',
+    'Appliances',
+    'Other'
+  ];
+
+  const mapCategoryToLabel = (raw?: string): string => {
+    const v = (raw ?? '').toString().trim().toLowerCase();
+    if (['furniture'].includes(v)) return 'Furniture';
+    if (['electronics', 'electronic'].includes(v)) return 'Electronics';
+    if (['textbooks', 'textbook', 'books', 'book'].includes(v)) return 'Textbooks';
+    if (['clothing', 'clothes', 'apparel'].includes(v)) return 'Clothing';
+    if (['kitchen'].includes(v)) return 'Kitchen';
+    if (['decor', 'decoration'].includes(v)) return 'Decor';
+    if (['appliances', 'appliance'].includes(v)) return 'Appliances';
+    return 'Other';
+  };
+
   // Handle input changes
   const handleInputChange = (field: keyof SearchFormData, value: string) => {
     setFormData((prev: SearchFormData) => ({
@@ -99,22 +131,63 @@ const MainFeaturePage: React.FC = () => {
       // Convert form data to search filters
       const searchFilters: SearchFilters = {
         query: formData.query.trim() || undefined,
-        category: formData.category as ItemCategory || undefined,
+        category: (formData.category as ItemCategory) || undefined,
         priceMin: formData.minPrice ? parseFloat(formData.minPrice) : undefined,
         priceMax: formData.maxPrice ? parseFloat(formData.maxPrice) : undefined,
-        condition: formData.condition as ItemCondition || undefined,
-        pickupMethod: formData.pickupMethod as PickupMethod || undefined,
+        condition: (formData.condition as ItemCondition) || undefined,
+        pickupMethod: (formData.pickupMethod as PickupMethod) || undefined,
         location: formData.location.trim() || undefined,
         sortBy: formData.sortBy as SortOption
       };
 
-      // Call API service
-      const results = await searchItems(searchFilters);
-      
-      // Navigate to results page with data
+      // Local filtering using mockItems to avoid network calls
+      let items = [...mockItems] as Item[];
+
+      const normalize = (v?: string) => (v ?? '').toString().toLowerCase();
+      const computedPickup = (it: Item): string => {
+        const pickup = (it as any).pickupAvailable;
+        const delivery = (it as any).deliveryAvailable;
+        if (pickup && delivery) return 'both available';
+        if (pickup && !delivery) return 'pickup only';
+        if (!pickup && delivery) return 'delivery only';
+        // fallback to item.pickupMethod field if present
+        const pm = ((it as any).pickupMethod || '').toString().toLowerCase();
+        return pm;
+      };
+
+      if (searchFilters.query) {
+        const q = searchFilters.query.toLowerCase();
+        items = items.filter(i =>
+          normalize(i.title).includes(q) ||
+          normalize(i.description).includes(q) ||
+          normalize(mapCategoryToLabel(i.category)).includes(q) ||
+          normalize(i.category).includes(q)
+        );
+      }
+      if (searchFilters.category) items = items.filter(i => normalize(mapCategoryToLabel(i.category)) === normalize(searchFilters.category as any));
+      if (searchFilters.condition) items = items.filter(i => normalize(i.condition as any) === normalize(searchFilters.condition as any));
+      if (searchFilters.pickupMethod) items = items.filter(i => computedPickup(i) === normalize(searchFilters.pickupMethod as any));
+      if (searchFilters.priceMin !== undefined) items = items.filter(i => i.price >= searchFilters.priceMin!);
+      if (searchFilters.priceMax !== undefined) items = items.filter(i => i.price <= searchFilters.priceMax!);
+      if (searchFilters.location) items = items.filter(i => normalize(i.location).includes(normalize(searchFilters.location)));
+
+      switch (searchFilters.sortBy) {
+        case SortOption.PRICE_LOW_TO_HIGH:
+          items.sort((a, b) => a.price - b.price); break;
+        case SortOption.PRICE_HIGH_TO_LOW:
+          items.sort((a, b) => b.price - a.price); break;
+        case SortOption.NEWEST:
+          items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()); break;
+        case SortOption.OLDEST:
+          items.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()); break;
+        default:
+          break;
+      }
+
+      // Navigate to results page with locally computed items and filters
       navigate('/results', { 
         state: { 
-          results, 
+          results: { items },
           filters: searchFilters,
           searchQuery: formData.query 
         } 
@@ -124,38 +197,19 @@ const MainFeaturePage: React.FC = () => {
       console.error('Search failed:', error);
       setErrors([{ 
         field: 'general', 
-        message: error instanceof Error ? error.message : 'Search failed. Please try again.' 
+        message: 'Search failed. Please try again.' 
       }]);
     } finally {
       setLoading(false);
     }
   };
 
-  // Handle quick actions
-  const handleAddToCart = async (itemId: string) => {
-    try {
-      // Find the item in featured items
-      const item = featuredItems.find(item => item.id === itemId);
-      if (item) {
-        setCartItems(prev => [...prev, item]);
-        // You could add a toast notification here
-      }
-    } catch (error) {
-      console.error('Failed to add to cart:', error);
-    }
+  // Toggle helpers
+  const handleToggleCart = (item: Item) => {
+    if (isInCart(item.id)) removeFromCart(item.id); else addToCart(item);
   };
-
-  const handleAddToWishlist = async (itemId: string) => {
-    try {
-      // Find the item in featured items and add to wishlist
-      const item = featuredItems.find(item => item.id === itemId);
-      if (item) {
-        setWishlistItems(prev => [...prev, item]);
-        // You could add a toast notification here
-      }
-    } catch (error) {
-      console.error('Failed to add to wishlist:', error);
-    }
+  const handleToggleWishlist = (item: Item) => {
+    if (isInWishlist(item.id)) removeFromWishlist(item.id); else addToWishlist(item);
   };
 
   // Get error message for a specific field
@@ -184,7 +238,7 @@ const MainFeaturePage: React.FC = () => {
             <nav className="flex items-center space-x-4">
               {/* Cart Button */}
               <button
-                onClick={() => setShowCart(!showCart)}
+                onClick={openCart}
                 className="relative flex items-center space-x-2 text-gray-700 hover:text-primary-600 transition-colors"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -200,7 +254,7 @@ const MainFeaturePage: React.FC = () => {
 
               {/* Wishlist Button */}
               <button
-                onClick={() => setShowWishlist(!showWishlist)}
+                onClick={openWishlist}
                 className="relative flex items-center space-x-2 text-gray-700 hover:text-primary-600 transition-colors"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -344,28 +398,24 @@ const MainFeaturePage: React.FC = () => {
             {showFilters && (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-4 border-t border-gray-200">
                 <div>
-                  <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-2">
+          <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-2">
                     Category
                   </label>
-                  <select
+          <select
                     id="category"
                     value={formData.category}
                     onChange={(e) => handleInputChange('category', e.target.value)}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                   >
-                    <option value="">All Categories</option>
-                    <option value={ItemCategory.FURNITURE}>Furniture</option>
-                    <option value={ItemCategory.ELECTRONICS}>Electronics</option>
-                    <option value={ItemCategory.TEXTBOOKS}>Textbooks</option>
-                    <option value={ItemCategory.CLOTHING}>Clothing</option>
-                    <option value={ItemCategory.KITCHEN}>Kitchen</option>
-                    <option value={ItemCategory.DECOR}>Decor</option>
-                    <option value={ItemCategory.OTHER}>Other</option>
+            <option value="">All Categories</option>
+            {CATEGORY_LABELS.map(lbl => (
+              <option key={lbl} value={lbl}>{lbl}</option>
+            ))}
                   </select>
                 </div>
 
                 <div>
-                  <label htmlFor="condition" className="block text-sm font-medium text-gray-700 mb-2">
+                  <label htmlFor="condition" className="block text sm font-medium text-gray-700 mb-2">
                     Condition
                   </label>
                   <select
@@ -469,7 +519,7 @@ const MainFeaturePage: React.FC = () => {
                 ) : (
                   <>
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                     <span>Search Items</span>
                   </>
@@ -489,7 +539,7 @@ const MainFeaturePage: React.FC = () => {
             >
               <span>View All</span>
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
               </svg>
             </button>
           </div>
@@ -523,23 +573,18 @@ const MainFeaturePage: React.FC = () => {
                   </div>
                   <div className="flex space-x-2 mt-auto">
                     <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleAddToCart(item.id);
-                      }}
-                      className="flex-1 bg-primary-600 text-white py-2 px-3 rounded text-sm font-medium hover:bg-primary-700 transition-colors"
+                      onClick={(e) => { e.stopPropagation(); handleToggleCart(item); }}
+                      className={`flex-1 py-2 px-3 rounded text-sm font-medium transition-colors ${isInCart(item.id) ? 'border border-red-300 text-red-700 hover:bg-red-50' : 'bg-primary-600 text-white hover:bg-primary-700'}`}
                     >
-                      Add to Cart
+                      {isInCart(item.id) ? 'Remove from Cart' : 'Add to Cart'}
                     </button>
                     <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleAddToWishlist(item.id);
-                      }}
-                      className="p-2 border border-gray-300 rounded hover:bg-gray-50 transition-colors"
+                      onClick={(e) => { e.stopPropagation(); handleToggleWishlist(item); }}
+                      className={`p-2 border rounded transition-colors ${isInWishlist(item.id) ? 'border-red-300 text-red-600 hover:bg-red-50' : 'border-gray-300 hover:bg-gray-50'}`}
+                      aria-label="Toggle wishlist"
                     >
-                      <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                      <svg className={`w-4 h-4 ${isInWishlist(item.id) ? 'text-red-600' : 'text-gray-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                       </svg>
                     </button>
                   </div>
@@ -558,7 +603,7 @@ const MainFeaturePage: React.FC = () => {
               className="flex items-center justify-center space-x-2 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
             >
               <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m6-5v6a2 2 0 01-2 2H9a2 2 0 01-2-2v-6m8 0V9a2 2 0 00-2-2H9a2 2 0 00-2 2v4.01" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m6-5v6a2 2 0 01-2 2H9a2 2 0 01-2-2v-6m8 0V9a2 2 0 00-2-2H9a2 2 0 00-2 2v4.01" />
               </svg>
               <span className="font-medium">View Cart</span>
             </button>
@@ -568,7 +613,7 @@ const MainFeaturePage: React.FC = () => {
               className="flex items-center justify-center space-x-2 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
             >
               <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
               </svg>
               <span className="font-medium">Wishlist</span>
             </button>
@@ -578,7 +623,7 @@ const MainFeaturePage: React.FC = () => {
               className="flex items-center justify-center space-x-2 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
             >
               <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
               </svg>
               <span className="font-medium">Sell Item</span>
             </button>
@@ -586,175 +631,7 @@ const MainFeaturePage: React.FC = () => {
         </div>
       </main>
 
-      {/* Cart Sidebar */}
-      {showCart && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-end">
-          <motion.div
-            initial={{ x: '100%' }}
-            animate={{ x: 0 }}
-            exit={{ x: '100%' }}
-            className="bg-white w-96 h-full shadow-xl overflow-y-auto"
-          >
-            <div className="p-6 border-b border-gray-200">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold text-gray-900">Shopping Cart</h2>
-                <button
-                  onClick={() => setShowCart(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-            
-            <div className="p-6">
-              {cartItems.length === 0 ? (
-                <div className="text-center py-8">
-                  <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m6-5v6a2 2 0 01-2 2H9a2 2 0 01-2-2v-6m8 0V9a2 2 0 00-2-2H9a2 2 0 00-2 2v4.01" />
-                  </svg>
-                  <p className="text-gray-500">Your cart is empty</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {cartItems.map((item) => (
-                    <div key={item.id} className="flex gap-4 p-4 border border-gray-200 rounded-lg">
-                      <div className="w-16 h-16 bg-gray-200 rounded-lg flex-shrink-0">
-                        {item.images && item.images.length > 0 ? (
-                          <img
-                            src={item.images[0]}
-                            alt={item.title}
-                            className="w-full h-full object-cover rounded-lg"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
-                            No Image
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="font-medium text-gray-900 text-sm line-clamp-2">
-                          {item.title}
-                        </h3>
-                        <p className="text-primary-600 font-semibold">
-                          ${item.price}
-                        </p>
-                        <div className="flex items-center gap-2 mt-2">
-                          <button
-                            onClick={() => {
-                              setCartItems(cartItems.filter(cartItem => cartItem.id !== item.id));
-                            }}
-                            className="text-red-600 hover:text-red-700 text-sm"
-                          >
-                            Remove
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                  <div className="border-t border-gray-200 pt-4">
-                    <div className="flex justify-between items-center mb-4">
-                      <span className="text-lg font-semibold text-gray-900">Total:</span>
-                      <span className="text-lg font-semibold text-primary-600">
-                        ${cartItems.reduce((sum, item) => sum + item.price, 0).toFixed(2)}
-                      </span>
-                    </div>
-                    <button className="w-full bg-primary-600 text-white py-3 rounded-lg hover:bg-primary-700 transition-colors">
-                      Proceed to Checkout
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          </motion.div>
-        </div>
-      )}
-
-      {/* Wishlist Sidebar */}
-      {showWishlist && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-end">
-          <motion.div
-            initial={{ x: '100%' }}
-            animate={{ x: 0 }}
-            exit={{ x: '100%' }}
-            className="bg-white w-96 h-full shadow-xl overflow-y-auto"
-          >
-            <div className="p-6 border-b border-gray-200">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold text-gray-900">Wishlist</h2>
-                <button
-                  onClick={() => setShowWishlist(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-            
-            <div className="p-6">
-              {wishlistItems.length === 0 ? (
-                <div className="text-center py-8">
-                  <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                  </svg>
-                  <p className="text-gray-500">Your wishlist is empty</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {wishlistItems.map((item) => (
-                    <div key={item.id} className="flex gap-4 p-4 border border-gray-200 rounded-lg">
-                      <div className="w-16 h-16 bg-gray-200 rounded-lg flex-shrink-0">
-                        {item.images && item.images.length > 0 ? (
-                          <img
-                            src={item.images[0]}
-                            alt={item.title}
-                            className="w-full h-full object-cover rounded-lg"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
-                            No Image
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="font-medium text-gray-900 text-sm line-clamp-2">
-                          {item.title}
-                        </h3>
-                        <p className="text-primary-600 font-semibold">
-                          ${item.price}
-                        </p>
-                        <div className="flex items-center gap-2 mt-2">
-                          <button
-                            onClick={() => {
-                              setCartItems([...cartItems, item]);
-                            }}
-                            className="text-primary-600 hover:text-primary-700 text-sm"
-                          >
-                            Add to Cart
-                          </button>
-                          <span className="text-gray-300">•</span>
-                          <button
-                            onClick={() => {
-                              setWishlistItems(wishlistItems.filter(wishlistItem => wishlistItem.id !== item.id));
-                            }}
-                            className="text-red-600 hover:text-red-700 text-sm"
-                          >
-                            Remove
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </motion.div>
-        </div>
-      )}
+      {/* Global drawers are rendered at App root via ShopDrawers */}
 
     </div>
   );

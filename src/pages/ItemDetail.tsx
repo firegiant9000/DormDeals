@@ -1,6 +1,8 @@
 import { useParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Heart, Share2, MessageCircle, User, MapPin } from 'lucide-react'
+import React from 'react'
+import { useShop } from '@/context/ShopContext'
 
 const ItemDetail = () => {
   const { id } = useParams()
@@ -26,6 +28,10 @@ const ItemDetail = () => {
     posted: '2 days ago',
     tags: ['Laptop', 'Apple', 'Student', 'Computer']
   }
+
+  const { addToCart, addToWishlist, isInCart, isInWishlist, openCart, openWishlist } = useShop()
+  const handleAddToCart = () => { if (!isInCart(String(item.id))) addToCart(item as any); else openCart() }
+  const handleAddToWishlist = () => { if (!isInWishlist(String(item.id))) addToWishlist(item as any); else openWishlist() }
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -82,7 +88,8 @@ const ItemDetail = () => {
               transition={{ delay: 0.2 }}
               className="sticky top-24"
             >
-              {/* Price and Actions */}
+              {/* Price and Actions */
+              }
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
                 <div className="flex items-center justify-between mb-4">
                   <h1 className="text-3xl font-bold text-gray-900">{item.title}</h1>
@@ -120,11 +127,19 @@ const ItemDetail = () => {
                 </div>
 
                 <div className="space-y-3">
-                  <button className="w-full btn-primary py-3 text-lg">
-                    Contact Seller
+                  <button
+                    onClick={handleAddToCart}
+                    disabled={isInCart(String(item.id))}
+                    className={`w-full py-3 text-lg ${isInCart(String(item.id)) ? 'btn-disabled cursor-not-allowed bg-gray-300 text-gray-600' : 'btn-primary'}`}
+                  >
+                    {isInCart(String(item.id)) ? 'In Cart' : 'Add to Cart'}
                   </button>
-                  <button className="w-full btn-outline py-3">
-                    Make Offer
+                  <button
+                    onClick={handleAddToWishlist}
+                    disabled={isInWishlist(String(item.id))}
+                    className={`w-full py-3 ${isInWishlist(String(item.id)) ? 'btn-disabled cursor-not-allowed border-gray-200 text-gray-400' : 'btn-outline'}`}
+                  >
+                    {isInWishlist(String(item.id)) ? 'In Wishlist' : 'Add to Wishlist'}
                   </button>
                 </div>
               </div>
@@ -158,6 +173,8 @@ const ItemDetail = () => {
           </div>
         </div>
       </div>
+
+      {/* Global drawers are rendered at App root via ShopDrawers */}
     </div>
   )
 }
