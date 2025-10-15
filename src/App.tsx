@@ -11,6 +11,7 @@ import ResultsPage from '@/pages/ResultsPage'
 import AboutPage from '@/pages/AboutPage'
 import MainFeaturePage from '@/pages/MainFeaturePage'
 import ListingDetailPage from '@/pages/ListingDetailPage'
+import MessagePage from '@/pages/MessagePage'
 import NotFoundPage from '@/pages/NotFoundPage'
 
 function App() {
@@ -32,6 +33,7 @@ function App() {
           <Route path="/item/:id" element={<ItemDetail />} />
           <Route path="/listing/:id" element={<ListingDetailPage />} />
           <Route path="/create-listing" element={<CreateListing />} />
+          <Route path="/chat" element={<MessagePage />} />
           <Route path="/home" element={<Home />} />
           <Route path="/:feature" element={<MainFeaturePage />} />
           <Route path="*" element={<NotFoundPage />} />
