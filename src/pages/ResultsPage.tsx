@@ -1,18 +1,16 @@
 import React, { useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Filter, LayoutGrid, List, Search } from 'lucide-react'
+import { LayoutGrid, List, Search } from 'lucide-react'
 import { 
   Item, 
-  ItemCategory, 
-  ItemCondition, 
-  PickupMethod, 
   SearchFilters, 
   SortOption 
 } from '../types'
 import { formatCurrency, formatRelativeTime } from '../utils/helpers'
 import { useShop } from '@/context/ShopContext'
 import { mockItems } from '../data/mockData'
+import SearchFiltersBar from '../components/SearchFiltersBar'
 
 type RouterState = {
   // When navigating from MainFeaturePage we pass these
@@ -26,13 +24,7 @@ const ResultsPage: React.FC = () => {
   const { state } = useLocation() as { state?: RouterState }
   const { addToCart, addToWishlist, removeFromCart, removeFromWishlist, isInCart, isInWishlist } = useShop()
 
-  // Derive initial items from router state with robust fallbacks
-  const initialItems: Item[] = useMemo(() => {
-    if (!state || !state.results) return []
-    const r = state.results
-    // Support either {items: Item[]} or {listings: Item[]}
-    return (r.items || r.listings || []) as Item[]
-  }, [state])
+  // We ignore routed results to ensure filters can expand the result set across all items
 
   // Local UI state for client-side refine
   const [view, setView] = useState<'cards' | 'list'>('cards')
@@ -46,22 +38,12 @@ const ResultsPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null)
   const [refilterTick, setRefilterTick] = useState(0)
 
-  // Compute the base item set: use results from router if present; otherwise fall back to local mock data
+  // Compute the base item set: always use the full local dataset so filters can broaden results
   const baseItems: Item[] = useMemo(() => {
-    return (initialItems && initialItems.length > 0) ? initialItems : (mockItems as Item[])
-  }, [initialItems])
+    return mockItems as Item[]
+  }, [])
 
   // Apply client-side filtering and sorting
-  const CATEGORY_LABELS = [
-    'Furniture',
-    'Electronics',
-    'Textbooks',
-    'Clothing',
-    'Kitchen',
-    'Decor',
-    'Appliances',
-    'Other'
-  ]
 
   const mapCategoryToLabel = (raw?: string): string => {
     const v = (raw ?? '').toString().trim().toLowerCase()
@@ -177,116 +159,41 @@ const ResultsPage: React.FC = () => {
 
         {/* Controls */}
         <div className="bg-white rounded-lg shadow-sm border p-4 sm:p-6 mb-6">
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-col lg:flex-row gap-3 lg:items-center">
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <input
-                  type="text"
-                  placeholder="Search within results..."
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                />
-              </div>
-              <div className="flex gap-2 self-end lg:self-auto">
-                <button
-                  onClick={() => setView('cards')}
-                  className={`inline-flex items-center gap-2 px-3 py-2 rounded border ${view === 'cards' ? 'border-primary-500 text-primary-600 bg-primary-50' : 'border-gray-300 hover:border-primary-500 hover:text-primary-600'}`}
-                  aria-label="Card view"
-                >
-                  <LayoutGrid className="w-4 h-4" />
-                  Cards
-                </button>
-                <button
-                  onClick={() => setView('list')}
-                  className={`inline-flex items-center gap-2 px-3 py-2 rounded border ${view === 'list' ? 'border-primary-500 text-primary-600 bg-primary-50' : 'border-gray-300 hover:border-primary-500 hover:text-primary-600'}`}
-                  aria-label="List view"
-                >
-                  <List className="w-4 h-4" />
-                  List
-                </button>
-              </div>
-            </div>
+          <SearchFiltersBar
+            query={query}
+            setQuery={setQuery}
+            category={category}
+            setCategory={setCategory}
+            condition={condition}
+            setCondition={setCondition}
+            pickupMethod={pickupMethod}
+            setPickupMethod={setPickupMethod}
+            sortBy={sortBy}
+            setSortBy={setSortBy}
+            minPrice={minPrice}
+            setMinPrice={setMinPrice}
+            maxPrice={maxPrice}
+            setMaxPrice={setMaxPrice}
+            onReset={() => setRefilterTick(t => t + 1)}
+          />
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-              >
-                <option value="">All Categories</option>
-                {Object.values(ItemCategory).map(c => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
-
-              <select
-                value={condition}
-                onChange={(e) => setCondition(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-              >
-                <option value="">Any Condition</option>
-                {Object.values(ItemCondition).map(c => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
-
-              <select
-                value={pickupMethod}
-                onChange={(e) => setPickupMethod(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-              >
-                <option value="">Any Pickup Method</option>
-                {Object.values(PickupMethod).map(m => (
-                  <option key={m} value={m}>{m}</option>
-                ))}
-              </select>
-
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as SortOption)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-              >
-                <option value={SortOption.RELEVANCE}>Relevance</option>
-                <option value={SortOption.NEWEST}>Newest</option>
-                <option value={SortOption.OLDEST}>Oldest</option>
-                <option value={SortOption.PRICE_LOW_TO_HIGH}>Price: Low to High</option>
-                <option value={SortOption.PRICE_HIGH_TO_LOW}>Price: High to Low</option>
-                <option value={SortOption.MOST_VIEWED}>Most Viewed</option>
-                <option value={SortOption.MOST_LIKED}>Most Liked</option>
-              </select>
-            </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <input
-                type="number"
-                inputMode="decimal"
-                placeholder="Min Price"
-                value={minPrice}
-                onChange={(e) => setMinPrice(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                min="0"
-                step="0.01"
-              />
-              <input
-                type="number"
-                inputMode="decimal"
-                placeholder="Max Price"
-                value={maxPrice}
-                onChange={(e) => setMaxPrice(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                min="0"
-                step="0.01"
-              />
-              <button
-                onClick={() => { setCategory(''); setCondition(''); setPickupMethod(''); setMinPrice(''); setMaxPrice(''); setSortBy(SortOption.RELEVANCE); setQuery('') }}
-                className="col-span-2 sm:col-span-2 inline-flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:border-primary-500 hover:text-primary-600 transition-colors"
-              >
-                <Filter className="w-4 h-4" />
-                Reset Filters
-              </button>
-            </div>
+          <div className="mt-4 flex gap-2 self-end lg:self-auto">
+            <button
+              onClick={() => setView('cards')}
+              className={`inline-flex items-center gap-2 px-3 py-2 rounded border ${view === 'cards' ? 'border-primary-500 text-primary-600 bg-primary-50' : 'border-gray-300 hover:border-primary-500 hover:text-primary-600'}`}
+              aria-label="Card view"
+            >
+              <LayoutGrid className="w-4 h-4" />
+              Cards
+            </button>
+            <button
+              onClick={() => setView('list')}
+              className={`inline-flex items-center gap-2 px-3 py-2 rounded border ${view === 'list' ? 'border-primary-500 text-primary-600 bg-primary-50' : 'border-gray-300 hover:border-primary-500 hover:text-primary-600'}`}
+              aria-label="List view"
+            >
+              <List className="w-4 h-4" />
+              List
+            </button>
           </div>
         </div>
 

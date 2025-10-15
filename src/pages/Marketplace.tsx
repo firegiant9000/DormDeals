@@ -1,21 +1,89 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
-import { Search, Grid, List, Heart, ShoppingCart } from 'lucide-react'
+import { Grid, List, Heart, ShoppingCart, Search } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { mockItems } from '../data/mockData'
 import { formatCurrency } from '../utils/helpers'
 import { useShop } from '@/context/ShopContext'
+import { Item, SortOption } from '../types'
+import SearchFiltersBar from '../components/SearchFiltersBar'
 
 const Marketplace = () => {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
-  const [searchQuery, setSearchQuery] = useState('')
+  const [query, setQuery] = useState('')
+  const [category, setCategory] = useState('')
+  const [condition, setCondition] = useState('')
+  const [pickupMethod, setPickupMethod] = useState('')
+  const [minPrice, setMinPrice] = useState('')
+  const [maxPrice, setMaxPrice] = useState('')
+  const [sortBy, setSortBy] = useState<SortOption>(SortOption.RELEVANCE)
   const { addToCart, addToWishlist, removeFromCart, removeFromWishlist, isInCart, isInWishlist } = useShop()
   const navigate = useNavigate()
 
   // Use app-wide mock items for richer data and images
-  const items = mockItems
+  const baseItems: Item[] = mockItems
 
-  const categories = ['All', 'Electronics', 'Books', 'Appliances', 'Furniture', 'Clothing']
+  const filteredItems = useMemo(() => {
+    let items = [...baseItems]
+    const normalize = (v?: string | number) => (v ?? '').toString().toLowerCase()
+    const mapCategoryToLabel = (raw?: string): string => {
+      const v = (raw ?? '').toString().trim().toLowerCase()
+      if (['furniture'].includes(v)) return 'Furniture'
+      if (['electronics', 'electronic'].includes(v)) return 'Electronics'
+      if (['textbooks', 'textbook', 'books', 'book'].includes(v)) return 'Textbooks'
+      if (['clothing', 'clothes', 'apparel'].includes(v)) return 'Clothing'
+      if (['kitchen'].includes(v)) return 'Kitchen'
+      if (['decor', 'decoration'].includes(v)) return 'Decor'
+      if (['appliances', 'appliance'].includes(v)) return 'Appliances'
+      return 'Other'
+    }
+    const computedPickup = (it: Item): string => {
+      const pickup = (it as any).pickupAvailable
+      const delivery = (it as any).deliveryAvailable
+      if (pickup && delivery) return 'both available'
+      if (pickup && !delivery) return 'pickup only'
+      if (!pickup && delivery) return 'delivery only'
+      const pm = ((it as any).pickupMethod || '').toString().toLowerCase()
+      return pm
+    }
+
+    if (query) {
+      const q = query.toLowerCase()
+      items = items.filter(i =>
+        normalize(i.title).includes(q) ||
+        normalize(i.description).includes(q) ||
+        normalize(mapCategoryToLabel(i.category)).includes(q)
+      )
+    }
+    if (category) items = items.filter(i => normalize(mapCategoryToLabel(i.category)) === normalize(category))
+    if (condition) items = items.filter(i => normalize((i as any).condition) === normalize(condition))
+    if (pickupMethod) items = items.filter(i => computedPickup(i) === normalize(pickupMethod))
+
+    const min = minPrice ? parseFloat(minPrice) : undefined
+    const max = maxPrice ? parseFloat(maxPrice) : undefined
+    if (!isNaN(min as any)) items = items.filter(i => i.price >= (min as number))
+    if (!isNaN(max as any)) items = items.filter(i => i.price <= (max as number))
+
+    switch (sortBy) {
+      case SortOption.PRICE_LOW_TO_HIGH:
+        items.sort((a, b) => a.price - b.price); break
+      case SortOption.PRICE_HIGH_TO_LOW:
+        items.sort((a, b) => b.price - a.price); break
+      case SortOption.NEWEST:
+        items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()); break
+      case SortOption.OLDEST:
+        items.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()); break
+      case SortOption.MOST_VIEWED:
+        items.sort((a, b) => (b.views || 0) - (a.views || 0)); break
+      case SortOption.MOST_LIKED:
+        items.sort((a, b) => (b.likes || 0) - (a.likes || 0)); break
+      default:
+        break
+    }
+    return items
+  }, [baseItems, query, category, condition, pickupMethod, minPrice, maxPrice, sortBy])
+
+  
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -28,52 +96,43 @@ const Marketplace = () => {
 
         {/* Search and Filters */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
-          <div className="flex flex-col lg:flex-row gap-4">
-            {/* Search Bar */}
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-              <input
-                type="text"
-                placeholder="Search for items..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-              />
-            </div>
+          <SearchFiltersBar
+            query={query}
+            setQuery={setQuery}
+            category={category}
+            setCategory={setCategory}
+            condition={condition}
+            setCondition={setCondition}
+            pickupMethod={pickupMethod}
+            setPickupMethod={setPickupMethod}
+            sortBy={sortBy}
+            setSortBy={setSortBy}
+            minPrice={minPrice}
+            setMinPrice={setMinPrice}
+            maxPrice={maxPrice}
+            setMaxPrice={setMaxPrice}
+          />
 
-            {/* Category Filter */}
-            <div className="flex gap-2 overflow-x-auto">
-              {categories.map((category) => (
-                <button
-                  key={category}
-                  className="px-4 py-2 rounded-lg border border-gray-300 hover:border-primary-500 hover:text-primary-600 whitespace-nowrap transition-colors"
-                >
-                  {category}
-                </button>
-              ))}
-            </div>
-
-            {/* View Toggle */}
-            <div className="flex border border-gray-300 rounded-lg overflow-hidden">
-              <button
-                onClick={() => setViewMode('grid')}
-                className={`p-2 ${viewMode === 'grid' ? 'bg-primary-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
-              >
-                <Grid className="w-5 h-5" />
-              </button>
-              <button
-                onClick={() => setViewMode('list')}
-                className={`p-2 ${viewMode === 'list' ? 'bg-primary-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
-              >
-                <List className="w-5 h-5" />
-              </button>
-            </div>
+          {/* View Toggle */}
+          <div className="mt-4 flex border border-gray-300 rounded-lg overflow-hidden w-fit">
+            <button
+              onClick={() => setViewMode('grid')}
+              className={`p-2 ${viewMode === 'grid' ? 'bg-primary-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
+            >
+              <Grid className="w-5 h-5" />
+            </button>
+            <button
+              onClick={() => setViewMode('list')}
+              className={`p-2 ${viewMode === 'list' ? 'bg-primary-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
+            >
+              <List className="w-5 h-5" />
+            </button>
           </div>
         </div>
 
         {/* Items Grid/List */}
         <div className={`grid gap-6 ${viewMode === 'grid' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' : 'grid-cols-1'}`}>
-          {items.map((item, index) => (
+          {filteredItems.map((item, index) => (
             <motion.div
               key={item.id}
               initial={{ opacity: 0, y: 20 }}
@@ -131,7 +190,7 @@ const Marketplace = () => {
         {/* Global drawers are rendered at App root via ShopDrawers */}
 
         {/* Empty State */}
-        {items.length === 0 && (
+        {filteredItems.length === 0 && (
           <div className="text-center py-12">
             <div className="text-gray-400 mb-4">
               <Search className="w-16 h-16 mx-auto" />
