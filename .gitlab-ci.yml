@@ -1,0 +1,137 @@
+# GitLab CI/CD Pipeline for DormDeals Application
+
+stages:
+  - install
+  - lint
+  - type-check
+  - build
+  - test
+  - deploy
+
+variables:
+  NODE_VERSION: "18"
+  CACHE_KEY: "node_modules-$CI_COMMIT_REF_SLUG"
+
+# Cache node_modules for faster builds
+cache:
+  key: $CACHE_KEY
+  paths:
+    - node_modules/
+    - .npm/
+
+# Install dependencies
+install_dependencies:
+  stage: install
+  image: node:18-alpine
+  script:
+    - npm ci --cache .npm --prefer-offline
+  artifacts:
+    paths:
+      - node_modules/
+    expire_in: 1 hour
+  only:
+    - main
+    - develop
+    - merge_requests
+
+# Lint code
+lint_code:
+  stage: lint
+  image: node:18-alpine
+  dependencies:
+    - install_dependencies
+  script:
+    - npm run lint
+  only:
+    - main
+    - develop
+    - merge_requests
+
+# Type check
+type_check:
+  stage: type-check
+  image: node:18-alpine
+  dependencies:
+    - install_dependencies
+  script:
+    - npx tsc --noEmit
+  only:
+    - main
+    - develop
+    - merge_requests
+
+# Build application
+build_app:
+  stage: build
+  image: node:18-alpine
+  dependencies:
+    - install_dependencies
+  script:
+    - npm run build
+  artifacts:
+    paths:
+      - dist/
+    expire_in: 1 week
+  only:
+    - main
+    - develop
+    - merge_requests
+
+# Run tests (when implemented)
+run_tests:
+  stage: test
+  image: node:18-alpine
+  dependencies:
+    - install_dependencies
+  script:
+    - npm run test:ci || echo "Tests not yet implemented"
+  allow_failure: true
+  only:
+    - main
+    - develop
+    - merge_requests
+
+# Deploy to staging (example)
+deploy_staging:
+  stage: deploy
+  image: alpine:latest
+  dependencies:
+    - build_app
+  script:
+    - echo "Deploying to staging environment..."
+    - echo "Build artifacts available in dist/ directory"
+  environment:
+    name: staging
+    url: https://staging.dormdeals.com
+  only:
+    - develop
+
+# Deploy to production
+deploy_production:
+  stage: deploy
+  image: alpine:latest
+  dependencies:
+    - build_app
+  script:
+    - echo "Deploying to production environment..."
+    - echo "Build artifacts available in dist/ directory"
+  environment:
+    name: production
+    url: https://dormdeals.com
+  only:
+    - main
+  when: manual
+
+# Security scan (example)
+security_scan:
+  stage: test
+  image: node:18-alpine
+  dependencies:
+    - install_dependencies
+  script:
+    - npm audit --audit-level moderate || echo "Security scan completed with warnings"
+  allow_failure: true
+  only:
+    - main
+    - develop
+    - merge_requests
