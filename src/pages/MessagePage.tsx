@@ -900,19 +900,19 @@ const MessagePage: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 bg-white flex overflow-hidden" style={{ height: '100vh', maxHeight: '100vh', width: '100vw' }}>
+    <div className="fixed inset-0 bg-transparent flex overflow-hidden" style={{ height: '100vh', maxHeight: '100vh', width: '100vw' }}>
       {/* Conversations Sidebar */}
-      <div className={`bg-white border-r border-gray-200 w-full sm:w-80 flex flex-col ${showMobileChat ? 'hidden lg:flex' : 'flex'}`} style={{ height: '100vh', maxHeight: '100vh' }}>
+      <div className={`dd-card bg-surface border-surface w-full sm:w-80 flex flex-col ${showMobileChat ? 'hidden lg:flex' : 'flex'}`} style={{ height: '100vh', maxHeight: '100vh' }}>
         {/* Header */}
-        <div className="p-4 border-b border-gray-200 flex items-center justify-between flex-shrink-0 bg-white">
-          <h1 className="text-xl font-semibold text-gray-900">Messages</h1>
+        <div className="p-4 border-b border-surface flex items-center justify-between flex-shrink-0 bg-surface">
+          <h1 className="text-xl font-semibold text-body">Messages</h1>
           <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200">
             <MoreVertical className="w-5 h-5 text-gray-600" />
           </button>
         </div>
 
         {/* Search */}
-        <div className="p-4 border-b border-gray-200 flex-shrink-0 bg-white">
+        <div className="p-4 border-b border-surface flex-shrink-0 bg-surface">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
@@ -988,11 +988,11 @@ const MessagePage: React.FC = () => {
       </div>
 
       {/* Chat Area */}
-      <div className={`flex-1 flex flex-col overflow-hidden bg-gray-50 ${showMobileChat ? 'flex' : 'hidden lg:flex'}`} style={{ height: '100vh', maxHeight: '100vh' }}>
+      <div className={`flex-1 flex flex-col overflow-hidden bg-surface-2 ${showMobileChat ? 'flex' : 'hidden lg:flex'}`} style={{ height: '100vh', maxHeight: '100vh' }}>
         {selectedConversation ? (
           <>
             {/* Chat Header */}
-            <div className="bg-white border-b border-gray-200 px-4 py-4 flex items-center justify-between flex-shrink-0 shadow-sm">
+            <div className="bg-surface border-b border-surface px-4 py-4 flex items-center justify-between flex-shrink-0 shadow-sm">
               <div className="flex items-center space-x-4">
                 <button
                   onClick={() => setShowMobileChat(false)}

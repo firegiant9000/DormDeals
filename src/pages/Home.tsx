@@ -121,6 +121,66 @@ const Home = () => {
         </div>
       </section>
 
+      {/* Search and Content Section */}
+      <div className="mx-auto max-w-6xl px-4 py-6 grid grid-cols-1 gap-8 lg:grid-cols-[280px_1fr]">
+        <aside>
+          <section className="dd-card bg-surface-3 border-surface rounded-2xl p-4">
+            <h3 className="text-lg font-semibold mb-3 text-body">Search</h3>
+
+            <label className="block text-xs font-medium text-muted mb-1">Keywords</label>
+            <input className="dd-input mb-3" placeholder="laptop, desk, textbooks..." />
+
+            <label className="block text-xs font-medium text-muted mb-1">Location</label>
+            <select className="dd-input mb-3">
+              <option>Campus area</option>
+              <option>Off campus</option>
+            </select>
+
+            <label className="block text-xs font-medium text-muted mb-1">Sort by</label>
+            <select className="dd-input mb-4">
+              <option>Newest</option>
+              <option>Lowest price</option>
+              <option>Highest price</option>
+            </select>
+
+            <button className="w-full rounded-xl px-4 py-2 font-semibold text-white bg-blue-600 hover:bg-blue-700 focus:outline-none">Search</button>
+          </section>
+        </aside>
+        <div>
+          {/* Featured Items Section */}
+          <section className="mb-12">
+            <div className="text-center mb-8">
+              <h2 className="text-3xl font-bold text-body mb-4">Featured Items</h2>
+              <p className="text-muted">Discover great deals from fellow UL students</p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {/* Placeholder for featured items */}
+              <div className="dd-card bg-surface border-surface p-6 text-center">
+                <div className="w-16 h-16 bg-surface-2 rounded-lg mx-auto mb-4 flex items-center justify-center">
+                  <span className="text-muted">📱</span>
+                </div>
+                <h3 className="font-semibold text-body mb-2">Electronics</h3>
+                <p className="text-muted text-sm">Laptops, phones, and more</p>
+              </div>
+              <div className="dd-card bg-surface border-surface p-6 text-center">
+                <div className="w-16 h-16 bg-surface-2 rounded-lg mx-auto mb-4 flex items-center justify-center">
+                  <span className="text-muted">📚</span>
+                </div>
+                <h3 className="font-semibold text-body mb-2">Textbooks</h3>
+                <p className="text-muted text-sm">Save on course materials</p>
+              </div>
+              <div className="dd-card bg-surface border-surface p-6 text-center">
+                <div className="w-16 h-16 bg-surface-2 rounded-lg mx-auto mb-4 flex items-center justify-center">
+                  <span className="text-muted">🪑</span>
+                </div>
+                <h3 className="font-semibold text-body mb-2">Furniture</h3>
+                <p className="text-muted text-sm">Dorm essentials</p>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+
       {/* Features Section */}
       <section className="py-24 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion'
 import { Users, Shield, Heart, Target, Award, Globe } from 'lucide-react'
+import { Link } from 'react-router-dom'
 
 const AboutPage = () => {
   const stats = [
@@ -51,7 +52,7 @@ const AboutPage = () => {
   ]
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-[100svh] bg-transparent text-body">
       {/* Hero Section */}
       <section className="bg-gradient-to-br from-primary-600 to-primary-800 text-white py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -77,7 +78,7 @@ const AboutPage = () => {
       </section>
 
       {/* Mission Section */}
-      <section className="py-20 bg-white">
+      <section className="py-20 bg-surface">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <motion.div
@@ -87,11 +88,11 @@ const AboutPage = () => {
               className="mb-8"
             >
               <Award className="w-16 h-16 text-primary-600 mx-auto mb-4" />
-              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              <h2 className="text-3xl md:text-4xl font-bold text-body mb-4">
                 Our Mission
               </h2>
             </motion.div>
-            <p className="text-xl text-gray-600 max-w-4xl mx-auto leading-relaxed">
+            <p className="text-xl text-muted max-w-4xl mx-auto leading-relaxed">
               DormDeals was born from a simple idea: college students shouldn't have to pay full price for everything. 
               We're building a sustainable marketplace where UL students can buy, sell, and rent items from each other, 
               making campus life more affordable while reducing waste and building community connections.
@@ -101,7 +102,7 @@ const AboutPage = () => {
       </section>
 
       {/* Stats Section */}
-      <section className="py-20 bg-gray-50">
+      <section className="py-20 bg-surface-2">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             {stats.map((stat, index) => (
@@ -115,7 +116,7 @@ const AboutPage = () => {
                 <div className="text-3xl md:text-4xl font-bold text-primary-600 mb-2">
                   {stat.value}
                 </div>
-                <div className="text-gray-600 font-medium">
+                <div className="text-muted font-medium">
                   {stat.label}
                 </div>
               </motion.div>
@@ -125,13 +126,13 @@ const AboutPage = () => {
       </section>
 
       {/* Values Section */}
-      <section className="py-20 bg-white">
+      <section className="py-20 bg-surface">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+            <h2 className="text-3xl md:text-4xl font-bold text-body mb-4">
               Our Values
             </h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+            <p className="text-xl text-muted max-w-2xl mx-auto">
               The principles that guide everything we do at DormDeals.
             </p>
           </div>
@@ -145,15 +146,15 @@ const AboutPage = () => {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.6, delay: index * 0.1 }}
-                  className="text-center p-6 rounded-lg hover:shadow-lg transition-shadow duration-300"
+                  className="text-center p-6 rounded-lg hover:shadow-lg transition-shadow duration-300 dd-card bg-surface border-surface"
                 >
                   <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
                     <Icon className="w-8 h-8 text-primary-600" />
                   </div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                  <h3 className="text-xl font-semibold text-body mb-2">
                     {value.title}
                   </h3>
-                  <p className="text-gray-600">
+                  <p className="text-muted">
                     {value.description}
                   </p>
                 </motion.div>
@@ -164,13 +165,13 @@ const AboutPage = () => {
       </section>
 
       {/* Team Section */}
-      <section className="py-20 bg-gray-50">
+      <section className="py-20 bg-surface-2">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+            <h2 className="text-3xl md:text-4xl font-bold text-body mb-4">
               Meet Our Team
             </h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+            <p className="text-xl text-muted max-w-2xl mx-auto">
               UL students building the future of campus marketplaces.
             </p>
           </div>
@@ -182,18 +183,18 @@ const AboutPage = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: index * 0.1 }}
-                className="bg-white rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow"
+                className="dd-card bg-surface border-surface p-6 shadow-sm hover:shadow-md transition-shadow"
               >
                 <div className="w-20 h-20 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Users className="w-10 h-10 text-primary-600" />
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-1">
+                <h3 className="text-xl font-semibold text-body mb-1">
                   {member.name}
                 </h3>
                 <p className="text-primary-600 font-medium mb-3">
                   {member.role}
                 </p>
-                <p className="text-gray-600">
+                <p className="text-muted">
                   {member.description}
                 </p>
               </motion.div>
@@ -218,18 +219,18 @@ const AboutPage = () => {
               Be part of the movement making college life more affordable and sustainable.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <a
-                href="/marketplace"
+              <Link
+                to="/marketplace"
                 className="bg-white text-primary-600 hover:bg-gray-100 font-semibold py-3 px-8 rounded-lg transition-colors duration-200"
               >
                 Start Shopping
-              </a>
-              <a
-                href="/create-listing"
+              </Link>
+              <Link
+                to="/create-listing"
                 className="border-2 border-white text-white hover:bg-white hover:text-primary-600 font-semibold py-3 px-8 rounded-lg transition-colors duration-200"
               >
                 Start Selling
-              </a>
+              </Link>
             </div>
           </motion.div>
         </div>
@@ -239,3 +240,4 @@ const AboutPage = () => {
 }
 
 export default AboutPage
+

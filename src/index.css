@@ -5,13 +5,38 @@
 @tailwind utilities;
 
 @layer base {
-  html {
+  :root {
+    /* LIGHT THEME TOKENS */
+    --dd-bg:          #f8fafc; /* page bg (slate-50/gray-50) */
+    --dd-surface-1:   #ffffff; /* cards/panels */
+    --dd-surface-2:   #f1f5f9; /* section strips / subtle bars */
+    --dd-surface-3:   var(--dd-surface-1); /* Light mode: surface-3 falls back to surface-1 */
+    --dd-input:       #ffffff;
+    --dd-border:      #e2e8f0; /* slate-200 */
+    --dd-text:        #0f172a; /* slate-900 */
+    --dd-muted:       #64748b; /* slate-500 */
+    --dd-ring:        #3b82f6; /* blue-500 */
+  }
+  html.dark {
+    /* DARK THEME TOKENS */
+    --dd-bg:          #0b1220; /* deep navy/ink */
+    --dd-surface-1:   #0f172a; /* slate-900 */
+    --dd-surface-2:   #111827; /* slightly different dark strip */
+    --dd-surface-3:   #0e1a2b; /* deep ink; still lighter than pure black */
+    --dd-input:       #1f2937; /* gray-800 for inputs */
+    --dd-border:      #334155; /* slate-700 */
+    --dd-text:        #e5e7eb; /* gray-200 */
+    --dd-muted:       #94a3b8; /* slate-400 */
+    --dd-ring:        #60a5fa; /* blue-400 */
+  }
+
+  /* Ensure document bg is truly page-wide */
+  html { 
     font-family: 'Inter', system-ui, sans-serif;
+    background: var(--dd-bg); 
   }
-  
-  body {
-    @apply bg-gray-50 text-gray-900;
-  }
+  html.dark { color-scheme: dark; }
+  body, #root { min-height: 100svh; }
 }
 
 @layer components {
@@ -28,19 +53,23 @@
   }
   
   .card {
-    @apply bg-white rounded-lg shadow-sm border border-gray-200 p-6;
+    @apply bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-slate-200 dark:border-slate-800 p-6;
   }
   
   .input-field {
-    @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent;
+    @apply w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100;
+  }
+  
+  .dd-input {
+    @apply w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 placeholder-gray-500 dark:placeholder-slate-400;
   }
   
   .text-primary {
-    @apply text-primary-600;
+    @apply text-primary-600 dark:text-primary-400;
   }
   
   .text-secondary {
-    @apply text-gray-600;
+    @apply text-gray-600 dark:text-slate-400;
   }
 }
 
@@ -69,5 +98,33 @@
     -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
+  }
+
+  .bg-surface      { background-color: var(--dd-surface-1); }
+  .bg-surface-2    { background-color: var(--dd-surface-2); }
+  .bg-surface-3    { background-color: var(--dd-surface-3); }
+  .text-body       { color: var(--dd-text); }
+  .text-muted      { color: var(--dd-muted); }
+  .border-surface  { border-color: var(--dd-border); }
+
+  /* Shared input style for both themes */
+  .dd-input {
+    @apply w-full rounded-lg px-3 py-2 text-sm outline-none;
+    background-color: var(--dd-input);
+    color: var(--dd-text);
+    border: 1px solid var(--dd-border);
+  }
+  .dd-input::placeholder {
+    color: var(--dd-muted);
+  }
+  .dd-input:focus {
+    box-shadow: 0 0 0 3px color-mix(in oklab, var(--dd-ring) 45%, transparent);
+    border-color: var(--dd-ring);
+  }
+
+  .dd-card {
+    @apply rounded-2xl border;
+    background-color: var(--dd-surface-1);
+    border-color: var(--dd-border);
   }
 }

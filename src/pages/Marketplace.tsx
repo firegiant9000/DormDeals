@@ -86,16 +86,16 @@ const Marketplace = () => {
   
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-transparent py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Marketplace</h1>
-          <p className="text-gray-600">Find great deals from fellow UL students</p>
+          <h1 className="text-3xl font-bold text-body mb-2">Marketplace</h1>
+          <p className="text-muted">Find great deals from fellow UL students</p>
         </div>
 
         {/* Search and Filters */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
+        <div className="dd-card bg-surface border-surface p-6 mb-8">
           <SearchFiltersBar
             query={query}
             setQuery={setQuery}

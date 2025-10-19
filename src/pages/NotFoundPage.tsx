@@ -4,7 +4,7 @@ import { Home, ArrowLeft, Search } from 'lucide-react'
 
 const NotFoundPage = () => {
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+    <div className="min-h-[100svh] bg-transparent text-inherit flex items-center justify-center">
       <div className="max-w-md mx-auto text-center px-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -76,3 +76,4 @@ const NotFoundPage = () => {
 }
 
 export default NotFoundPage
+
