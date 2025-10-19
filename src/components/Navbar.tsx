@@ -3,10 +3,12 @@ import { ShoppingBag, Plus, User, Home, Menu, X, ChevronDown, Moon, Sun, Shoppin
 import { motion, AnimatePresence } from 'framer-motion'
 import { useState, useEffect, useRef } from 'react'
 import { useTheme } from '../context/ThemeContext'
+import { useShop } from '../context/ShopContext'
 
 const Navbar = () => {
   const location = useLocation()
   const { theme, toggle } = useTheme()
+  const { openCart, openWishlist } = useShop()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
   const userMenuRef = useRef<HTMLDivElement>(null)
@@ -88,12 +90,12 @@ const Navbar = () => {
             
             {/* Cart, Wishlist, Chat */}
             <div className="flex items-center gap-3">
-              <Link to="/cart" className="px-3 py-2 rounded-lg border border-surface hover:bg-surface-2">
+              <button onClick={openCart} className="px-3 py-2 rounded-lg border border-surface hover:bg-surface-2">
                 <ShoppingCart className="w-4 h-4" />
-              </Link>
-              <Link to="/wishlist" className="px-3 py-2 rounded-lg border border-surface hover:bg-surface-2">
+              </button>
+              <button onClick={openWishlist} className="px-3 py-2 rounded-lg border border-surface hover:bg-surface-2">
                 <Heart className="w-4 h-4" />
-              </Link>
+              </button>
               <Link to="/chat" className="px-3 py-2 rounded-lg border border-surface hover:bg-surface-2">
                 <MessageCircle className="w-4 h-4" />
               </Link>
@@ -195,22 +197,20 @@ const Navbar = () => {
                 
                 <div className="border-t border-surface pt-4 mt-4 space-y-2">
                   <div className="grid grid-cols-3 gap-2">
-                    <Link
-                      to="/cart"
+                    <button
+                      onClick={() => { openCart(); setIsMobileMenuOpen(false); }}
                       className="flex items-center justify-center gap-2 px-3 py-2 border border-surface rounded-lg hover:bg-surface-2"
-                      onClick={() => setIsMobileMenuOpen(false)}
                     >
                       <ShoppingCart className="w-4 h-4" />
                       <span className="text-sm">Cart</span>
-                    </Link>
-                    <Link
-                      to="/wishlist"
+                    </button>
+                    <button
+                      onClick={() => { openWishlist(); setIsMobileMenuOpen(false); }}
                       className="flex items-center justify-center gap-2 px-3 py-2 border border-surface rounded-lg hover:bg-surface-2"
-                      onClick={() => setIsMobileMenuOpen(false)}
                     >
                       <Heart className="w-4 h-4" />
                       <span className="text-sm">Wishlist</span>
-                    </Link>
+                    </button>
                     <Link
                       to="/chat"
                       className="flex items-center justify-center gap-2 px-3 py-2 border border-surface rounded-lg hover:bg-surface-2"
