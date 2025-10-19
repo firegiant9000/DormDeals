@@ -46,27 +46,27 @@ const CreateListing = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-[100svh] bg-transparent text-body py-8">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white rounded-lg shadow-sm border border-gray-200"
+          className="dd-card bg-surface border-surface"
         >
           {/* Header */}
-          <div className="border-b border-gray-200 px-6 py-4">
-            <h1 className="text-2xl font-bold text-gray-900">Create New Listing</h1>
-            <p className="text-gray-600">List your item for sale to fellow UL students</p>
+          <div className="border-b border-surface px-6 py-4">
+            <h1 className="text-2xl font-bold text-body">Create New Listing</h1>
+            <p className="text-muted">List your item for sale to fellow UL students</p>
           </div>
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="p-6 space-y-6">
             {/* Images */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-body mb-2">
                 Photos <span className="text-red-500">*</span>
               </label>
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-primary-500 transition-colors">
+              <div className="rounded-xl border-2 border-dashed border-surface bg-surface p-6 text-center text-muted hover:border-primary-500 transition-colors">
                 <input
                   type="file"
                   multiple
@@ -76,9 +76,9 @@ const CreateListing = () => {
                   id="image-upload"
                 />
                 <label htmlFor="image-upload" className="cursor-pointer">
-                  <Camera className="w-12 h-12 text-gray-400 mx-auto mb-2" />
-                  <p className="text-gray-600 mb-1">Click to upload photos</p>
-                  <p className="text-sm text-gray-500">PNG, JPG up to 10MB each</p>
+                  <Camera className="w-12 h-12 text-muted mx-auto mb-2" />
+                  <p className="text-body mb-1">Click to upload photos</p>
+                  <p className="text-sm text-muted">PNG, JPG up to 10MB each</p>
                 </label>
               </div>
               
@@ -107,7 +107,7 @@ const CreateListing = () => {
 
             {/* Title */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-body mb-2">
                 Title <span className="text-red-500">*</span>
               </label>
               <input
@@ -116,7 +116,7 @@ const CreateListing = () => {
                 value={formData.title}
                 onChange={handleInputChange}
                 placeholder="What are you selling?"
-                className="input-field"
+                className="dd-input"
                 required
               />
             </div>
@@ -124,32 +124,32 @@ const CreateListing = () => {
             {/* Price and Category */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-body mb-2">
                   Price <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
-                  <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted w-5 h-5" />
                   <input
                     type="number"
                     name="price"
                     value={formData.price}
                     onChange={handleInputChange}
                     placeholder="0.00"
-                    className="input-field pl-10"
+                    className="dd-input pl-10"
                     required
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-body mb-2">
                   Category <span className="text-red-500">*</span>
                 </label>
                 <select
                   name="category"
                   value={formData.category}
                   onChange={handleInputChange}
-                  className="input-field"
+                  className="dd-input"
                   required
                 >
                   <option value="">Select a category</option>
@@ -162,7 +162,7 @@ const CreateListing = () => {
 
             {/* Condition */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-body mb-2">
                 Condition <span className="text-red-500">*</span>
               </label>
               <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
@@ -177,7 +177,7 @@ const CreateListing = () => {
                       className="mr-2"
                       required
                     />
-                    <span className="text-sm">{condition}</span>
+                    <span className="text-sm text-body">{condition}</span>
                   </label>
                 ))}
               </div>
@@ -185,7 +185,7 @@ const CreateListing = () => {
 
             {/* Description */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-body mb-2">
                 Description <span className="text-red-500">*</span>
               </label>
               <textarea
@@ -194,14 +194,14 @@ const CreateListing = () => {
                 onChange={handleInputChange}
                 placeholder="Describe your item in detail..."
                 rows={4}
-                className="input-field"
+                className="dd-input"
                 required
               />
             </div>
 
             {/* Location */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-body mb-2">
                 Pickup Location
               </label>
               <input
@@ -210,12 +210,12 @@ const CreateListing = () => {
                 value={formData.location}
                 onChange={handleInputChange}
                 placeholder="e.g., UL Campus, Lafayette, LA"
-                className="input-field"
+                className="dd-input"
               />
             </div>
 
             {/* Submit Buttons */}
-            <div className="flex gap-4 pt-6 border-t border-gray-200">
+            <div className="flex gap-4 pt-6 border-t border-surface">
               <button
                 type="submit"
                 className="btn-primary flex-1"

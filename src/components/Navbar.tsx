@@ -1,10 +1,12 @@
 import { Link, useLocation } from 'react-router-dom'
-import { ShoppingBag, Plus, User, Home, Menu, X, ChevronDown } from 'lucide-react'
+import { ShoppingBag, Plus, User, Home, Menu, X, ChevronDown, Moon, Sun, ShoppingCart, Heart, MessageCircle } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useState, useEffect, useRef } from 'react'
+import { useTheme } from '../context/ThemeContext'
 
 const Navbar = () => {
   const location = useLocation()
+  const { theme, toggle } = useTheme()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
   const userMenuRef = useRef<HTMLDivElement>(null)
@@ -24,10 +26,6 @@ const Navbar = () => {
   const navItems = [
     { path: '/', label: 'Home', icon: Home },
     { path: '/marketplace', label: 'Marketplace', icon: ShoppingBag },
-    { path: '/electronics', label: 'Electronics', icon: ShoppingBag },
-    { path: '/textbooks', label: 'Textbooks', icon: ShoppingBag },
-    { path: '/furniture', label: 'Furniture', icon: ShoppingBag },
-    { path: '/results', label: 'Search', icon: ShoppingBag },
     { path: '/about', label: 'About', icon: ShoppingBag },
   ]
 
@@ -42,7 +40,7 @@ const Navbar = () => {
       initial={{ y: -100 }}
       animate={{ y: 0 }}
       transition={{ duration: 0.5 }}
-      className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50"
+      className="bg-surface-2 border-b border-surface sticky top-0 z-50"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
@@ -79,9 +77,31 @@ const Navbar = () => {
 
           {/* Desktop User Menu */}
           <div className="hidden lg:flex items-center space-x-4">
+            {/* Theme Toggle */}
+            <button
+              onClick={toggle}
+              className="flex items-center justify-center w-10 h-10 text-gray-600 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+            >
+              {theme === 'light' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
+            </button>
+            
+            {/* Cart, Wishlist, Chat */}
+            <div className="flex items-center gap-3">
+              <Link to="/cart" className="px-3 py-2 rounded-lg border border-surface hover:bg-surface-2">
+                <ShoppingCart className="w-4 h-4" />
+              </Link>
+              <Link to="/wishlist" className="px-3 py-2 rounded-lg border border-surface hover:bg-surface-2">
+                <Heart className="w-4 h-4" />
+              </Link>
+              <Link to="/chat" className="px-3 py-2 rounded-lg border border-surface hover:bg-surface-2">
+                <MessageCircle className="w-4 h-4" />
+              </Link>
+            </div>
+            
             <Link
               to="/create-listing"
-              className="flex items-center space-x-2 bg-primary-600 text-white hover:bg-primary-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+              className="inline-flex items-center gap-2 rounded-xl px-4 py-2 font-semibold text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 border border-transparent dark:focus:ring-offset-slate-900"
             >
               <Plus className="w-4 h-4" />
               <span>Sell</span>
@@ -104,13 +124,13 @@ const Navbar = () => {
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
-                    className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50"
+                    className="absolute right-0 mt-2 w-48 dd-card bg-surface border-surface text-body py-1 z-50"
                   >
                     {userMenuItems.map((item) => (
                       <Link
                         key={item.path}
                         to={item.path}
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-primary-600 transition-colors"
+                        className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-surface-2"
                         onClick={() => setIsUserMenuOpen(false)}
                       >
                         {item.label}
@@ -122,13 +142,24 @@ const Navbar = () => {
             </div>
           </div>
 
-          {/* Mobile menu button */}
-          <button
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="lg:hidden text-gray-600 hover:text-primary-600 p-2"
-          >
-            {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-          </button>
+          {/* Mobile menu button and theme toggle */}
+          <div className="lg:hidden flex items-center space-x-2">
+            {/* Mobile Theme Toggle */}
+            <button
+              onClick={toggle}
+              className="text-gray-600 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 p-2"
+              aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+            >
+              {theme === 'light' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
+            </button>
+            
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="text-gray-600 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 p-2"
+            >
+              {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
+          </div>
         </div>
 
         {/* Mobile Menu */}
@@ -138,7 +169,7 @@ const Navbar = () => {
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              className="lg:hidden border-t border-gray-200"
+              className="lg:hidden border-t border-surface"
             >
               <div className="py-4 space-y-2">
                 {navItems.map((item) => {
@@ -162,10 +193,36 @@ const Navbar = () => {
                   )
                 })}
                 
-                <div className="border-t border-gray-200 pt-4 mt-4">
+                <div className="border-t border-surface pt-4 mt-4 space-y-2">
+                  <div className="grid grid-cols-3 gap-2">
+                    <Link
+                      to="/cart"
+                      className="flex items-center justify-center gap-2 px-3 py-2 border border-surface rounded-lg hover:bg-surface-2"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      <ShoppingCart className="w-4 h-4" />
+                      <span className="text-sm">Cart</span>
+                    </Link>
+                    <Link
+                      to="/wishlist"
+                      className="flex items-center justify-center gap-2 px-3 py-2 border border-surface rounded-lg hover:bg-surface-2"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      <Heart className="w-4 h-4" />
+                      <span className="text-sm">Wishlist</span>
+                    </Link>
+                    <Link
+                      to="/chat"
+                      className="flex items-center justify-center gap-2 px-3 py-2 border border-surface rounded-lg hover:bg-surface-2"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      <MessageCircle className="w-4 h-4" />
+                      <span className="text-sm">Chat</span>
+                    </Link>
+                  </div>
                   <Link
                     to="/create-listing"
-                    className="flex items-center space-x-3 px-4 py-3 bg-primary-600 text-white rounded-md text-base font-medium hover:bg-primary-700 transition-colors"
+                    className="inline-flex items-center gap-2 rounded-xl px-4 py-2 font-semibold text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 border border-transparent dark:focus:ring-offset-slate-900"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
                     <Plus className="w-5 h-5" />

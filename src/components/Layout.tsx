@@ -14,7 +14,7 @@ const Layout = ({ children }: LayoutProps) => {
   const hideFooter = location.pathname === '/chat'
   
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-[100svh] bg-transparent text-body flex flex-col">
       <Navbar />
       <main className="flex-1">
         {children}

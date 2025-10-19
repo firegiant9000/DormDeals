@@ -36,14 +36,10 @@ const MainFeaturePage: React.FC = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [featuredItems, setFeaturedItems] = useState<Item[]>([]);
   const {
-    cartItems,
-    wishlistItems,
     addToCart,
     addToWishlist,
     removeFromCart,
     removeFromWishlist,
-    openCart,
-    openWishlist,
     isInCart,
     isInWishlist
   } = useShop();
@@ -224,7 +220,7 @@ const MainFeaturePage: React.FC = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-[100svh] bg-transparent text-inherit">
       {/* Header */}
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -236,38 +232,6 @@ const MainFeaturePage: React.FC = () => {
 
             {/* Navigation */}
             <nav className="flex items-center space-x-4">
-              {/* Cart Button */}
-              <button
-                onClick={openCart}
-                className="relative flex items-center space-x-2 text-gray-700 hover:text-primary-600 transition-colors"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m6-5v6a2 2 0 01-2 2H9a2 2 0 01-2-2v-6m8 0V9a2 2 0 00-2-2H9a2 2 0 00-2 2v4.01" />
-                </svg>
-                <span className="hidden sm:inline">Cart</span>
-                {cartItems.length > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-primary-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                    {cartItems.length}
-                  </span>
-                )}
-              </button>
-
-              {/* Wishlist Button */}
-              <button
-                onClick={openWishlist}
-                className="relative flex items-center space-x-2 text-gray-700 hover:text-primary-600 transition-colors"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                </svg>
-                <span className="hidden sm:inline">Wishlist</span>
-                {wishlistItems.length > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-primary-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                    {wishlistItems.length}
-                  </span>
-                )}
-              </button>
-
               <button
                 onClick={() => navigate('/profile')}
                 className="flex items-center space-x-2 text-gray-700 hover:text-primary-600 transition-colors"
@@ -276,16 +240,6 @@ const MainFeaturePage: React.FC = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
                 <span className="hidden sm:inline">Profile</span>
-              </button>
-
-              <button
-                onClick={() => navigate('/chat')}
-                className="flex items-center space-x-2 text-gray-700 hover:text-primary-600 transition-colors"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                </svg>
-                <span className="hidden sm:inline">Chat</span>
               </button>
 
               <button
@@ -317,8 +271,8 @@ const MainFeaturePage: React.FC = () => {
         </div>
 
         {/* Search Section */}
-        <div className="bg-white rounded-lg shadow-sm border p-6 mb-8">
-          <h2 className="text-2xl font-semibold text-gray-900 mb-6">Search Items</h2>
+        <div className="dd-card bg-surface-3 text-body rounded-2xl mb-8">
+          <h2 className="text-2xl font-semibold text-body mb-6">Search Items</h2>
           
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Search Bar */}
@@ -334,8 +288,8 @@ const MainFeaturePage: React.FC = () => {
                     value={formData.query}
                     onChange={(e) => handleInputChange('query', e.target.value)}
                     placeholder="Search for textbooks, furniture, electronics..."
-                    className={`w-full px-4 py-3 pl-10 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${
-                      getFieldError('query') ? 'border-red-500' : 'border-gray-300'
+                    className={`dd-input pl-10 ${
+                      getFieldError('query') ? 'border-red-500' : ''
                     }`}
                   />
                   <svg className="absolute left-3 top-3.5 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -357,7 +311,7 @@ const MainFeaturePage: React.FC = () => {
                   value={formData.location}
                   onChange={(e) => handleInputChange('location', e.target.value)}
                   placeholder="Campus area"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  className="dd-input"
                 />
               </div>
 
@@ -369,7 +323,7 @@ const MainFeaturePage: React.FC = () => {
                   id="sortBy"
                   value={formData.sortBy}
                   onChange={(e) => handleInputChange('sortBy', e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  className="dd-input"
                 >
                   <option value={SortOption.NEWEST}>Newest</option>
                   <option value={SortOption.OLDEST}>Oldest</option>
@@ -390,7 +344,7 @@ const MainFeaturePage: React.FC = () => {
                 <svg className={`w-5 h-5 transition-transform ${showFilters ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
-                <span>Advanced Filters</span>
+                <span className="text-muted">Advanced Filters</span>
               </button>
             </div>
 
@@ -405,7 +359,7 @@ const MainFeaturePage: React.FC = () => {
                     id="category"
                     value={formData.category}
                     onChange={(e) => handleInputChange('category', e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    className="dd-input"
                   >
             <option value="">All Categories</option>
             {CATEGORY_LABELS.map(lbl => (
@@ -422,7 +376,7 @@ const MainFeaturePage: React.FC = () => {
                     id="condition"
                     value={formData.condition}
                     onChange={(e) => handleInputChange('condition', e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    className="dd-input"
                   >
                     <option value="">Any Condition</option>
                     <option value={ItemCondition.NEW}>New</option>
@@ -445,8 +399,8 @@ const MainFeaturePage: React.FC = () => {
                     placeholder="0"
                     min="0"
                     step="0.01"
-                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                      getFieldError('minPrice') ? 'border-red-500' : 'border-gray-300'
+                    className={`dd-input ${
+                      getFieldError('minPrice') ? 'border-red-500' : ''
                     }`}
                   />
                   {getFieldError('minPrice') && (
@@ -466,8 +420,8 @@ const MainFeaturePage: React.FC = () => {
                     placeholder="1000"
                     min="0"
                     step="0.01"
-                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                      getFieldError('maxPrice') ? 'border-red-500' : 'border-gray-300'
+                    className={`dd-input ${
+                      getFieldError('maxPrice') ? 'border-red-500' : ''
                     }`}
                   />
                   {getFieldError('maxPrice') && (
@@ -483,7 +437,7 @@ const MainFeaturePage: React.FC = () => {
                     id="pickupMethod"
                     value={formData.pickupMethod}
                     onChange={(e) => handleInputChange('pickupMethod', e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    className="dd-input"
                   >
                     <option value="">Any Method</option>
                     <option value={PickupMethod.PICKUP}>Pickup Only</option>
@@ -506,7 +460,7 @@ const MainFeaturePage: React.FC = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full sm:w-auto btn-primary px-8 py-3 font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center space-x-2"
+                className="w-full sm:w-auto rounded-xl px-5 py-3 font-semibold text-white bg-blue-600 hover:bg-blue-700 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center space-x-2"
               >
                 {loading ? (
                   <>
@@ -530,9 +484,9 @@ const MainFeaturePage: React.FC = () => {
         </div>
 
         {/* Featured Items Section */}
-        <div className="bg-white rounded-lg shadow-sm border p-6 mb-8">
+        <section className="dd-card bg-surface mb-8">
           <div className="flex justify-between items-center mb-6">
-            <h3 className="text-2xl font-semibold text-gray-900">Featured Items</h3>
+            <h3 className="text-2xl font-semibold text-body">Featured Items</h3>
             <button
               onClick={() => navigate('/marketplace')}
               className="text-primary-600 hover:text-primary-700 font-medium flex items-center space-x-1"
@@ -592,43 +546,8 @@ const MainFeaturePage: React.FC = () => {
               </motion.div>
             ))}
           </div>
-        </div>
+        </section>
 
-        {/* Quick Actions Section */}
-        <div className="bg-white rounded-lg shadow-sm border p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <button
-              onClick={() => navigate('/cart')}
-              className="flex items-center justify-center space-x-2 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m6-5v6a2 2 0 01-2 2H9a2 2 0 01-2-2v-6m8 0V9a2 2 0 00-2-2H9a2 2 0 00-2 2v4.01" />
-              </svg>
-              <span className="font-medium">View Cart</span>
-            </button>
-
-            <button
-              onClick={() => navigate('/wishlist')}
-              className="flex items-center justify-center space-x-2 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-              </svg>
-              <span className="font-medium">Wishlist</span>
-            </button>
-
-            <button
-              onClick={() => navigate('/create-listing')}
-              className="flex items-center justify-center space-x-2 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-              </svg>
-              <span className="font-medium">Sell Item</span>
-            </button>
-          </div>
-        </div>
       </main>
 
       {/* Global drawers are rendered at App root via ShopDrawers */}

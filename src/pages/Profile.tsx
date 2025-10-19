@@ -44,13 +44,13 @@ const Profile = () => {
   ]
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-transparent py-8">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Profile Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8"
+          className="dd-card bg-surface border-surface p-6 mb-8"
         >
           <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
             {/* Profile Image */}
@@ -104,8 +104,8 @@ const Profile = () => {
         </motion.div>
 
         {/* Tabs */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-8">
-          <div className="border-b border-gray-200">
+        <div className="dd-card bg-surface border-surface mb-8">
+          <div className="border-b border-surface">
             <nav className="flex space-x-8 px-6">
               {tabs.map((tab) => {
                 const Icon = tab.icon
@@ -144,7 +144,7 @@ const Profile = () => {
                       key={listing.id}
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow"
+                      className="dd-card bg-surface border-surface overflow-hidden hover:shadow-md transition-shadow"
                     >
                       <div className="h-32 bg-gray-200 flex items-center justify-center">
                         <span className="text-gray-400">Image</span>
