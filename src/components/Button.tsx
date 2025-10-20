@@ -136,6 +136,27 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
     const isDisabled = disabled || loading;
 
+    // Separate motion props from HTML props
+    const { 
+      onAnimationStart, 
+      onAnimationEnd, 
+      onAnimationIteration,
+      onDragStart,
+      onDrag,
+      onDragEnd,
+      onDragCapture,
+      onDragEndCapture,
+      onDragEnter,
+      onDragEnterCapture,
+      onDragExit,
+      onDragExitCapture,
+      onDragLeave,
+      onDragLeaveCapture,
+      onDragOver,
+      onDragOverCapture,
+      ...htmlProps 
+    } = props;
+
     return (
       <motion.button
         ref={ref}
@@ -144,7 +165,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         whileHover={!isDisabled ? { scale: 1.02 } : {}}
         whileTap={!isDisabled ? { scale: 0.98 } : {}}
         transition={{ duration: 0.1 }}
-        {...props}
+        {...htmlProps}
       >
         {/* Loading spinner */}
         {loading && (

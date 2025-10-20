@@ -229,11 +229,32 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             onFocus={handleFocus}
             onBlur={handleBlur}
             maxLength={maxLength}
-            {...props}
             animate={{
               scale: isFocused ? 1.01 : 1,
             }}
             transition={{ duration: 0.1 }}
+            {...(() => {
+              const { 
+                onAnimationStart, 
+                onAnimationEnd, 
+                onAnimationIteration,
+                onDragStart,
+                onDrag,
+                onDragEnd,
+                onDragCapture,
+                onDragEndCapture,
+                onDragEnter,
+                onDragEnterCapture,
+                onDragExit,
+                onDragExitCapture,
+                onDragLeave,
+                onDragLeaveCapture,
+                onDragOver,
+                onDragOverCapture,
+                ...htmlProps 
+              } = props;
+              return htmlProps;
+            })()}
           />
 
           {/* Right icon */}
