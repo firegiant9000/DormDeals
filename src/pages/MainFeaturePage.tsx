@@ -246,21 +246,16 @@ const MainFeaturePage: React.FC = () => {
                 <label htmlFor="query" className="block text-sm font-medium text-gray-700 mb-2">
                   Search Items
                 </label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    id="query"
-                    value={formData.query}
-                    onChange={(e) => handleInputChange('query', e.target.value)}
-                    placeholder="Search for textbooks, furniture, electronics..."
-                    className={`dd-input pl-10 ${
-                      getFieldError('query') ? 'border-red-500' : ''
-                    }`}
-                  />
-                  <svg className="absolute left-3 top-3.5 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                </div>
+                <input
+                  type="text"
+                  id="query"
+                  value={formData.query}
+                  onChange={(e) => handleInputChange('query', e.target.value)}
+                  placeholder="Search for textbooks, furniture, electronics..."
+                  className={`dd-input ${
+                    getFieldError('query') ? 'border-red-500' : ''
+                  }`}
+                />
                 {getFieldError('query') && (
                   <p className="mt-1 text-sm text-red-600">{getFieldError('query')}</p>
                 )}
@@ -425,7 +420,7 @@ const MainFeaturePage: React.FC = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full sm:w-auto rounded-xl px-5 py-3 font-semibold text-white bg-blue-600 hover:bg-blue-700 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center space-x-2"
+                className="w-full sm:w-auto rounded-xl px-5 py-3 font-semibold text-white bg-primary-600 hover:bg-primary-700 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center space-x-2"
               >
                 {loading ? (
                   <>
