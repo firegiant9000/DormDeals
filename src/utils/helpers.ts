@@ -48,7 +48,7 @@ export const isValidEmail = (email: string): boolean => {
 
 // Validate phone number helper
 export const isValidPhone = (phone: string): boolean => {
-  const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/;
+  const phoneRegex = /^[+]?[1-9][\d]{0,15}$/;
   return phoneRegex.test(phone.replace(/\s/g, ''));
 };
 

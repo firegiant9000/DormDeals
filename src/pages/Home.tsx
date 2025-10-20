@@ -195,7 +195,7 @@ const Home = () => {
               Why Choose DormDeals?
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-              We're built specifically for UL students, making campus life more affordable, sustainable, and connected.
+              We&apos;re built specifically for UL students, making campus life more affordable, sustainable, and connected.
             </p>
           </motion.div>
 

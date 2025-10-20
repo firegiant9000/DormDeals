@@ -36,7 +36,6 @@ const ResultsPage: React.FC = () => {
   const [maxPrice, setMaxPrice] = useState<string>(state?.filters?.priceMax?.toString() || '')
   const [query, setQuery] = useState<string>(state?.filters?.query || state?.searchQuery || '')
   const [error, setError] = useState<string | null>(null)
-  const [refilterTick, setRefilterTick] = useState(0)
 
   // Compute the base item set: always use the full local dataset so filters can broaden results
   const baseItems: Item[] = useMemo(() => {
@@ -119,7 +118,7 @@ const ResultsPage: React.FC = () => {
       setError(e?.message || 'Failed to filter results')
       return []
     }
-  }, [baseItems, query, category, condition, pickupMethod, minPrice, maxPrice, sortBy, refilterTick])
+  }, [baseItems, query, category, condition, pickupMethod, minPrice, maxPrice, sortBy])
 
   const hasNoData = (!state || !state.results) && baseItems.length === 0
   const totalFound = filteredItems.length
@@ -130,7 +129,7 @@ const ResultsPage: React.FC = () => {
 
   const onSearchAgain = () => {
     // Explicitly trigger re-filter; filters are already bound to state
-    setRefilterTick(t => t + 1)
+    // Refilter functionality removed - filters are reactive
   }
 
   return (
@@ -174,7 +173,7 @@ const ResultsPage: React.FC = () => {
             setMinPrice={setMinPrice}
             maxPrice={maxPrice}
             setMaxPrice={setMaxPrice}
-            onReset={() => setRefilterTick(t => t + 1)}
+            onReset={() => {/* Reset functionality - filters are reactive */}}
           />
 
           <div className="mt-4 flex gap-2 self-end lg:self-auto">

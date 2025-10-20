@@ -68,19 +68,14 @@ async function apiRequest<T>(
     },
   };
 
-  try {
-    const response = await fetch(url, config);
-    
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.error('API request failed:', error);
-    throw error;
+  const response = await fetch(url, config);
+  
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
   }
+
+  return await response.json();
 }
 
 // API Service Class
@@ -199,7 +194,7 @@ class ApiService {
         success: true,
         data: results
       };
-    } catch (error) {
+    } catch {
       return {
         success: false,
         error: 'Failed to search listings'
@@ -241,7 +236,7 @@ class ApiService {
         success: true,
         data: itemDetail
       };
-    } catch (error) {
+    } catch {
       return {
         success: false,
         error: 'Failed to get listing details'
@@ -266,7 +261,7 @@ class ApiService {
         success: true,
         data: user
       };
-    } catch (error) {
+    } catch {
       return {
         success: false,
         error: 'Failed to get user profile'
@@ -301,7 +296,7 @@ class ApiService {
         success: true,
         data: cartItem
       };
-    } catch (error) {
+    } catch {
       return {
         success: false,
         error: 'Failed to add item to cart'
@@ -317,7 +312,7 @@ class ApiService {
         success: true,
         data: mockData.cartItems
       };
-    } catch (error) {
+    } catch {
       return {
         success: false,
         error: 'Failed to get cart items'
@@ -342,7 +337,7 @@ class ApiService {
       return {
         success: true
       };
-    } catch (error) {
+    } catch {
       return {
         success: false,
         error: 'Failed to remove item from cart'
@@ -375,7 +370,7 @@ class ApiService {
         success: true,
         data: wishlistItem
       };
-    } catch (error) {
+    } catch {
       return {
         success: false,
         error: 'Failed to add item to wishlist'
@@ -391,7 +386,7 @@ class ApiService {
         success: true,
         data: mockData.wishlistItems
       };
-    } catch (error) {
+    } catch {
       return {
         success: false,
         error: 'Failed to get wishlist items'
@@ -416,7 +411,7 @@ class ApiService {
       return {
         success: true
       };
-    } catch (error) {
+    } catch {
       return {
         success: false,
         error: 'Failed to remove item from wishlist'
@@ -462,7 +457,7 @@ class ApiService {
         success: true,
         data: newListing
       };
-    } catch (error) {
+    } catch {
       return {
         success: false,
         error: 'Failed to create listing'
@@ -483,7 +478,7 @@ class ApiService {
         success: true,
         data: userListings
       };
-    } catch (error) {
+    } catch {
       return {
         success: false,
         error: 'Failed to get user listings'
@@ -504,7 +499,7 @@ class ApiService {
         success: true,
         data: userChats
       };
-    } catch (error) {
+    } catch {
       return {
         success: false,
         error: 'Failed to get chats'
@@ -524,7 +519,7 @@ class ApiService {
         success: true,
         data: chatMessages
       };
-    } catch (error) {
+    } catch {
       return {
         success: false,
         error: 'Failed to get chat messages'
@@ -558,7 +553,7 @@ class ApiService {
         success: true,
         data: newMessage
       };
-    } catch (error) {
+    } catch {
       return {
         success: false,
         error: 'Failed to send message'
@@ -597,7 +592,7 @@ class ApiService {
         success: true,
         data: newOrder
       };
-    } catch (error) {
+    } catch {
       return {
         success: false,
         error: 'Failed to create order'
@@ -617,7 +612,7 @@ class ApiService {
         success: true,
         data: userOrders
       };
-    } catch (error) {
+    } catch {
       return {
         success: false,
         error: 'Failed to get user orders'
@@ -638,7 +633,7 @@ class ApiService {
         success: true,
         data: listingReviews
       };
-    } catch (error) {
+    } catch {
       return {
         success: false,
         error: 'Failed to get listing reviews'
@@ -673,7 +668,7 @@ class ApiService {
         success: true,
         data: newReview
       };
-    } catch (error) {
+    } catch {
       return {
         success: false,
         error: 'Failed to create review'
@@ -694,7 +689,7 @@ class ApiService {
         success: true,
         data: userNotifications
       };
-    } catch (error) {
+    } catch {
       return {
         success: false,
         error: 'Failed to get notifications'
@@ -714,7 +709,7 @@ class ApiService {
       return {
         success: true
       };
-    } catch (error) {
+    } catch {
       return {
         success: false,
         error: 'Failed to mark notification as read'

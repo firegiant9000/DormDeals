@@ -1,11 +1,11 @@
 import { useParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Heart, Share2, MessageCircle, User, MapPin } from 'lucide-react'
-import React from 'react'
 import { useShop } from '@/context/ShopContext'
 
 const ItemDetail = () => {
   const { id } = useParams()
+  // Item ID loaded: {id}
   console.log('Item ID:', id) // Use the id to avoid unused variable warning
 
   // Mock data - replace with actual data fetching
