@@ -3,10 +3,6 @@ import { motion } from 'framer-motion'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { LayoutGrid, List, Search } from 'lucide-react'
 import { 
-  fadeInUp, 
-  fadeIn, 
-  staggerContainer, 
-  staggerItem, 
   resultsGrid, 
   resultCard,
   getAnimationVariants
@@ -229,7 +225,7 @@ const ResultsPage: React.FC = () => {
             initial="hidden"
             animate="visible"
           >
-            {filteredItems.map((item, index) => (
+            {filteredItems.map((item, _index) => (
               <motion.div
                 key={item.id}
                 variants={getAnimationVariants(resultCard)}
