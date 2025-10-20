@@ -2,6 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
+  fadeInUp, 
+  fadeIn, 
+  staggerContainer, 
+  staggerItem, 
+  heroTitle, 
+  heroSubtitle, 
+  formField,
+  getAnimationVariants
+} from '../utils/animations';
+import { 
   SearchFormData, 
   FormError, 
   ItemCategory, 
@@ -224,29 +234,59 @@ const MainFeaturePage: React.FC = () => {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Hero Section */}
-        <div className="bg-gradient-to-br from-primary-600 to-primary-800 text-white rounded-lg p-8 mb-8">
+        <motion.div 
+          className="bg-gradient-to-br from-primary-600 to-primary-800 text-white rounded-lg p-8 mb-8"
+          initial="hidden"
+          animate="visible"
+          variants={getAnimationVariants(fadeIn)}
+        >
           <div className="text-center">
-            <h1 className="text-3xl md:text-4xl font-bold mb-4">
+            <motion.h1 
+              className="text-3xl md:text-4xl font-bold mb-4"
+              variants={getAnimationVariants(heroTitle)}
+            >
               Find Your Perfect Dorm Items
-            </h1>
-            <p className="text-xl text-primary-100 mb-6">
+            </motion.h1>
+            <motion.p 
+              className="text-xl text-primary-100 mb-6"
+              variants={getAnimationVariants(heroSubtitle)}
+            >
               Browse items from fellow UL students and discover great deals on campus
-            </p>
+            </motion.p>
           </div>
-        </div>
+        </motion.div>
 
         {/* Search Section */}
-        <div className="dd-card bg-surface-3 text-body rounded-2xl mb-8">
-          <h2 className="text-2xl font-semibold text-body mb-6">Search Items</h2>
+        <motion.div 
+          className="dd-card bg-surface-3 text-body rounded-2xl mb-8"
+          initial="hidden"
+          animate="visible"
+          variants={getAnimationVariants(fadeInUp)}
+          transition={{ delay: 0.2 }}
+        >
+          <motion.h2 
+            className="text-2xl font-semibold text-body mb-6"
+            variants={getAnimationVariants(fadeInUp)}
+          >
+            Search Items
+          </motion.h2>
           
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Search Bar */}
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="flex-1">
+            <motion.div 
+              className="flex flex-col sm:flex-row gap-4"
+              variants={getAnimationVariants(staggerContainer)}
+              initial="hidden"
+              animate="visible"
+            >
+              <motion.div 
+                className="flex-1"
+                variants={getAnimationVariants(formField)}
+              >
                 <label htmlFor="query" className="block text-sm font-medium text-gray-700 mb-2">
                   Search Items
                 </label>
-                <input
+                <motion.input
                   type="text"
                   id="query"
                   value={formData.query}
@@ -255,44 +295,63 @@ const MainFeaturePage: React.FC = () => {
                   className={`dd-input ${
                     getFieldError('query') ? 'border-red-500' : ''
                   }`}
+                  whileFocus={{ scale: 1.01 }}
+                  transition={{ duration: 0.2 }}
                 />
                 {getFieldError('query') && (
-                  <p className="mt-1 text-sm text-red-600">{getFieldError('query')}</p>
+                  <motion.p 
+                    className="mt-1 text-sm text-red-600"
+                    initial={{ opacity: 0, y: -5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    {getFieldError('query')}
+                  </motion.p>
                 )}
-              </div>
+              </motion.div>
 
-              <div className="sm:w-48">
+              <motion.div 
+                className="sm:w-48"
+                variants={getAnimationVariants(formField)}
+              >
                 <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-2">
                   Location
                 </label>
-                <input
+                <motion.input
                   type="text"
                   id="location"
                   value={formData.location}
                   onChange={(e) => handleInputChange('location', e.target.value)}
                   placeholder="Campus area"
                   className="dd-input"
+                  whileFocus={{ scale: 1.01 }}
+                  transition={{ duration: 0.2 }}
                 />
-              </div>
+              </motion.div>
 
-              <div className="sm:w-32">
+              <motion.div 
+                className="sm:w-32"
+                variants={getAnimationVariants(formField)}
+              >
                 <label htmlFor="sortBy" className="block text-sm font-medium text-gray-700 mb-2">
                   Sort By
                 </label>
-                <select
+                <motion.select
                   id="sortBy"
                   value={formData.sortBy}
                   onChange={(e) => handleInputChange('sortBy', e.target.value)}
                   className="dd-input"
+                  whileFocus={{ scale: 1.01 }}
+                  transition={{ duration: 0.2 }}
                 >
                   <option value={SortOption.NEWEST}>Newest</option>
                   <option value={SortOption.OLDEST}>Oldest</option>
                   <option value={SortOption.PRICE_LOW_TO_HIGH}>Price: Low to High</option>
                   <option value={SortOption.PRICE_HIGH_TO_LOW}>Price: High to Low</option>
                   <option value={SortOption.RELEVANCE}>Relevance</option>
-                </select>
-              </div>
-            </div>
+                </motion.select>
+              </motion.div>
+            </motion.div>
 
             {/* Filter Toggle */}
             <div className="flex justify-between items-center">
@@ -416,11 +475,17 @@ const MainFeaturePage: React.FC = () => {
             )}
 
             {/* Submit Button */}
-            <div className="flex justify-center">
-              <button
+            <motion.div 
+              className="flex justify-center"
+              variants={getAnimationVariants(fadeInUp)}
+            >
+              <motion.button
                 type="submit"
                 disabled={loading}
                 className="w-full sm:w-auto rounded-xl px-5 py-3 font-semibold text-white bg-primary-600 hover:bg-primary-700 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center space-x-2"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                transition={{ duration: 0.2 }}
               >
                 {loading ? (
                   <>
@@ -438,35 +503,56 @@ const MainFeaturePage: React.FC = () => {
                     <span>Search Items</span>
                   </>
                 )}
-              </button>
-            </div>
+              </motion.button>
+            </motion.div>
           </form>
-        </div>
+        </motion.div>
 
         {/* Featured Items Section */}
-        <section className="dd-card bg-surface mb-8">
-          <div className="flex justify-between items-center mb-6">
+        <motion.section 
+          className="dd-card bg-surface mb-8"
+          initial="hidden"
+          animate="visible"
+          variants={getAnimationVariants(fadeInUp)}
+          transition={{ delay: 0.4 }}
+        >
+          <motion.div 
+            className="flex justify-between items-center mb-6"
+            variants={getAnimationVariants(fadeInUp)}
+          >
             <h3 className="text-2xl font-semibold text-body">Featured Items</h3>
-            <button
+            <motion.button
               onClick={() => navigate('/marketplace')}
               className="text-primary-600 hover:text-primary-700 font-medium flex items-center space-x-1"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              transition={{ duration: 0.2 }}
             >
               <span>View All</span>
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
               </svg>
-            </button>
-          </div>
+            </motion.button>
+          </motion.div>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {featuredItems.map((item, index) => (
+          <motion.div 
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
+            variants={getAnimationVariants(staggerContainer)}
+            initial="hidden"
+            animate="visible"
+          >
+            {featuredItems.map((item) => (
               <motion.div
                 key={item.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
+                variants={getAnimationVariants(staggerItem)}
                 className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow duration-300 cursor-pointer flex flex-col"
                 onClick={() => navigate(`/listing/${item.id}`, { state: { listing: item } })}
+                whileHover={{ 
+                  scale: 1.02, 
+                  y: -4,
+                  transition: { duration: 0.2 }
+                }}
+                whileTap={{ scale: 0.98 }}
               >
                 <div className="aspect-w-16 aspect-h-9 bg-gray-200">
                   <img
@@ -505,8 +591,8 @@ const MainFeaturePage: React.FC = () => {
                 </div>
               </motion.div>
             ))}
-          </div>
-        </section>
+          </motion.div>
+        </motion.section>
 
       </main>
 
