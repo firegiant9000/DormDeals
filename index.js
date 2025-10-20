@@ -4,24 +4,72 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import { Pool } from 'pg';
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 dotenv.config();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Environment variable validation
+const requiredEnvVars = ['DATABASE_URL', 'SECRET_KEY', 'JWT_SECRET'];
+const missingEnvVars = requiredEnvVars.filter(envVar => !process.env[envVar]);
+
+if (missingEnvVars.length > 0) {
+  console.error('❌ Missing required environment variables:');
+  missingEnvVars.forEach(envVar => {
+    console.error(`   - ${envVar}`);
+  });
+  console.error('\nPlease check your .env file or environment configuration.');
+  process.exit(1);
+}
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Database connection
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
-});
+// Database connection with error handling
+let pool;
+try {
+  pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+  });
+} catch (error) {
+  console.error('❌ Failed to create database pool:', error.message);
+  process.exit(1);
+}
+
+// Test database connection on startup
+const testDatabaseConnection = async () => {
+  try {
+    console.log('🔄 Testing database connection...');
+    const client = await pool.connect();
+    const result = await client.query('SELECT NOW()');
+    client.release();
+    console.log('✅ Database connection successful');
+    console.log(`   Connected at: ${result.rows[0].now}`);
+    return true;
+  } catch (error) {
+    console.error('❌ Database connection failed:');
+    console.error(`   Error: ${error.message}`);
+    console.error('   Please check your DATABASE_URL environment variable.');
+    console.error('   Make sure your database is running and accessible.');
+    return false;
+  }
+};
 
 // Middleware
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: false, // Disable CSP for Vite dev server compatibility
+}));
 app.use(cors());
 app.use(morgan('combined'));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
+
+// Serve static files from dist folder (Vite build output)
+app.use(express.static(path.join(__dirname, 'dist')));
 
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -135,15 +183,71 @@ app.use((err, req, res, _next) => {
   res.status(500).json({ error: 'Something went wrong!' });
 });
 
-// 404 handler
-app.use('*', (req, res) => {
-  res.status(404).json({ error: 'Route not found' });
+// SPA fallback - serve index.html for all non-API routes
+app.get('*', (req, res) => {
+  // Don't serve SPA for API routes
+  if (req.path.startsWith('/api/')) {
+    return res.status(404).json({ error: 'API route not found' });
+  }
+  
+  // Serve the React app for all other routes
+  res.sendFile(path.join(__dirname, 'dist', 'index.html'), (err) => {
+    if (err) {
+      console.error('Error serving index.html:', err);
+      res.status(500).json({ error: 'Failed to serve application' });
+    }
+  });
 });
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`DormDeal API server running on port ${PORT}`);
-  console.log(`Environment: ${process.env.NODE_ENV}`);
+// Start server with database connection check
+const startServer = async () => {
+  // Test database connection before starting server
+  const dbConnected = await testDatabaseConnection();
+  
+  if (!dbConnected) {
+    console.error('❌ Server startup aborted due to database connection failure');
+    process.exit(1);
+  }
+  
+  // Start the server
+  app.listen(PORT, () => {
+    console.log('🚀 DormDeal server started successfully!');
+    console.log(`   Port: ${PORT}`);
+    console.log(`   Environment: ${process.env.NODE_ENV}`);
+    console.log(`   Health check: http://localhost:${PORT}/health`);
+    console.log(`   API base: http://localhost:${PORT}/api`);
+  });
+};
+
+// Handle graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('🔄 SIGTERM received, shutting down gracefully...');
+  if (pool) {
+    pool.end(() => {
+      console.log('✅ Database pool closed');
+      process.exit(0);
+    });
+  } else {
+    process.exit(0);
+  }
+});
+
+process.on('SIGINT', () => {
+  console.log('🔄 SIGINT received, shutting down gracefully...');
+  if (pool) {
+    pool.end(() => {
+      console.log('✅ Database pool closed');
+      process.exit(0);
+    });
+  } else {
+    process.exit(0);
+  }
+});
+
+// Start the server
+startServer().catch((error) => {
+  console.error('❌ Failed to start server:', error.message);
+  process.exit(1);
 });
 
 export default app;
