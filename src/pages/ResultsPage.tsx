@@ -3,6 +3,15 @@ import { motion } from 'framer-motion'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { LayoutGrid, List, Search } from 'lucide-react'
 import { 
+  fadeInUp, 
+  fadeIn, 
+  staggerContainer, 
+  staggerItem, 
+  resultsGrid, 
+  resultCard,
+  getAnimationVariants
+} from '../utils/animations'
+import { 
   Item, 
   SearchFilters, 
   SortOption 
@@ -214,15 +223,24 @@ const ResultsPage: React.FC = () => {
 
         {/* Results list - Card view (like Marketplace) */}
         {totalFound > 0 && view === 'cards' && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <motion.div 
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
+            variants={getAnimationVariants(resultsGrid)}
+            initial="hidden"
+            animate="visible"
+          >
             {filteredItems.map((item, index) => (
               <motion.div
                 key={item.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: index * 0.05 }}
+                variants={getAnimationVariants(resultCard)}
                 className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow duration-300 cursor-pointer flex flex-col"
                 onClick={() => onCardClick(item)}
+                whileHover={{ 
+                  scale: 1.02, 
+                  y: -4,
+                  transition: { duration: 0.2 }
+                }}
+                whileTap={{ scale: 0.98 }}
               >
                 <div className="aspect-w-16 aspect-h-9 bg-gray-200">
                   <img
@@ -262,7 +280,7 @@ const ResultsPage: React.FC = () => {
                 </div>
               </motion.div>
             ))}
-          </div>
+          </motion.div>
         )}
 
         {/* List view with actions */}

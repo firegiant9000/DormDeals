@@ -1,7 +1,8 @@
-import { Routes, Route } from 'react-router-dom'
-import { motion } from 'framer-motion'
+import { Routes, Route, useLocation } from 'react-router-dom'
+import { motion, AnimatePresence } from 'framer-motion'
 import Layout from '@/components/Layout'
 import { ShopDrawers } from '@/context/ShopContext'
+import PageTransition from '@/components/PageTransition'
 import Home from '@/pages/Home'
 import Marketplace from '@/pages/Marketplace'
 import ItemDetail from '@/pages/ItemDetail'
@@ -16,6 +17,8 @@ import Checkout from '@/pages/Checkout'
 import NotFoundPage from '@/pages/NotFoundPage'
 
 function App() {
+  const location = useLocation();
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -24,21 +27,75 @@ function App() {
       className="min-h-[100svh] bg-transparent text-body"
     >
       <Layout>
-        <Routes>
-        <Route path="/" element={<MainFeaturePage />} />  {/* Now the homepage */}
-        <Route path="/marketplace" element={<Marketplace />} />
-        <Route path="/results" element={<ResultsPage />} />
-        <Route path="/about" element={<AboutPage />} />
-        <Route path="/profile" element={<Profile />} />
-        <Route path="/item/:id" element={<ItemDetail />} />
-        <Route path="/listing/:id" element={<ListingDetailPage />} />
-        <Route path="/create-listing" element={<CreateListing />} />
-        <Route path="/checkout" element={<Checkout />} />
-        <Route path="/chat" element={<MessagePage />} />
-        <Route path="/home" element={<Home />} />
-        <Route path="/:feature" element={<MainFeaturePage />} />
-        <Route path="*" element={<NotFoundPage />} />
-        </Routes>
+        <AnimatePresence mode="wait">
+          <Routes location={location} key={location.pathname}>
+            <Route path="/" element={
+              <PageTransition>
+                <MainFeaturePage />
+              </PageTransition>
+            } />
+            <Route path="/marketplace" element={
+              <PageTransition>
+                <Marketplace />
+              </PageTransition>
+            } />
+            <Route path="/results" element={
+              <PageTransition>
+                <ResultsPage />
+              </PageTransition>
+            } />
+            <Route path="/about" element={
+              <PageTransition>
+                <AboutPage />
+              </PageTransition>
+            } />
+            <Route path="/profile" element={
+              <PageTransition>
+                <Profile />
+              </PageTransition>
+            } />
+            <Route path="/item/:id" element={
+              <PageTransition>
+                <ItemDetail />
+              </PageTransition>
+            } />
+            <Route path="/listing/:id" element={
+              <PageTransition>
+                <ListingDetailPage />
+              </PageTransition>
+            } />
+            <Route path="/create-listing" element={
+              <PageTransition>
+                <CreateListing />
+              </PageTransition>
+            } />
+            <Route path="/checkout" element={
+              <PageTransition>
+                <Checkout />
+              </PageTransition>
+            } />
+            <Route path="/chat" element={
+              <PageTransition>
+                <MessagePage />
+              </PageTransition>
+            } />
+            <Route path="/home" element={
+              <PageTransition>
+                <Home />
+              </PageTransition>
+            } />
+            <Route path="/:feature" element={
+              <PageTransition>
+                <MainFeaturePage />
+              </PageTransition>
+            } />
+            <Route path="*" element={
+              <PageTransition>
+                <NotFoundPage />
+              </PageTransition>
+            } />
+          </Routes>
+        </AnimatePresence>
       </Layout>
       <ShopDrawers />
     </motion.div>
