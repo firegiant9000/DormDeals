@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useMemo, useState } from 'react'
+import React, { createContext, useContext, useMemo, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Item } from '../types'
 import { formatCurrency } from '../utils/helpers'
@@ -28,8 +28,8 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [showCart, setShowCart] = useState(false)
   const [showWishlist, setShowWishlist] = useState(false)
 
-  const isInCart = (id: string) => cartItems.some(i => i.id === id)
-  const isInWishlist = (id: string) => wishlistItems.some(i => i.id === id)
+  const isInCart = useCallback((id: string) => cartItems.some(i => i.id === id), [cartItems])
+  const isInWishlist = useCallback((id: string) => wishlistItems.some(i => i.id === id), [wishlistItems])
 
   const addToCart = (item: Item) => {
     setCartItems(prev => (prev.some(i => i.id === item.id) ? prev : [...prev, item]))
@@ -68,7 +68,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     closeWishlist,
     isInCart,
     isInWishlist
-  }), [cartItems, wishlistItems, showCart, showWishlist])
+  }), [cartItems, wishlistItems, showCart, showWishlist, isInCart, isInWishlist])
 
   return (
     <ShopContext.Provider value={value}>

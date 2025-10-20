@@ -152,7 +152,7 @@ const Checkout: React.FC = () => {
         navigate('/')
       }, 1500)
       
-    } catch (error) {
+    } catch {
       toast.error('Payment failed. Please try again.')
     } finally {
       setIsProcessing(false)

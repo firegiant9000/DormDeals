@@ -67,9 +67,7 @@ export interface Item {
   pickupMethod?: PickupMethod;
 }
 
-export interface Listing extends Item {
-  // Listing extends Item with additional properties
-}
+export type Listing = Item;
 
 export interface ItemDetail extends Listing {
   specifications?: Record<string, string>;

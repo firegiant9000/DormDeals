@@ -189,8 +189,8 @@ const MainFeaturePage: React.FC = () => {
         } 
       });
       
-    } catch (error) {
-      console.error('Search failed:', error);
+    } catch {
+      // Search failed
       setErrors([{ 
         field: 'general', 
         message: 'Search failed. Please try again.' 

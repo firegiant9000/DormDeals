@@ -93,8 +93,8 @@ const AboutPage = () => {
               </h2>
             </motion.div>
             <p className="text-xl text-muted max-w-4xl mx-auto leading-relaxed">
-              DormDeals was born from a simple idea: college students shouldn't have to pay full price for everything. 
-              We're building a sustainable marketplace where UL students can buy, sell, and rent items from each other, 
+              DormDeals was born from a simple idea: college students shouldn&apos;t have to pay full price for everything. 
+              We&apos;re building a sustainable marketplace where UL students can buy, sell, and rent items from each other, 
               making campus life more affordable while reducing waste and building community connections.
             </p>
           </div>
