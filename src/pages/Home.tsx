@@ -1,14 +1,12 @@
 import { motion } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import { 
-  fadeInUp, 
   fadeIn, 
   staggerContainer, 
   staggerItem, 
   heroTitle, 
   heroSubtitle, 
   heroButton,
-  cardHover,
   getAnimationVariants
 } from '../utils/animations'
 import { 
@@ -228,7 +226,7 @@ const Home = () => {
             whileInView="visible"
             viewport={{ once: true }}
           >
-            {features.map((feature, index) => {
+            {features.map((feature, _index) => {
               const Icon = feature.icon
               return (
                 <motion.div
@@ -276,19 +274,19 @@ const Home = () => {
           </motion.div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
-            {howItWorks.map((step, index) => {
+            {howItWorks.map((step, _index) => {
               const Icon = step.icon
               return (
                 <motion.div
                   key={step.step}
                   initial={{ opacity: 0, y: 30 }}
                   whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: index * 0.2 }}
+                  transition={{ duration: 0.6, delay: _index * 0.2 }}
                   viewport={{ once: true }}
                   className="relative text-center"
                 >
                   {/* Connection line for desktop */}
-                  {index < howItWorks.length - 1 && (
+                  {_index < howItWorks.length - 1 && (
                     <div className="hidden md:block absolute top-16 left-1/2 w-full h-0.5 bg-gradient-to-r from-primary-300 to-primary-200 transform translate-x-1/2"></div>
                   )}
                   
