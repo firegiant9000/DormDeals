@@ -136,6 +136,14 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
     const isDisabled = disabled || loading;
 
+    // Filter out conflicting props for motion component
+    const htmlProps = Object.fromEntries(
+      Object.entries(props).filter(([key]) => 
+        !key.startsWith('onAnimation') && 
+        !key.startsWith('onDrag')
+      )
+    );
+
     return (
       <motion.button
         ref={ref}
@@ -144,7 +152,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         whileHover={!isDisabled ? { scale: 1.02 } : {}}
         whileTap={!isDisabled ? { scale: 0.98 } : {}}
         transition={{ duration: 0.1 }}
-        {...props}
+        {...htmlProps}
       >
         {/* Loading spinner */}
         {loading && (

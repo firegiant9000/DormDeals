@@ -75,7 +75,6 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
     ref
   ) => {
     const [isFocused, setIsFocused] = useState(false);
-    const [hasValue, setHasValue] = useState(!!props.value || !!props.defaultValue);
     const inputRef = useRef<HTMLInputElement>(null);
 
     // Combine refs
@@ -87,10 +86,6 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
       }
     }, [ref]);
 
-    // Update hasValue when value changes
-    useEffect(() => {
-      setHasValue(!!props.value);
-    }, [props.value]);
 
     // Size classes
     const sizeClasses = {
@@ -198,7 +193,6 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
 
     const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
       setIsFocused(false);
-      setHasValue(!!e.target.value);
       onBlur?.(e);
     };
 
@@ -235,11 +229,16 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             onFocus={handleFocus}
             onBlur={handleBlur}
             maxLength={maxLength}
-            {...props}
             animate={{
               scale: isFocused ? 1.01 : 1,
             }}
             transition={{ duration: 0.1 }}
+            {...Object.fromEntries(
+              Object.entries(props).filter(([key]) => 
+                !key.startsWith('onAnimation') && 
+                !key.startsWith('onDrag')
+              )
+            )}
           />
 
           {/* Right icon */}

@@ -1,4 +1,4 @@
-import { Heart, Mail, ShoppingBag, GraduationCap } from 'lucide-react'
+import { Mail, ShoppingBag, GraduationCap } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 const Footer = () => {
