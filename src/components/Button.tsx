@@ -136,26 +136,13 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
     const isDisabled = disabled || loading;
 
-    // Separate motion props from HTML props
-    const { 
-      onAnimationStart: _onAnimationStart, 
-      onAnimationEnd: _onAnimationEnd, 
-      onAnimationIteration: _onAnimationIteration,
-      onDragStart: _onDragStart,
-      onDrag: _onDrag,
-      onDragEnd: _onDragEnd,
-      onDragCapture: _onDragCapture,
-      onDragEndCapture: _onDragEndCapture,
-      onDragEnter: _onDragEnter,
-      onDragEnterCapture: _onDragEnterCapture,
-      onDragExit: _onDragExit,
-      onDragExitCapture: _onDragExitCapture,
-      onDragLeave: _onDragLeave,
-      onDragLeaveCapture: _onDragLeaveCapture,
-      onDragOver: _onDragOver,
-      onDragOverCapture: _onDragOverCapture,
-      ...htmlProps 
-    } = props;
+    // Filter out conflicting props for motion component
+    const htmlProps = Object.fromEntries(
+      Object.entries(props).filter(([key]) => 
+        !key.startsWith('onAnimation') && 
+        !key.startsWith('onDrag')
+      )
+    );
 
     return (
       <motion.button
