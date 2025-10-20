@@ -138,22 +138,22 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
     // Separate motion props from HTML props
     const { 
-      onAnimationStart, 
-      onAnimationEnd, 
-      onAnimationIteration,
-      onDragStart,
-      onDrag,
-      onDragEnd,
-      onDragCapture,
-      onDragEndCapture,
-      onDragEnter,
-      onDragEnterCapture,
-      onDragExit,
-      onDragExitCapture,
-      onDragLeave,
-      onDragLeaveCapture,
-      onDragOver,
-      onDragOverCapture,
+      onAnimationStart: _onAnimationStart, 
+      onAnimationEnd: _onAnimationEnd, 
+      onAnimationIteration: _onAnimationIteration,
+      onDragStart: _onDragStart,
+      onDrag: _onDrag,
+      onDragEnd: _onDragEnd,
+      onDragCapture: _onDragCapture,
+      onDragEndCapture: _onDragEndCapture,
+      onDragEnter: _onDragEnter,
+      onDragEnterCapture: _onDragEnterCapture,
+      onDragExit: _onDragExit,
+      onDragExitCapture: _onDragExitCapture,
+      onDragLeave: _onDragLeave,
+      onDragLeaveCapture: _onDragLeaveCapture,
+      onDragOver: _onDragOver,
+      onDragOverCapture: _onDragOverCapture,
       ...htmlProps 
     } = props;
 
