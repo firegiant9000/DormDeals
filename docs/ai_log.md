@@ -210,3 +210,64 @@ The user appears to prefer the original light mode styling for the listing detai
 - **Build Tool**: Vite
 - **Linting**: ESLint + TypeScript
 - **Git**: Version control with GitLab
+
+
+# DormDeals QA/Docs Lead Prompt
+
+## Initial Documentation
+
+I'm the QA/Documentation Lead for [FA25TEAM04].
+
+Please create comprehensive documentation:
+
+1. Update README.md with:
+   - Project name and slogan
+   - Description
+   - Features list
+   - Tech stack
+   - Team members section (I'll fill names)
+   - Installation instructions:
+     * Prerequisites
+     * Clone repository
+     * Install dependencies
+     * Run application
+   - Available scripts
+   - Project structure
+   - License
+
+2. Create TESTING.md with:
+   - Manual testing checklist template
+   - Test case format
+   - Browser testing checklist
+   - Responsive design testing
+
+3. Create ARCHITECTURE.md template with:
+   - Project structure explanation
+   - Component hierarchy (we'll fill this)
+   - Data flow diagram placeholder
+   - Design decisions section
+
+Make it professional and easy to follow.
+
+## Testing
+
+I'm setting up testing for [FA25TEAM04].
+
+Please:
+
+1. Update TESTING.md with specific test cases for our features:
+   - Homepage testing checklist
+   - [Main feature] testing checklist
+   - Navigation testing
+   - Responsive design testing
+   - Browser compatibility checklist
+
+2. Create a manual testing script (scripts/test-checklist.md) that testers can follow step-by-step
+
+3. Create templates for bug reports in .gitlab/issue_templates/bug_report.md
+
+Include:
+- Test case format
+- Expected vs actual results template
+- Screenshots placeholder
+- Steps to reproduce
