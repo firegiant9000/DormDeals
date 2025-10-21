@@ -15,11 +15,232 @@ This document provides comprehensive testing guidelines and checklists for the D
 ## 🔍 Manual Testing Checklist
 
 ### Pre-Testing Setup
-- [ ] Application is running in development mode
+- [ ] Application is running in development mode (`npm run dev`)
 - [ ] Database is properly configured and seeded with test data
 - [ ] All dependencies are installed (`npm install`)
 - [ ] Environment variables are properly set
 - [ ] Browser cache is cleared
+- [ ] Test data is available (mock items, users, etc.)
+
+### Homepage Testing Checklist
+
+#### Hero Section
+- [ ] **Hero title displays correctly**: "Your Campus Marketplace"
+- [ ] **Subtitle is visible**: "The ultimate marketplace for UL students..."
+- [ ] **Get Started button** navigates to `/marketplace`
+- [ ] **Learn More button** navigates to `/about`
+- [ ] **Hero animations** work smoothly (fade in, stagger effects)
+- [ ] **Background decorations** render properly
+- [ ] **Responsive layout** works on mobile/tablet/desktop
+
+#### Search Section (Sidebar)
+- [ ] **Keywords input** accepts text input
+- [ ] **Location dropdown** has options (Campus area, Off campus)
+- [ ] **Sort by dropdown** has options (Newest, Lowest price, Highest price)
+- [ ] **Search button** triggers search functionality
+- [ ] **Form validation** works for empty fields
+- [ ] **Input styling** matches design system
+
+#### Featured Items Section
+- [ ] **Section title** displays: "Featured Items"
+- [ ] **Subtitle** displays: "Discover great deals from fellow UL students"
+- [ ] **Category cards** display correctly (Electronics, Textbooks, Furniture)
+- [ ] **Category icons** render properly (📱, 📚, 🪑)
+- [ ] **Card hover effects** work smoothly
+- [ ] **Grid layout** is responsive
+
+#### Features Section
+- [ ] **Section title** displays: "Why Choose DormDeals?"
+- [ ] **All 6 feature cards** display correctly:
+  - [ ] Easy Marketplace
+  - [ ] Affordable Prices
+  - [ ] Trusted Community
+  - [ ] Safe Transactions
+  - [ ] Smart Search
+  - [ ] Sustainable Living
+- [ ] **Feature icons** render properly
+- [ ] **Hover animations** work on feature cards
+- [ ] **Grid layout** is responsive (1 col mobile, 2 col tablet, 3 col desktop)
+
+#### How It Works Section
+- [ ] **Section title** displays: "How It Works"
+- [ ] **All 3 steps** display correctly:
+  - [ ] Step 1: Browse & Search
+  - [ ] Step 2: Connect & Chat
+  - [ ] Step 3: Secure Payment
+- [ ] **Step numbers** display correctly (1, 2, 3)
+- [ ] **Connection lines** appear on desktop
+- [ ] **Step animations** work on scroll
+
+#### Stats Section
+- [ ] **All 4 stats** display correctly:
+  - [ ] 500+ Active Students
+  - [ ] 1,200+ Items Listed
+  - [ ] $15K+ Money Saved
+  - [ ] 4.9★ User Rating
+- [ ] **Stats animations** work on scroll
+- [ ] **Background color** is primary-600
+
+#### Final CTA Section
+- [ ] **Section title** displays: "Ready to Transform Your Campus Life?"
+- [ ] **Description text** displays correctly
+- [ ] **Explore Marketplace button** navigates to `/marketplace`
+- [ ] **Start Selling button** navigates to `/create-listing`
+- [ ] **Button hover effects** work properly
+
+### Main Feature Page Testing Checklist
+
+#### Hero Section
+- [ ] **Title displays**: "Find Your Perfect Dorm Items"
+- [ ] **Subtitle displays**: "Browse items from fellow UL students..."
+- [ ] **Background gradient** renders correctly
+- [ ] **Animations** work smoothly
+
+#### Search Form
+- [ ] **Search input** accepts text and shows placeholder
+- [ ] **Location input** accepts text and shows placeholder
+- [ ] **Sort dropdown** has all options:
+  - [ ] Newest
+  - [ ] Oldest
+  - [ ] Price: Low to High
+  - [ ] Price: High to Low
+  - [ ] Relevance
+- [ ] **Advanced Filters toggle** works (shows/hides filters)
+- [ ] **Advanced filters** include:
+  - [ ] Category dropdown (All Categories, Furniture, Electronics, etc.)
+  - [ ] Condition dropdown (Any Condition, New, Like New, Good, Fair, Poor)
+  - [ ] Min Price input (number validation)
+  - [ ] Max Price input (number validation)
+  - [ ] Pickup Method dropdown (Any Method, Pickup Only, Delivery Only, Both Available)
+
+#### Form Validation
+- [ ] **Search query validation**: Shows error for queries < 2 characters
+- [ ] **Price validation**: Shows error for invalid numbers
+- [ ] **Price range validation**: Shows error when min > max
+- [ ] **Error messages** display correctly with red styling
+- [ ] **Error clearing** works when user starts typing
+
+#### Search Functionality
+- [ ] **Search button** shows loading state during search
+- [ ] **Search results** navigate to `/results` page
+- [ ] **Search filters** are passed to results page
+- [ ] **Empty search** shows all items
+- [ ] **Filtered search** returns correct results
+
+#### Featured Items Grid
+- [ ] **Section title** displays: "Featured Items"
+- [ ] **View All button** navigates to `/marketplace`
+- [ ] **Item cards** display correctly with:
+  - [ ] Item images
+  - [ ] Item titles
+  - [ ] Item prices
+  - [ ] Item descriptions
+  - [ ] Item categories
+  - [ ] Posted dates
+- [ ] **Add to Cart button** works (adds/removes from cart)
+- [ ] **Wishlist button** works (adds/removes from wishlist)
+- [ ] **Item click** navigates to item detail page
+- [ ] **Card hover effects** work smoothly
+- [ ] **Grid layout** is responsive
+
+### Navigation Testing
+
+#### Main Navigation
+- [ ] **Logo** displays and links to homepage
+- [ ] **Navigation links** work correctly:
+  - [ ] Home → `/`
+  - [ ] Marketplace → `/marketplace`
+  - [ ] About → `/about`
+  - [ ] Profile → `/profile`
+- [ ] **Active page** is highlighted in navigation
+- [ ] **Mobile menu** works on small screens
+- [ ] **Navigation animations** are smooth
+
+#### Footer Navigation
+- [ ] **Footer links** work correctly
+- [ ] **Social media links** open in new tabs
+- [ ] **Copyright information** displays correctly
+- [ ] **Footer layout** is responsive
+
+#### Page Transitions
+- [ ] **Page transitions** are smooth between all pages
+- [ ] **Loading states** display during navigation
+- [ ] **Back button** works correctly
+- [ ] **Browser history** is maintained
+
+### Responsive Design Testing
+
+#### Mobile Devices (320px - 768px)
+- [ ] **iPhone SE (375x667)**:
+  - [ ] Navigation menu collapses to hamburger menu
+  - [ ] Hero section text is readable
+  - [ ] Search form stacks vertically
+  - [ ] Featured items grid shows 1 column
+  - [ ] Touch targets are at least 44px
+  - [ ] No horizontal scrolling
+
+- [ ] **iPhone 12 (390x844)**:
+  - [ ] All mobile features work
+  - [ ] Safe area handling works
+  - [ ] Gesture navigation works
+
+- [ ] **Samsung Galaxy S21 (360x800)**:
+  - [ ] Android-specific features work
+  - [ ] Back button functionality works
+  - [ ] Status bar integration works
+
+#### Tablet Devices (768px - 1024px)
+- [ ] **iPad (768x1024)**:
+  - [ ] Navigation shows full menu
+  - [ ] Featured items grid shows 2 columns
+  - [ ] Search form shows side-by-side layout
+  - [ ] Touch interactions work properly
+
+- [ ] **iPad Pro (834x1194)**:
+  - [ ] High-resolution display support
+  - [ ] All tablet features work
+  - [ ] Keyboard integration works
+
+#### Desktop Devices (1024px+)
+- [ ] **Small Desktop (1024x768)**:
+  - [ ] All features accessible
+  - [ ] No horizontal scrolling
+  - [ ] Optimal information density
+
+- [ ] **Large Desktop (1920x1080)**:
+  - [ ] Content doesn't stretch too wide
+  - [ ] Navigation remains accessible
+  - [ ] Performance is optimal
+
+### Browser Compatibility Testing
+
+#### Chrome (Latest Version)
+- [ ] **All features work correctly**
+- [ ] **Console shows no critical errors**
+- [ ] **Performance is optimal**
+- [ ] **Extensions don't interfere with functionality**
+- [ ] **Developer tools work properly**
+
+#### Firefox (Latest Version)
+- [ ] **All features work correctly**
+- [ ] **No layout issues**
+- [ ] **JavaScript functions properly**
+- [ ] **CSS animations work smoothly**
+- [ ] **No Firefox-specific issues**
+
+#### Safari (Latest Version)
+- [ ] **All features work correctly**
+- [ ] **No WebKit-specific issues**
+- [ ] **Touch gestures work (if applicable)**
+- [ ] **Mobile Safari compatibility**
+- [ ] **No Safari-specific bugs**
+
+#### Edge (Latest Version)
+- [ ] **All features work correctly**
+- [ ] **No Microsoft-specific issues**
+- [ ] **Performance is comparable to Chrome**
+- [ ] **Security features work properly**
+- [ ] **No Edge-specific problems**
 
 ### Authentication & User Management
 - [ ] User registration with valid email
@@ -61,16 +282,6 @@ This document provides comprehensive testing guidelines and checklists for the D
 - [ ] Mark messages as read/unread
 - [ ] Send image attachments in messages
 - [ ] Block/unblock users
-
-### Navigation & UI
-- [ ] All navigation links work correctly
-- [ ] Back button functionality
-- [ ] Page transitions are smooth
-- [ ] Loading states display properly
-- [ ] Error messages are user-friendly
-- [ ] Success notifications appear
-- [ ] Modal dialogs open and close properly
-- [ ] Dropdown menus function correctly
 
 ### Search & Filtering
 - [ ] Search returns relevant results
