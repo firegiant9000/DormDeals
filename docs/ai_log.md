@@ -10,11 +10,47 @@
 I'm building the main feature page for DormDeals.
 
 Here's my UI mockup description:
-[DESCRIBE YOUR MOCKUP IN DETAIL:
- - Layout – profile page, chat, and add listings at the top rightmost corner. Ability to add items to cart/wishlist on the listings
- - Input fields/controls – a search tab, a filter tab
- - Buttons – profile page, chat, add listing, add items to cart/wishlist
- - What happens when user submits]
+
+## **Layout**
+The application features a clean and modern layout with a **top navigation bar**.  
+At the **top right corner**, users can access:
+- **Profile Page**
+- **Chat**
+- **Add Listing**
+
+Below the header is the **main listings section**, where users can browse available items.  
+Each listing card includes:
+- Item image, title, description, and price  
+- Buttons to **Add to Cart** or **Add to Wishlist**
+
+---
+
+## **Input Fields / Controls**
+- **Search Tab:** Enables users to search for items or sellers.  
+- **Filter Tab:** Allows users to sort or filter listings (e.g., by category, price, or location).
+
+---
+
+## **Buttons**
+| Button | Function |
+|--------|-----------|
+| **Profile Page** | Opens the user’s profile with listings, wishlist, and order history. |
+| **Chat** | Opens a messaging interface for buyers and sellers. |
+| **Add Listing** | Opens a form to create and publish a new listing. |
+| **Add to Cart / Wishlist** | Adds the selected item to the user’s cart or wishlist. |
+
+---
+
+## **On Submit**
+- **Search / Filter:** Updates the listings dynamically based on user input or filters.  
+- **Add Listing:** Validates input fields and posts the new listing to the marketplace.  
+- **Add to Cart / Wishlist:** Displays a success confirmation (e.g., icon fill or toast message) and updates the user’s cart or wishlist data.
+
+---
+
+**File:** `fa25team04/ai_log.md`  
+**Purpose:** Visual guide describing layout structure and user interactions for DormDeals.
+
 
 User flow:
 3. Show loading state
@@ -112,6 +148,8 @@ When the user is messaging the seller about an item, send the item to the chat t
 # AI Development Log
 
 This document tracks the AI-assisted development process for the DormDeals application.
+
+Cursor AI was used to assist with polishing the homepage and UI. It assigned proper icons, changed the primary color to red, and added animations for the startup.
 
 ## Project Overview
 DormDeals is a Vite + React + TypeScript + Tailwind CSS marketplace application for UL students to buy, sell, and rent items within their campus community.
