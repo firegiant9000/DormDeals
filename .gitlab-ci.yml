@@ -89,7 +89,7 @@ security:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
 
-# Build stage - Build application and validate Dockerfile
+# Build stage - Build application and create Docker image
 build:
   stage: build
   image: node:${NODE_VERSION}-alpine
