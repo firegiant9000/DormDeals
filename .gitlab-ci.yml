@@ -94,7 +94,12 @@ build:
   stage: build
   image: docker:latest
   services:
-    - docker:dind
+    - name: docker:dind
+      command: ["--tls=false", "--insecure-registry=0.0.0.0/0"]
+  variables:
+    DOCKER_TLS_CERTDIR: ""
+    DOCKER_DRIVER: overlay2
+    DOCKER_HOST: tcp://docker:2375
   before_script:
     - docker info
   script:
@@ -111,7 +116,12 @@ deploy_staging:
   stage: deploy
   image: docker:latest
   services:
-    - docker:dind
+    - name: docker:dind
+      command: ["--tls=false", "--insecure-registry=0.0.0.0/0"]
+  variables:
+    DOCKER_TLS_CERTDIR: ""
+    DOCKER_DRIVER: overlay2
+    DOCKER_HOST: tcp://docker:2375
   script:
     - echo "Deploying to staging..."
     - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
@@ -127,7 +137,12 @@ deploy_production:
   stage: deploy
   image: docker:latest
   services:
-    - docker:dind
+    - name: docker:dind
+      command: ["--tls=false", "--insecure-registry=0.0.0.0/0"]
+  variables:
+    DOCKER_TLS_CERTDIR: ""
+    DOCKER_DRIVER: overlay2
+    DOCKER_HOST: tcp://docker:2375
   script:
     - echo "Deploying to production..."
     - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
@@ -144,7 +159,12 @@ cleanup:
   stage: deploy
   image: docker:latest
   services:
-    - docker:dind
+    - name: docker:dind
+      command: ["--tls=false", "--insecure-registry=0.0.0.0/0"]
+  variables:
+    DOCKER_TLS_CERTDIR: ""
+    DOCKER_DRIVER: overlay2
+    DOCKER_HOST: tcp://docker:2375
   script:
     - echo "Cleaning up old images..."
     - docker system prune -f
