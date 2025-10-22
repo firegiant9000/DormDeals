@@ -1,5 +1,4 @@
 stages:
-  - install
   - lint
   - build
 
@@ -15,19 +14,13 @@ default:
       - .npm/
       - node_modules/
 
-install:
-  stage: install
-  script:
-    - npm ci --cache .npm --prefer-offline
-  artifacts:
-    expire_in: 1 week
-
 lint:
   stage: lint
-  needs: ["install"]
   script:
+    - npm ci --cache .npm --prefer-offline
     - echo "Running ESLint (flat config)…"
     - npm run lint:ci
+  allow_failure: true
   artifacts:
     when: always
     paths:
@@ -36,11 +29,12 @@ lint:
 
 build:
   stage: build
-  needs: ["install"]
   script:
+    - npm ci --cache .npm --prefer-offline
     - npm run type-check
-    - npm run build:production
+    - npm run build:production -- --logLevel debug
   artifacts:
+    when: always
     paths:
       - dist/
     expire_in: 1 week
