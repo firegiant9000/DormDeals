@@ -5,6 +5,7 @@ import { useShop } from '@/context/ShopContext'
 
 const ItemDetail = () => {
   const { id } = useParams()
+  // Item ID loaded: {id}
   console.log('Item ID:', id) // Use the id to avoid unused variable warning
 
   // Mock data - replace with actual data fetching

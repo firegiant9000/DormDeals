@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom'
-import { ShoppingBag, Plus, User, Home, Menu, X, ChevronDown, Moon, Sun, ShoppingCart, Heart, MessageCircle } from 'lucide-react'
+import { ShoppingBag, Plus, User, Home, Menu, X, ChevronDown, Moon, Sun, ShoppingCart, Heart, MessageCircle, GraduationCap, Info } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useState, useEffect, useRef } from 'react'
 import { useTheme } from '../context/ThemeContext'
@@ -28,7 +28,7 @@ const Navbar = () => {
   const navItems = [
     { path: '/', label: 'Home', icon: Home },
     { path: '/marketplace', label: 'Marketplace', icon: ShoppingBag },
-    { path: '/about', label: 'About', icon: ShoppingBag },
+    { path: '/about', label: 'About', icon: Info },
   ]
 
   const userMenuItems = [
@@ -48,8 +48,11 @@ const Navbar = () => {
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
-              <ShoppingBag className="w-5 h-5 text-white" />
+            <div className="w-10 h-10 bg-primary-600 rounded-lg relative flex items-center justify-center">
+              <ShoppingBag className="w-6 h-6 text-white" />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <GraduationCap className="w-4 h-4 text-white" />
+              </div>
             </div>
             <span className="text-xl font-bold text-primary-600">DormDeals</span>
           </Link>
@@ -103,7 +106,7 @@ const Navbar = () => {
             
             <Link
               to="/create-listing"
-              className="inline-flex items-center gap-2 rounded-xl px-4 py-2 font-semibold text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 border border-transparent dark:focus:ring-offset-slate-900"
+              className="inline-flex items-center gap-2 rounded-xl px-4 py-2 font-semibold text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 border border-transparent dark:focus:ring-offset-slate-900"
             >
               <Plus className="w-4 h-4" />
               <span>Sell</span>
@@ -222,7 +225,7 @@ const Navbar = () => {
                   </div>
                   <Link
                     to="/create-listing"
-                    className="inline-flex items-center gap-2 rounded-xl px-4 py-2 font-semibold text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 border border-transparent dark:focus:ring-offset-slate-900"
+                    className="inline-flex items-center gap-2 rounded-xl px-4 py-2 font-semibold text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 border border-transparent dark:focus:ring-offset-slate-900"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
                     <Plus className="w-5 h-5" />

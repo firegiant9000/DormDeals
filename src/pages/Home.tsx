@@ -1,6 +1,15 @@
 import { motion } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import { 
+  fadeIn, 
+  staggerContainer, 
+  staggerItem, 
+  heroTitle, 
+  heroSubtitle, 
+  heroButton,
+  getAnimationVariants
+} from '../utils/animations'
+import { 
   ArrowRight, 
   ShoppingBag, 
   DollarSign, 
@@ -71,7 +80,12 @@ const Home = () => {
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-primary-600 via-primary-700 to-primary-800 text-white py-24 overflow-hidden">
+      <motion.section 
+        className="relative bg-gradient-to-br from-primary-600 via-primary-700 to-primary-800 text-white py-24 overflow-hidden"
+        initial="hidden"
+        animate="visible"
+        variants={getAnimationVariants(fadeIn)}
+      >
         {/* Background decoration */}
         <div className="absolute inset-0 bg-gradient-to-r from-primary-600/20 to-transparent"></div>
         <div className="absolute top-0 right-0 w-96 h-96 bg-white/5 rounded-full -translate-y-48 translate-x-48"></div>
@@ -80,46 +94,52 @@ const Home = () => {
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <motion.h1
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8 }}
+              variants={getAnimationVariants(heroTitle)}
               className="text-5xl md:text-7xl font-bold mb-8 leading-tight"
             >
               Your Campus
               <span className="block text-primary-200">Marketplace</span>
             </motion.h1>
             <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.2 }}
+              variants={getAnimationVariants(heroSubtitle)}
               className="text-xl md:text-2xl mb-12 max-w-4xl mx-auto text-primary-100 leading-relaxed"
             >
               The ultimate marketplace for UL students to buy, sell, and rent items within their campus community. 
               Save money, make money, and build connections.
             </motion.p>
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.4 }}
+              variants={getAnimationVariants(heroButton)}
               className="flex flex-col sm:flex-row gap-6 justify-center"
             >
-              <Link
-                to="/marketplace"
-                className="bg-white text-primary-600 hover:bg-gray-100 font-semibold py-4 px-10 rounded-xl transition-all duration-300 flex items-center justify-center text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-1"
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                transition={{ duration: 0.2 }}
               >
-                Get Started
-                <ArrowRight className="ml-2 w-5 h-5" />
-              </Link>
-              <Link
-                to="/about"
-                className="border-2 border-white text-white hover:bg-white hover:text-primary-600 font-semibold py-4 px-10 rounded-xl transition-all duration-300 text-lg"
+                <Link
+                  to="/marketplace"
+                  className="bg-white text-primary-600 hover:bg-gray-100 font-semibold py-4 px-10 rounded-xl transition-all duration-300 flex items-center justify-center text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-1"
+                >
+                  Get Started
+                  <ArrowRight className="ml-2 w-5 h-5" />
+                </Link>
+              </motion.div>
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                transition={{ duration: 0.2 }}
               >
-                Learn More
-              </Link>
+                <Link
+                  to="/about"
+                  className="border-2 border-white text-white hover:bg-white hover:text-primary-600 font-semibold py-4 px-10 rounded-xl transition-all duration-300 text-lg"
+                >
+                  Learn More
+                </Link>
+              </motion.div>
             </motion.div>
           </div>
         </div>
-      </section>
+      </motion.section>
 
       {/* Search and Content Section */}
       <div className="mx-auto max-w-6xl px-4 py-6 grid grid-cols-1 gap-8 lg:grid-cols-[280px_1fr]">
@@ -195,21 +215,29 @@ const Home = () => {
               Why Choose DormDeals?
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-              We're built specifically for UL students, making campus life more affordable, sustainable, and connected.
+              We&apos;re built specifically for UL students, making campus life more affordable, sustainable, and connected.
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {features.map((feature, index) => {
+          <motion.div 
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+            variants={getAnimationVariants(staggerContainer)}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+          >
+            {features.map((feature, _index) => {
               const Icon = feature.icon
               return (
                 <motion.div
                   key={feature.title}
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: index * 0.1 }}
-                  viewport={{ once: true }}
+                  variants={getAnimationVariants(staggerItem)}
                   className="group text-center p-8 rounded-2xl hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-white to-gray-50 border border-gray-100 hover:border-primary-200"
+                  whileHover={{ 
+                    scale: 1.02, 
+                    y: -4,
+                    transition: { duration: 0.2 }
+                  }}
                 >
                   <div className="w-20 h-20 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg">
                     <Icon className="w-10 h-10 text-white" />
@@ -223,7 +251,7 @@ const Home = () => {
                 </motion.div>
               )
             })}
-          </div>
+          </motion.div>
         </div>
       </section>
 
@@ -246,19 +274,19 @@ const Home = () => {
           </motion.div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
-            {howItWorks.map((step, index) => {
+            {howItWorks.map((step, _index) => {
               const Icon = step.icon
               return (
                 <motion.div
                   key={step.step}
                   initial={{ opacity: 0, y: 30 }}
                   whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: index * 0.2 }}
+                  transition={{ duration: 0.6, delay: _index * 0.2 }}
                   viewport={{ once: true }}
                   className="relative text-center"
                 >
                   {/* Connection line for desktop */}
-                  {index < howItWorks.length - 1 && (
+                  {_index < howItWorks.length - 1 && (
                     <div className="hidden md:block absolute top-16 left-1/2 w-full h-0.5 bg-gradient-to-r from-primary-300 to-primary-200 transform translate-x-1/2"></div>
                   )}
                   

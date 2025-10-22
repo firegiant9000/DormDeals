@@ -3,6 +3,11 @@ import { motion } from 'framer-motion'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { LayoutGrid, List, Search } from 'lucide-react'
 import { 
+  resultsGrid, 
+  resultCard,
+  getAnimationVariants
+} from '../utils/animations'
+import { 
   Item, 
   SearchFilters, 
   SortOption 
@@ -36,7 +41,6 @@ const ResultsPage: React.FC = () => {
   const [maxPrice, setMaxPrice] = useState<string>(state?.filters?.priceMax?.toString() || '')
   const [query, setQuery] = useState<string>(state?.filters?.query || state?.searchQuery || '')
   const [error, setError] = useState<string | null>(null)
-  const [refilterTick, setRefilterTick] = useState(0)
 
   // Compute the base item set: always use the full local dataset so filters can broaden results
   const baseItems: Item[] = useMemo(() => {
@@ -119,7 +123,7 @@ const ResultsPage: React.FC = () => {
       setError(e?.message || 'Failed to filter results')
       return []
     }
-  }, [baseItems, query, category, condition, pickupMethod, minPrice, maxPrice, sortBy, refilterTick])
+  }, [baseItems, query, category, condition, pickupMethod, minPrice, maxPrice, sortBy])
 
   const hasNoData = (!state || !state.results) && baseItems.length === 0
   const totalFound = filteredItems.length
@@ -130,7 +134,7 @@ const ResultsPage: React.FC = () => {
 
   const onSearchAgain = () => {
     // Explicitly trigger re-filter; filters are already bound to state
-    setRefilterTick(t => t + 1)
+    // Refilter functionality removed - filters are reactive
   }
 
   return (
@@ -174,7 +178,7 @@ const ResultsPage: React.FC = () => {
             setMinPrice={setMinPrice}
             maxPrice={maxPrice}
             setMaxPrice={setMaxPrice}
-            onReset={() => setRefilterTick(t => t + 1)}
+            onReset={() => {/* Reset functionality - filters are reactive */}}
           />
 
           <div className="mt-4 flex gap-2 self-end lg:self-auto">
@@ -215,15 +219,24 @@ const ResultsPage: React.FC = () => {
 
         {/* Results list - Card view (like Marketplace) */}
         {totalFound > 0 && view === 'cards' && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredItems.map((item, index) => (
+          <motion.div 
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
+            variants={getAnimationVariants(resultsGrid)}
+            initial="hidden"
+            animate="visible"
+          >
+            {filteredItems.map((item, _index) => (
               <motion.div
                 key={item.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: index * 0.05 }}
+                variants={getAnimationVariants(resultCard)}
                 className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow duration-300 cursor-pointer flex flex-col"
                 onClick={() => onCardClick(item)}
+                whileHover={{ 
+                  scale: 1.02, 
+                  y: -4,
+                  transition: { duration: 0.2 }
+                }}
+                whileTap={{ scale: 0.98 }}
               >
                 <div className="aspect-w-16 aspect-h-9 bg-gray-200">
                   <img
@@ -263,7 +276,7 @@ const ResultsPage: React.FC = () => {
                 </div>
               </motion.div>
             ))}
-          </div>
+          </motion.div>
         )}
 
         {/* List view with actions */}

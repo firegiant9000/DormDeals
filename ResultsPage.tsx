@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { SearchResponse, Item, SearchFilters } from '../types';
+import { SearchResponse, SearchFilters } from '../types';
 import { addToCart, addToWishlist } from '../services/apiService';
 
 interface ResultsPageState {
@@ -12,7 +12,7 @@ interface ResultsPageState {
 const ResultsPage: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { results, filters, searchQuery } = location.state as ResultsPageState;
+  const { results, searchQuery } = location.state as ResultsPageState;
   
   const [loadingItems, setLoadingItems] = useState<Set<string>>(new Set());
 
@@ -21,8 +21,8 @@ const ResultsPage: React.FC = () => {
     try {
       await addToCart(itemId);
       // You could add a toast notification here
-    } catch (error) {
-      console.error('Failed to add to cart:', error);
+    } catch {
+      // Failed to add to cart
     } finally {
       setLoadingItems(prev => {
         const newSet = new Set(prev);
@@ -37,8 +37,8 @@ const ResultsPage: React.FC = () => {
     try {
       await addToWishlist(itemId);
       // You could add a toast notification here
-    } catch (error) {
-      console.error('Failed to add to wishlist:', error);
+    } catch {
+      // Failed to add to wishlist
     } finally {
       setLoadingItems(prev => {
         const newSet = new Set(prev);

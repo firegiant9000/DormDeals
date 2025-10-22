@@ -15,7 +15,7 @@
     --dd-border:      #e2e8f0; /* slate-200 */
     --dd-text:        #0f172a; /* slate-900 */
     --dd-muted:       #64748b; /* slate-500 */
-    --dd-ring:        #3b82f6; /* blue-500 */
+    --dd-ring:        #ef4444; /* red-500 */
   }
   html.dark {
     /* DARK THEME TOKENS */
@@ -27,7 +27,7 @@
     --dd-border:      #334155; /* slate-700 */
     --dd-text:        #e5e7eb; /* gray-200 */
     --dd-muted:       #94a3b8; /* slate-400 */
-    --dd-ring:        #60a5fa; /* blue-400 */
+    --dd-ring:        #f87171; /* red-400 */
   }
 
   /* Ensure document bg is truly page-wide */

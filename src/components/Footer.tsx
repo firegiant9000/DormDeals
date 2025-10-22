@@ -1,4 +1,4 @@
-import { Heart, Mail } from 'lucide-react'
+import { Mail, ShoppingBag, GraduationCap } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 const Footer = () => {
@@ -8,8 +8,11 @@ const Footer = () => {
         <div className="flex flex-col md:flex-row justify-between items-center">
           {/* Brand */}
           <div className="flex items-center space-x-2 mb-4 md:mb-0">
-            <div className="w-6 h-6 bg-primary-600 rounded flex items-center justify-center">
-              <Heart className="w-4 h-4 text-white" />
+            <div className="w-8 h-8 bg-primary-600 rounded-lg relative flex items-center justify-center">
+              <ShoppingBag className="w-5 h-5 text-white" />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <GraduationCap className="w-3 h-3 text-white" />
+              </div>
             </div>
             <span className="text-lg font-bold">DormDeals</span>
           </div>

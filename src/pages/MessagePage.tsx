@@ -742,7 +742,7 @@ const MessagePage: React.FC = () => {
         setMessages([initialMessage]);
       }
     }
-  }, [listingFromState]);
+  }, [listingFromState, conversations]);
 
   // Set item context based on selected conversation
   useEffect(() => {
@@ -858,7 +858,7 @@ const MessagePage: React.FC = () => {
             }
           : conv
       ));
-    } catch (error) {
+    } catch {
       setError('Failed to send message. Please try again.');
     } finally {
       setUploading(false);
@@ -1052,7 +1052,7 @@ const MessagePage: React.FC = () => {
                       </span>
                     </div>
                     <span className="text-sm font-medium text-gray-700">Talking about:</span>
-                    <span className="text-sm font-semibold text-gray-900">{itemContext.seller.name}'s item</span>
+                    <span className="text-sm font-semibold text-gray-900">{itemContext.seller.name}&apos;s item</span>
                   </div>
                 </div>
                 
