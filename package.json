@@ -5,17 +5,14 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "concurrently \"npm run server:dev\" \"npm run client:dev\"",
-    "client:dev": "vite",
-    "server:dev": "nodemon index.js",
-    "start": "node index.js",
+    "dev": "vite",
     "build": "tsc && vite build",
-    "server:build": "echo 'Server build complete'",
-    "lint": "eslint . --report-unused-disable-directives --max-warnings 0",
-    "test": "jest",
-    "test:coverage": "jest --coverage",
+    "build:production": "npm run type-check && npm run build",
     "preview": "vite preview",
-    "type-check": "tsc --noEmit"
+    "start": "vite preview --port 3000 --host",
+    "type-check": "tsc --noEmit",
+    "lint": "eslint . --report-unused-disable-directives --max-warnings 0",
+    "lint:ci": "eslint . --report-unused-disable-directives --max-warnings 0 -f junit -o lint-results.xml"
   },
   "dependencies": {
     "@types/react-router-dom": "^5.3.3",
@@ -62,7 +59,7 @@
     "postcss": "^8.4.32",
     "tailwindcss": "^3.3.6",
     "ts-jest": "^29.1.1",
-    "typescript": "^5.2.2",
+    "typescript": "^5.9.3",
     "typescript-eslint": "^8.46.1",
     "vite": "^6.4.1"
   },
