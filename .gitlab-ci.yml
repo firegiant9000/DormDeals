@@ -14,7 +14,7 @@ default:
       - .npm/
       - node_modules/
   before_script:
-    # Each job gets a fresh container; install deps every time
+    # fresh container per job → install deps in every job
     - npm ci --cache .npm --prefer-offline
 
 lint:
@@ -22,7 +22,8 @@ lint:
   script:
     - echo "Running ESLint (flat config)…"
     - npx eslint -v
-    - npm run lint:ci || true
+    # use npx so we don't care about PATH; allow failure so lint won't block deploys
+    - npx eslint . --report-unused-disable-directives --max-warnings 0 -f junit -o lint-results.xml || true
   allow_failure: true
   artifacts:
     when: always
@@ -34,7 +35,7 @@ build:
   stage: build
   script:
     - npx tsc -v
-    - npm run type-check
+    - npx tsc --noEmit
     - npm run build:production -- --logLevel debug
   artifacts:
     when: always
