@@ -37,7 +37,7 @@ build:
   script:
     - npx tsc -v
     - npx tsc --noEmit
-    - npm run build:production -- --logLevel debug
+    - npm run build:production
   artifacts:
     when: always
     paths:
