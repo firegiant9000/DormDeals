@@ -10,12 +10,12 @@
     "server:dev": "nodemon index.js",
     "start": "node index.js",
     "build": "tsc && vite build",
-    "build:production": "npm run type-check && npm run build",
-    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "server:build": "echo 'Server build complete'",
+    "lint": "eslint . --report-unused-disable-directives --max-warnings 0",
+    "test": "jest",
+    "test:coverage": "jest --coverage",
     "preview": "vite preview",
-    "type-check": "tsc --noEmit",
-    "start": "vite preview --port 3000 --host",
-    "deploy": "npm run build:production"
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "@types/react-router-dom": "^5.3.3",

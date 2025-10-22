@@ -1,347 +1,327 @@
-# DormDeals Deployment Guide
+# DormDeal Deployment Guide
 
-This guide provides comprehensive instructions for deploying the DormDeals application to Render and other platforms.
-
-## Table of Contents
-
-- [Prerequisites](#prerequisites)
-- [Environment Setup](#environment-setup)
-- [Deployment to Render](#deployment-to-render)
-- [Deployment to Vercel](#deployment-to-vercel)
-- [Environment Variables](#environment-variables)
-- [Build Process](#build-process)
-- [Troubleshooting](#troubleshooting)
-- [Team Deployment Checklist](#team-deployment-checklist)
+This guide provides step-by-step instructions for deploying the DormDeal Express.js + SQL application to Vercel.
 
 ## Prerequisites
 
-Before deploying, ensure you have:
+- Node.js (version 16 or higher)
+- npm or yarn package manager
+- Git repository with your code
+- Vercel account (free tier available)
+- PostgreSQL database (recommended: Neon, Supabase, or Railway)
 
-- Node.js 16.0.0 or higher
-- npm 8.0.0 or higher
-- Git repository access
-- Render account (for primary deployment)
-- Vercel account (for alternative deployment)
+## Step 1: Prepare Your Database
 
-## Environment Setup
+### Option A: Using Neon (Recommended)
+1. Go to [Neon Console](https://console.neon.tech/)
+2. Create a new project
+3. Copy your connection string (it will look like: `postgresql://username:password@hostname:port/database?sslmode=require`)
 
-### 1. Clone and Install Dependencies
+### Option B: Using Supabase
+1. Go to [Supabase](https://supabase.com/)
+2. Create a new project
+3. Go to Settings > Database
+4. Copy your connection string
 
-```bash
-git clone https://gitlab.com/sohaikia2002/fa25team04.git
-cd fa25team04
-npm install
+### Option C: Using Railway
+1. Go to [Railway](https://railway.app/)
+2. Create a new PostgreSQL database
+3. Copy your connection string
+
+## Step 2: Database Schema Setup
+
+Run the following SQL commands in your database to create the required tables:
+
+```sql
+-- Users table
+CREATE TABLE users (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Listings table
+CREATE TABLE listings (
+    id SERIAL PRIMARY KEY,
+    title VARCHAR(200) NOT NULL,
+    description TEXT,
+    price DECIMAL(10,2) NOT NULL,
+    category VARCHAR(50),
+    condition VARCHAR(20),
+    seller_id INTEGER REFERENCES users(id),
+    images TEXT[], -- Array of image URLs
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Messages table (for communication between users)
+CREATE TABLE messages (
+    id SERIAL PRIMARY KEY,
+    sender_id INTEGER REFERENCES users(id),
+    receiver_id INTEGER REFERENCES users(id),
+    listing_id INTEGER REFERENCES listings(id),
+    content TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create indexes for better performance
+CREATE INDEX idx_listings_category ON listings(category);
+CREATE INDEX idx_listings_seller_id ON listings(seller_id);
+CREATE INDEX idx_messages_sender_id ON messages(sender_id);
+CREATE INDEX idx_messages_receiver_id ON messages(receiver_id);
 ```
 
-### 2. Environment Configuration
+## Step 3: Environment Variables Setup
 
-Copy the example environment file and configure your variables:
+Create a `.env` file in your project root with the following variables:
 
-```bash
-cp .env.example .env
-```
+```env
+# Database
+DATABASE_URL=postgresql://username:password@hostname:port/database?sslmode=require
 
-Edit `.env` with your actual values (see [Environment Variables](#environment-variables) section).
-
-### 3. Local Testing
-
-Test the application locally before deployment:
-
-```bash
-# Development server
-npm run dev
-
-# Production build test
-npm run build:production
-npm run preview
-```
-
-## Deployment to Render
-
-### Step 1: Prepare Repository
-
-1. Ensure all code is committed and pushed to your Git repository
-2. Verify that `package.json` contains the correct build scripts
-3. Check that `vercel.json` is properly configured
-
-### Step 2: Create Render Service
-
-1. Log in to [Render Dashboard](https://dashboard.render.com)
-2. Click "New +" → "Static Site"
-3. Connect your Git repository
-4. Configure the following settings:
-
-**Basic Settings:**
-- **Name**: `dormdeals` (or your preferred name)
-- **Branch**: `main` (or your default branch)
-- **Root Directory**: Leave empty (root of repository)
-- **Build Command**: `npm run build:production`
-- **Publish Directory**: `dist`
-
-**Advanced Settings:**
-- **Node Version**: `18` (or latest LTS)
-- **Environment**: `Production`
-
-### Step 3: Environment Variables
-
-In the Render dashboard, go to your service → Environment tab and add:
-
-**Required Variables:**
-```
+# Server Configuration
+PORT=3000
 NODE_ENV=production
-VITE_APP_ENV=production
+
+# Security
+SECRET_KEY=your-super-secret-key-here
+JWT_SECRET=your-jwt-secret-key-here
+
+# Optional: Email Configuration (if implementing email features)
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
+EMAIL_USER=your-email@gmail.com
+EMAIL_PASS=your-app-password
+
+# Optional: File Upload (if using cloud storage)
+CLOUDINARY_CLOUD_NAME=your-cloud-name
+CLOUDINARY_API_KEY=your-api-key
+CLOUDINARY_API_SECRET=your-api-secret
 ```
 
-**API Configuration:**
+## Step 4: Deploy to Vercel
+
+### Method 1: Using Vercel CLI (Recommended)
+
+1. **Install Vercel CLI globally:**
+   ```bash
+   npm install -g vercel
+   ```
+
+2. **Login to Vercel:**
+   ```bash
+   vercel login
+   ```
+
+3. **Deploy your project:**
+   ```bash
+   vercel
+   ```
+
+4. **Follow the prompts:**
+   - Set up and deploy? `Y`
+   - Which scope? (Choose your account)
+   - Link to existing project? `N`
+   - Project name: `dormdeal-api`
+   - Directory: `./`
+   - Override settings? `N`
+
+### Method 2: Using Vercel Dashboard
+
+1. **Go to [Vercel Dashboard](https://vercel.com/dashboard)**
+2. **Click "New Project"**
+3. **Import your Git repository**
+4. **Configure project settings:**
+   - Framework Preset: `Other`
+   - Root Directory: `./`
+   - Build Command: `npm run build`
+   - Output Directory: `dist`
+   - Install Command: `npm install`
+
+## Step 5: Configure Environment Variables in Vercel
+
+1. **Go to your project dashboard in Vercel**
+2. **Navigate to Settings > Environment Variables**
+3. **Add the following variables:**
+
+| Variable Name | Value | Environment |
+|---------------|-------|-------------|
+| `DATABASE_URL` | Your PostgreSQL connection string | Production, Preview, Development |
+| `NODE_ENV` | `production` | Production |
+| `SECRET_KEY` | Your secret key | Production, Preview, Development |
+| `JWT_SECRET` | Your JWT secret | Production, Preview, Development |
+
+## Step 6: Deploy and Test
+
+1. **Trigger a new deployment:**
+   ```bash
+   vercel --prod
+   ```
+
+2. **Test your API endpoints:**
+   ```bash
+   # Health check
+   curl https://your-app.vercel.app/health
+   
+   # Test listings endpoint
+   curl https://your-app.vercel.app/api/listings
+   ```
+
+## Step 7: Frontend Integration
+
+Update your React frontend to use the deployed API:
+
+```typescript
+// In your API service file
+const API_BASE_URL = process.env.NODE_ENV === 'production' 
+  ? 'https://your-app.vercel.app/api'
+  : 'http://localhost:3000/api';
+
+export const apiService = {
+  async getListings() {
+    const response = await fetch(`${API_BASE_URL}/listings`);
+    return response.json();
+  },
+  
+  async createListing(listingData) {
+    const response = await fetch(`${API_BASE_URL}/listings`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(listingData),
+    });
+    return response.json();
+  }
+};
 ```
-VITE_API_BASE_URL=https://your-api-domain.com/api
-VITE_API_TIMEOUT=10000
-```
-
-**Authentication:**
-```
-VITE_JWT_SECRET=your-secure-jwt-secret
-VITE_ENCRYPTION_KEY=your-encryption-key
-```
-
-**External Services (as needed):**
-```
-VITE_GOOGLE_MAPS_API_KEY=your-google-maps-key
-VITE_STRIPE_PUBLISHABLE_KEY=your-stripe-key
-VITE_GOOGLE_ANALYTICS_ID=your-analytics-id
-```
-
-### Step 4: Deploy
-
-1. Click "Create Static Site"
-2. Render will automatically build and deploy your application
-3. Monitor the build logs for any errors
-4. Once deployed, you'll receive a URL (e.g., `https://dormdeals.onrender.com`)
-
-## Deployment to Vercel
-
-### Step 1: Install Vercel CLI
-
-```bash
-npm install -g vercel
-```
-
-### Step 2: Deploy
-
-```bash
-# Login to Vercel
-vercel login
-
-# Deploy from project directory
-vercel
-
-# For production deployment
-vercel --prod
-```
-
-### Step 3: Configure Environment Variables
-
-In Vercel dashboard:
-1. Go to your project → Settings → Environment Variables
-2. Add all required environment variables
-3. Redeploy if needed
-
-## Environment Variables
-
-### Required Variables
-
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `NODE_ENV` | Application environment | `production` |
-| `VITE_APP_ENV` | Frontend environment | `production` |
-| `VITE_API_BASE_URL` | Backend API URL | `https://api.dormdeals.com` |
-
-### Optional Variables
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `VITE_API_TIMEOUT` | API request timeout (ms) | `10000` |
-| `VITE_MAX_FILE_SIZE` | Max file upload size (bytes) | `5242880` |
-| `VITE_ENABLE_ANALYTICS` | Enable analytics | `true` |
-| `VITE_ENABLE_DEBUG_MODE` | Enable debug mode | `false` |
-
-### Service-Specific Variables
-
-**Authentication:**
-- `VITE_JWT_SECRET`: JWT signing secret
-- `VITE_ENCRYPTION_KEY`: Data encryption key
-
-**External APIs:**
-- `VITE_GOOGLE_MAPS_API_KEY`: Google Maps integration
-- `VITE_STRIPE_PUBLISHABLE_KEY`: Payment processing
-- `VITE_GOOGLE_ANALYTICS_ID`: Analytics tracking
-
-**File Upload:**
-- `VITE_MAX_FILE_SIZE`: Maximum file size
-- `VITE_ALLOWED_FILE_TYPES`: Allowed file types
-
-## Build Process
-
-### Local Build
-
-```bash
-# Type checking
-npm run type-check
-
-# Production build
-npm run build:production
-
-# Preview build
-npm run preview
-```
-
-### Build Scripts
-
-- `npm run dev`: Development server
-- `npm run build`: Standard build
-- `npm run build:production`: Production build with type checking
-- `npm run preview`: Preview production build
-- `npm run deploy`: Deploy command (builds for production)
-
-### Build Output
-
-The build process creates a `dist` directory containing:
-- Static HTML, CSS, and JavaScript files
-- Optimized assets
-- Source maps (if enabled)
 
 ## Troubleshooting
 
-### Common Issues
+### Common Issues and Solutions
 
-#### 1. Build Failures
+#### 1. Database Connection Errors
+**Error:** `Error: connect ECONNREFUSED`
+**Solution:**
+- Verify your `DATABASE_URL` is correct
+- Ensure your database allows external connections
+- Check if your database provider requires SSL
 
-**Error**: TypeScript compilation errors
-```bash
-# Solution: Fix TypeScript errors
-npm run type-check
-```
+#### 2. Port Conflicts
+**Error:** `EADDRINUSE: address already in use :::3000`
+**Solution:**
+- Vercel automatically handles port configuration
+- Don't hardcode port numbers in production
+- Use `process.env.PORT || 3000`
 
-**Error**: Missing dependencies
-```bash
-# Solution: Install dependencies
-npm install
-```
+#### 3. Environment Variables Not Loading
+**Error:** `undefined` environment variables
+**Solution:**
+- Ensure variables are set in Vercel dashboard
+- Check variable names match exactly (case-sensitive)
+- Redeploy after adding new environment variables
 
-#### 2. Environment Variables Not Loading
+#### 4. Build Failures
+**Error:** Build command fails
+**Solution:**
+- Check your `package.json` scripts
+- Ensure all dependencies are in `dependencies` (not `devDependencies`)
+- Verify Node.js version compatibility
 
-**Issue**: VITE_ variables not accessible in production
-- Ensure variables start with `VITE_`
-- Check that variables are set in deployment platform
-- Verify no typos in variable names
+#### 5. CORS Issues
+**Error:** CORS policy blocks requests
+**Solution:**
+- Configure CORS in your Express app
+- Add your frontend domain to allowed origins
+- Use environment variables for different domains
 
-#### 3. Routing Issues
+#### 6. Database SSL Issues
+**Error:** SSL connection required
+**Solution:**
+- Add SSL configuration to your database connection
+- Use `sslmode=require` in your connection string
+- Configure SSL in your database provider
 
-**Issue**: 404 errors on page refresh
-- Ensure `vercel.json` has proper routing configuration
-- Check that all routes redirect to `index.html`
+### Performance Optimization
 
-#### 4. API Connection Issues
+1. **Database Connection Pooling:**
+   ```javascript
+   const pool = new Pool({
+     connectionString: process.env.DATABASE_URL,
+     max: 20,
+     idleTimeoutMillis: 30000,
+     connectionTimeoutMillis: 2000,
+   });
+   ```
 
-**Issue**: API calls failing in production
-- Verify `VITE_API_BASE_URL` is correct
-- Check CORS configuration
-- Ensure API server is running and accessible
+2. **Caching:**
+   - Implement Redis for session storage
+   - Use Vercel's edge caching for static content
+   - Cache database queries when appropriate
 
-#### 5. Asset Loading Issues
+3. **Monitoring:**
+   - Set up Vercel Analytics
+   - Monitor database performance
+   - Use logging services like LogRocket or Sentry
 
-**Issue**: Images or CSS not loading
-- Check file paths are relative
-- Verify assets are in `public` directory
-- Check build output in `dist` directory
+## Security Best Practices
 
-### Debug Commands
+1. **Environment Variables:**
+   - Never commit `.env` files to version control
+   - Use strong, unique secrets
+   - Rotate secrets regularly
 
-```bash
-# Check TypeScript errors
-npm run type-check
+2. **Database Security:**
+   - Use connection pooling
+   - Implement proper authentication
+   - Use prepared statements to prevent SQL injection
 
-# Lint code
-npm run lint
+3. **API Security:**
+   - Implement rate limiting
+   - Use HTTPS in production
+   - Validate all input data
+   - Implement proper error handling
 
-# Build with verbose output
-npm run build -- --debug
+## Monitoring and Maintenance
 
-# Check environment variables
-npm run dev -- --debug
-```
+1. **Health Checks:**
+   - Monitor `/health` endpoint
+   - Set up uptime monitoring
+   - Track response times
 
-### Logs and Monitoring
+2. **Database Maintenance:**
+   - Regular backups
+   - Monitor connection usage
+   - Optimize slow queries
 
-**Render:**
-- Check build logs in Render dashboard
-- Monitor service logs for runtime errors
-- Set up alerts for deployment failures
-
-**Vercel:**
-- View function logs in Vercel dashboard
-- Check build logs for deployment issues
-- Monitor performance metrics
-
-## Team Deployment Checklist
-
-### Pre-Deployment
-
-- [ ] All code reviewed and merged to main branch
-- [ ] Environment variables documented and configured
-- [ ] Build process tested locally
-- [ ] TypeScript errors resolved
-- [ ] Linting passes without errors
-- [ ] All dependencies up to date
-
-### Deployment
-
-- [ ] Repository connected to deployment platform
-- [ ] Build command configured correctly
-- [ ] Environment variables set
-- [ ] Custom domain configured (if applicable)
-- [ ] SSL certificate enabled
-- [ ] CDN configured (if applicable)
-
-### Post-Deployment
-
-- [ ] Application loads correctly
-- [ ] All pages accessible
-- [ ] API calls working
-- [ ] File uploads functional
-- [ ] Authentication working
-- [ ] Performance acceptable
-- [ ] Analytics tracking (if enabled)
-- [ ] Error monitoring set up
-
-### Rollback Plan
-
-If deployment fails:
-
-1. **Immediate**: Revert to previous working version
-2. **Investigate**: Check build logs and error messages
-3. **Fix**: Address issues in development
-4. **Test**: Verify fix locally
-5. **Redeploy**: Deploy corrected version
+3. **Logging:**
+   - Implement structured logging
+   - Monitor error rates
+   - Track user activity
 
 ## Support
 
-For deployment issues:
+If you encounter issues not covered in this guide:
 
-1. Check this documentation first
-2. Review build logs in deployment platform
-3. Test locally with production build
-4. Contact team lead for assistance
-5. Create issue in project repository
+1. Check Vercel's [documentation](https://vercel.com/docs)
+2. Review your database provider's documentation
+3. Check the application logs in Vercel dashboard
+4. Test your API endpoints using tools like Postman or curl
 
-## Additional Resources
+## Next Steps
 
-- [Render Documentation](https://render.com/docs)
-- [Vercel Documentation](https://vercel.com/docs)
-- [Vite Build Guide](https://vitejs.dev/guide/build.html)
-- [React Deployment Guide](https://create-react-app.dev/docs/deployment/)
+After successful deployment:
+
+1. Set up a custom domain
+2. Configure SSL certificates
+3. Implement monitoring and alerting
+4. Set up automated backups
+5. Plan for scaling as your user base grows
 
 ---
 
-**Last Updated**: October 2025
-**Maintained By**: DormDeals Team
+**Note:** This deployment guide assumes you're using PostgreSQL. If you're using a different database, adjust the connection string and SQL schema accordingly.
