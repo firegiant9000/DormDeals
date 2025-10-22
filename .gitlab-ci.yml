@@ -5,6 +5,8 @@ stages:
 variables:
   NODE_ENV: production
   NPM_CONFIG_CACHE: ".npm"
+  # ← ensure devDependencies are installed in CI
+  NPM_CONFIG_PRODUCTION: "false"
 
 default:
   image: node:20-alpine
@@ -14,15 +16,14 @@ default:
       - .npm/
       - node_modules/
   before_script:
-    # fresh container per job → install deps in every job
-    - npm ci --cache .npm --prefer-offline
+    # fresh container per job → install deps in every job (including dev)
+    - npm ci --cache .npm --prefer-offline --include=dev
 
 lint:
   stage: lint
   script:
     - echo "Running ESLint (flat config)…"
     - npx eslint -v
-    # use npx so we don't care about PATH; allow failure so lint won't block deploys
     - npx eslint . --report-unused-disable-directives --max-warnings 0 -f junit -o lint-results.xml || true
   allow_failure: true
   artifacts:
