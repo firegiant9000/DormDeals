@@ -7,9 +7,12 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "build:production": "npm run type-check && npm run build",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "start": "vite preview --port 3000 --host",
+    "deploy": "npm run build:production"
   },
   "dependencies": {
     "@types/react-router-dom": "^5.3.3",

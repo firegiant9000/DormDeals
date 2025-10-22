@@ -1,7 +1,6 @@
 import { useParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Heart, Share2, MessageCircle, User, MapPin } from 'lucide-react'
-import React from 'react'
 import { useShop } from '@/context/ShopContext'
 
 const ItemDetail = () => {

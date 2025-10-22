@@ -1,6 +1,6 @@
 import React from 'react'
 import { Filter, Search } from 'lucide-react'
-import { ItemCategory, ItemCondition, PickupMethod, SortOption } from '../types'
+import { ItemCondition, PickupMethod, SortOption } from '../types'
 
 type Props = {
   query: string
