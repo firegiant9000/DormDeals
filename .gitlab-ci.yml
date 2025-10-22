@@ -14,6 +14,7 @@ default:
       - .npm/
       - node_modules/
   before_script:
+    # Each job gets a fresh container; install deps every time
     - npm ci --cache .npm --prefer-offline
 
 lint:
