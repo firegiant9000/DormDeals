@@ -195,7 +195,7 @@ const Checkout: React.FC = () => {
                 {/* Shipping Information */}
                 <div className="bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-slate-200 dark:border-slate-800 p-6">
                   <div className="flex items-center mb-6">
-                    <MapPin className="w-5 h-5 text-primary-600 mr-2" />
+                    <MapPin className="w-5 h-5 text-primary-600 mr-3" />
                     <h2 className="text-xl font-semibold text-gray-900 dark:text-slate-100">Shipping Information</h2>
                   </div>
                   
@@ -211,7 +211,7 @@ const Checkout: React.FC = () => {
                           name="fullName"
                           value={formData.fullName}
                           onChange={handleInputChange}
-                          className="dd-input pl-10"
+                          className="dd-input pl-12"
                           placeholder="Enter your full name"
                           required
                         />
@@ -229,7 +229,7 @@ const Checkout: React.FC = () => {
                           name="email"
                           value={formData.email}
                           onChange={handleInputChange}
-                          className="dd-input pl-10"
+                          className="dd-input pl-12"
                           placeholder="Enter your email"
                           required
                         />
@@ -301,7 +301,7 @@ const Checkout: React.FC = () => {
                 {/* Payment Information */}
                 <div className="bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-slate-200 dark:border-slate-800 p-6">
                   <div className="flex items-center mb-6">
-                    <CreditCard className="w-5 h-5 text-primary-600 mr-2" />
+                    <CreditCard className="w-5 h-5 text-primary-600 mr-3" />
                     <h2 className="text-xl font-semibold text-gray-900 dark:text-slate-100">Payment Information</h2>
                   </div>
                   
@@ -365,7 +365,7 @@ const Checkout: React.FC = () => {
                             name="cvc"
                             value={formData.cvc}
                             onChange={handleInputChange}
-                            className="dd-input pl-10"
+                            className="dd-input pl-12"
                             placeholder="123"
                             maxLength={4}
                             required

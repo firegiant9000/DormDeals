@@ -14,6 +14,7 @@ import MainFeaturePage from '@/pages/MainFeaturePage'
 import ListingDetailPage from '@/pages/ListingDetailPage'
 import MessagePage from '@/pages/MessagePage'
 import Checkout from '@/pages/Checkout'
+import LoginPage from '@/pages/LoginPage'
 import NotFoundPage from '@/pages/NotFoundPage'
 
 function App() {
@@ -77,6 +78,11 @@ function App() {
             <Route path="/chat" element={
               <PageTransition>
                 <MessagePage />
+              </PageTransition>
+            } />
+            <Route path="/login" element={
+              <PageTransition>
+                <LoginPage />
               </PageTransition>
             } />
             <Route path="/home" element={
