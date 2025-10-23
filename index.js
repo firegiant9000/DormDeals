@@ -22,11 +22,9 @@ if (missingEnvVars.length > 0) {
     console.error(`   - ${envVar}`);
   });
   console.error('\nPlease check your .env file or environment configuration.');
-  process.exit(1);
 }
 
 const app = express();
-const PORT = process.env.PORT || 3000;
 
 // Database connection with error handling
 let pool;
@@ -37,27 +35,10 @@ try {
   });
 } catch (error) {
   console.error('❌ Failed to create database pool:', error.message);
-  process.exit(1);
 }
 
-// Test database connection on startup
-const testDatabaseConnection = async () => {
-  try {
-    console.log('🔄 Testing database connection...');
-    const client = await pool.connect();
-    const result = await client.query('SELECT NOW()');
-    client.release();
-    console.log('✅ Database connection successful');
-    console.log(`   Connected at: ${result.rows[0].now}`);
-    return true;
-  } catch (error) {
-    console.error('❌ Database connection failed:');
-    console.error(`   Error: ${error.message}`);
-    console.error('   Please check your DATABASE_URL environment variable.');
-    console.error('   Make sure your database is running and accessible.');
-    return false;
-  }
-};
+// Database connection testing removed for Vercel compatibility
+// Database connections are handled per-request in serverless functions
 
 // Middleware
 app.use(helmet({
@@ -199,55 +180,7 @@ app.get('*', (req, res) => {
   });
 });
 
-// Start server with database connection check
-const startServer = async () => {
-  // Test database connection before starting server
-  const dbConnected = await testDatabaseConnection();
-  
-  if (!dbConnected) {
-    console.error('❌ Server startup aborted due to database connection failure');
-    process.exit(1);
-  }
-  
-  // Start the server
-  app.listen(PORT, () => {
-    console.log('🚀 DormDeal server started successfully!');
-    console.log(`   Port: ${PORT}`);
-    console.log(`   Environment: ${process.env.NODE_ENV}`);
-    console.log(`   Health check: http://localhost:${PORT}/health`);
-    console.log(`   API base: http://localhost:${PORT}/api`);
-  });
-};
-
-// Handle graceful shutdown
-process.on('SIGTERM', () => {
-  console.log('🔄 SIGTERM received, shutting down gracefully...');
-  if (pool) {
-    pool.end(() => {
-      console.log('✅ Database pool closed');
-      process.exit(0);
-    });
-  } else {
-    process.exit(0);
-  }
-});
-
-process.on('SIGINT', () => {
-  console.log('🔄 SIGINT received, shutting down gracefully...');
-  if (pool) {
-    pool.end(() => {
-      console.log('✅ Database pool closed');
-      process.exit(0);
-    });
-  } else {
-    process.exit(0);
-  }
-});
-
-// Start the server
-startServer().catch((error) => {
-  console.error('❌ Failed to start server:', error.message);
-  process.exit(1);
-});
+// Server startup code removed for Vercel compatibility
+// The server will be started by Vercel's serverless functions
 
 export default app;
