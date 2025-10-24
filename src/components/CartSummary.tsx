@@ -15,36 +15,23 @@ const CartSummary: React.FC<CartSummaryProps> = ({ className = '' }) => {
 
   return (
     <div className={`bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-slate-200 dark:border-slate-800 p-6 ${className}`}>
-      <h3 className="text-xl font-bold text-gray-900 dark:text-slate-100 mb-6">Order Summary</h3>
+      <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100 mb-4">Order Summary</h3>
       
-      <div className="space-y-4">
+      <div className="space-y-3">
         {cartItems.map((item) => (
-          <div key={item.id} className="flex items-center gap-4 py-3 border-b border-slate-100 dark:border-slate-800 last:border-b-0">
-            {/* Item Image */}
-            <div className="flex-shrink-0">
-              <div className="w-16 h-16 bg-gray-200 dark:bg-slate-700 rounded-lg overflow-hidden shadow-sm">
-                <img
-                  src={item.images[0] || '/api/placeholder/64/64'}
-                  alt={item.title}
-                  className="w-full h-full object-cover hover:scale-105 transition-transform duration-200"
-                  loading="lazy"
-                />
-              </div>
-            </div>
-            
-            {/* Item Details */}
-            <div className="flex-1 min-w-0">
-              <h4 className="text-sm font-semibold text-gray-900 dark:text-slate-100 line-clamp-2 mb-2">
+          <div key={item.id} className="flex items-center justify-between py-2 border-b border-slate-100 dark:border-slate-800 last:border-b-0">
+            <div className="flex-1">
+              <h4 className="text-sm font-medium text-gray-900 dark:text-slate-100 line-clamp-2">
                 {item.title}
               </h4>
-              <div className="flex items-center justify-between">
-                <p className="text-xs text-gray-500 dark:text-slate-400">
-                  {item.condition} • {item.category}
-                </p>
-                <p className="text-sm font-bold text-primary-600 dark:text-primary-400">
-                  {formatCurrency(item.price)}
-                </p>
-              </div>
+              <p className="text-xs text-gray-500 dark:text-slate-400">
+                {item.condition} • {item.category}
+              </p>
+            </div>
+            <div className="ml-4 text-right">
+              <p className="text-sm font-semibold text-gray-900 dark:text-slate-100">
+                {formatCurrency(item.price)}
+              </p>
             </div>
           </div>
         ))}
