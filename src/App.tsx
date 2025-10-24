@@ -2,6 +2,7 @@ import { Routes, Route, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import Layout from '@/components/Layout'
 import { ShopDrawers } from '@/context/ShopContext'
+import LoginPopupWrapper from '@/components/LoginPopupWrapper'
 import PageTransition from '@/components/PageTransition'
 import Home from '@/pages/Home'
 import Marketplace from '@/pages/Marketplace'
@@ -14,6 +15,7 @@ import MainFeaturePage from '@/pages/MainFeaturePage'
 import ListingDetailPage from '@/pages/ListingDetailPage'
 import MessagePage from '@/pages/MessagePage'
 import Checkout from '@/pages/Checkout'
+import LoginPage from '@/pages/LoginPage'
 import NotFoundPage from '@/pages/NotFoundPage'
 
 function App() {
@@ -79,6 +81,11 @@ function App() {
                 <MessagePage />
               </PageTransition>
             } />
+            <Route path="/login" element={
+              <PageTransition>
+                <LoginPage />
+              </PageTransition>
+            } />
             <Route path="/home" element={
               <PageTransition>
                 <Home />
@@ -98,6 +105,7 @@ function App() {
         </AnimatePresence>
       </Layout>
       <ShopDrawers />
+      <LoginPopupWrapper />
     </motion.div>
   )
 }
