@@ -70,7 +70,7 @@ const SearchFiltersBar: React.FC<Props> = ({
               placeholder="Search within results..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              className="dd-input pl-12"
+              className="dd-input pl-10"
             />
           </div>
         </div>
