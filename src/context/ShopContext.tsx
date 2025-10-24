@@ -175,7 +175,8 @@ export const ShopDrawers: React.FC = () => {
                 disabled={selectedIds.size === 0}
                 className="w-full btn-primary px-4 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 onClick={() => {
-                  // Navigate to checkout page
+                  // Close the cart drawer and navigate to checkout page
+                  closeCart()
                   navigate('/checkout')
                 }}
               >
