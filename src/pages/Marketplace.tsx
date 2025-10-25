@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
-import { Grid, List, Heart, ShoppingCart, Search } from 'lucide-react'
+import { Grid, List, Search } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { mockItems } from '../data/mockData'
 import { formatCurrency } from '../utils/helpers'
