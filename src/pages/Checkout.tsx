@@ -211,7 +211,7 @@ const Checkout: React.FC = () => {
                           name="fullName"
                           value={formData.fullName}
                           onChange={handleInputChange}
-                          className="dd-input pl-10"
+                          className="dd-input pl-12"
                           placeholder="Enter your full name"
                           required
                         />
@@ -229,7 +229,7 @@ const Checkout: React.FC = () => {
                           name="email"
                           value={formData.email}
                           onChange={handleInputChange}
-                          className="dd-input pl-10"
+                          className="dd-input pl-12"
                           placeholder="Enter your email"
                           required
                         />
@@ -365,7 +365,7 @@ const Checkout: React.FC = () => {
                             name="cvc"
                             value={formData.cvc}
                             onChange={handleInputChange}
-                            className="dd-input pl-10"
+                            className="dd-input pl-12"
                             placeholder="123"
                             maxLength={4}
                             required

@@ -1,14 +1,16 @@
 import { Link, useLocation } from 'react-router-dom'
-import { ShoppingBag, Plus, User, Home, Menu, X, ChevronDown, Moon, Sun, ShoppingCart, Heart, MessageCircle, GraduationCap, Info } from 'lucide-react'
+import { ShoppingBag, Plus, User, Home, Menu, X, ChevronDown, Moon, Sun, ShoppingCart, Heart, MessageCircle, GraduationCap, Info, LogIn, LogOut } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useState, useEffect, useRef } from 'react'
 import { useTheme } from '../context/ThemeContext'
 import { useShop } from '../context/ShopContext'
+import { useAuth } from '../context/AuthContext'
 
 const Navbar = () => {
   const location = useLocation()
   const { theme, toggle } = useTheme()
   const { openCart, openWishlist } = useShop()
+  const { isAuthenticated, logout } = useAuth()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
   const userMenuRef = useRef<HTMLDivElement>(null)
@@ -31,10 +33,12 @@ const Navbar = () => {
     { path: '/about', label: 'About', icon: Info },
   ]
 
-  const userMenuItems = [
+  const userMenuItems = isAuthenticated ? [
     { path: '/profile', label: 'Profile' },
     { path: '/create-listing', label: 'Create Listing' },
-    { path: '/logout', label: 'Logout' },
+    { path: '/logout', label: 'Logout', action: logout },
+  ] : [
+    { path: '/login', label: 'Login' },
   ]
 
   return (
@@ -118,8 +122,8 @@ const Navbar = () => {
                 onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                 className="flex items-center space-x-2 text-gray-600 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium transition-colors"
               >
-                <User className="w-4 h-4" />
-                <span>Account</span>
+                {isAuthenticated ? <User className="w-4 h-4" /> : <LogIn className="w-4 h-4" />}
+                <span>{isAuthenticated ? 'Account' : 'Login'}</span>
                 <ChevronDown className="w-4 h-4" />
               </button>
               
@@ -132,14 +136,29 @@ const Navbar = () => {
                     className="absolute right-0 mt-2 w-48 dd-card bg-surface border-surface text-body py-1 z-50"
                   >
                     {userMenuItems.map((item) => (
-                      <Link
-                        key={item.path}
-                        to={item.path}
-                        className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-surface-2"
-                        onClick={() => setIsUserMenuOpen(false)}
-                      >
-                        {item.label}
-                      </Link>
+                      item.action ? (
+                        <button
+                          key={item.path}
+                          onClick={() => {
+                            item.action?.()
+                            setIsUserMenuOpen(false)
+                          }}
+                          className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-surface-2 w-full text-left"
+                        >
+                          <LogOut className="w-4 h-4" />
+                          {item.label}
+                        </button>
+                      ) : (
+                        <Link
+                          key={item.path}
+                          to={item.path}
+                          className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-surface-2"
+                          onClick={() => setIsUserMenuOpen(false)}
+                        >
+                          {item.path === '/login' && <LogIn className="w-4 h-4" />}
+                          {item.label}
+                        </Link>
+                      )
                     ))}
                   </motion.div>
                 )}
@@ -223,14 +242,25 @@ const Navbar = () => {
                       <span className="text-sm">Chat</span>
                     </Link>
                   </div>
-                  <Link
-                    to="/create-listing"
-                    className="inline-flex items-center gap-2 rounded-xl px-4 py-2 font-semibold text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 border border-transparent dark:focus:ring-offset-slate-900"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    <Plus className="w-5 h-5" />
-                    <span>Create Listing</span>
-                  </Link>
+                  {isAuthenticated ? (
+                    <Link
+                      to="/create-listing"
+                      className="inline-flex items-center gap-2 rounded-xl px-4 py-2 font-semibold text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 border border-transparent dark:focus:ring-offset-slate-900"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      <Plus className="w-5 h-5" />
+                      <span>Create Listing</span>
+                    </Link>
+                  ) : (
+                    <Link
+                      to="/login"
+                      className="inline-flex items-center gap-2 rounded-xl px-4 py-2 font-semibold text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 border border-transparent dark:focus:ring-offset-slate-900"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      <LogIn className="w-5 h-5" />
+                      <span>Login</span>
+                    </Link>
+                  )}
                 </div>
               </div>
             </motion.div>

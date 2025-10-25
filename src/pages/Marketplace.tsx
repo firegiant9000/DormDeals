@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
-import { Grid, List, Heart, ShoppingCart, Search } from 'lucide-react'
+import { Grid, List, Search } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { mockItems } from '../data/mockData'
 import { formatCurrency } from '../utils/helpers'
 import { useShop } from '@/context/ShopContext'
+import { useAuth } from '@/context/AuthContext'
 import { Item, SortOption } from '../types'
 import SearchFiltersBar from '../components/SearchFiltersBar'
 
@@ -18,6 +19,7 @@ const Marketplace = () => {
   const [maxPrice, setMaxPrice] = useState('')
   const [sortBy, setSortBy] = useState<SortOption>(SortOption.RELEVANCE)
   const { addToCart, addToWishlist, removeFromCart, removeFromWishlist, isInCart, isInWishlist } = useShop()
+  const { isAuthenticated } = useAuth()
   const navigate = useNavigate()
 
   // Use app-wide mock items for richer data and images
@@ -130,75 +132,83 @@ const Marketplace = () => {
           </div>
         </div>
 
-        {/* Items Grid/List */}
-        <div className={`grid gap-6 ${viewMode === 'grid' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' : 'grid-cols-1'}`}>
-          {filteredItems.map((item, index) => (
-            <motion.div
-              key={item.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: index * 0.1 }}
-              className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
-              onClick={() => navigate(`/listing/${item.id}`, { state: { listing: item } })}
-            >
-              <div className={`${viewMode === 'list' ? 'flex' : ''}`}>
-                {/* Image */}
-                <div className={`${viewMode === 'list' ? 'w-48 h-32' : 'h-48'} bg-gray-200`}> 
+        {/* Items Section */}
+        <div className="dd-card bg-surface mb-8 p-8">
+          <div className="flex justify-between items-center mb-8">
+            <h3 className="text-3xl font-bold text-body">All Items</h3>
+            <div className="text-sm text-gray-500">
+              {filteredItems.length} item{filteredItems.length !== 1 ? 's' : ''} found
+            </div>
+          </div>
+          
+          {/* Items Grid/List */}
+          <div className={`grid gap-8 ${viewMode === 'grid' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'}`}>
+            {filteredItems.map((item, index) => (
+              <motion.div
+                key={item.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: index * 0.1 }}
+                className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer flex flex-col shadow-sm hover:border-primary-200"
+                onClick={() => navigate(`/listing/${item.id}`, { state: { listing: item } })}
+                whileHover={{ 
+                  scale: 1.02, 
+                  y: -6,
+                  transition: { duration: 0.2 }
+                }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <div className="aspect-w-16 aspect-h-9 bg-gray-200">
                   <img
                     src={item.images[0] || '/api/placeholder/400/300'}
                     alt={item.title}
-                    className={`${viewMode === 'list' ? 'w-48 h-32' : 'w-full h-48'} object-cover`}
-                    loading="lazy"
+                    className="w-full h-48 object-cover"
                   />
                 </div>
-
-                {/* Content */}
-                <div className={`p-4 ${viewMode === 'list' ? 'flex-1' : ''}`}>
-                  <div className="flex items-start justify-between gap-2 mb-2">
-                    <h3 className="font-semibold text-gray-900 line-clamp-2 mr-2">{item.title}</h3>
-                    <span className="text-lg font-bold text-primary-600">{formatCurrency(item.price)}</span>
+                <div className="p-6 flex flex-col h-full">
+                  <div className="flex justify-between items-start mb-3">
+                    <h4 className="font-semibold text-gray-900 line-clamp-2 text-lg">{item.title}</h4>
+                    <span className="text-xl font-bold text-primary-600 ml-2">{formatCurrency(item.price)}</span>
                   </div>
-                  <div className="flex justify-between text-sm text-gray-500 mb-2">
-                    <span className="bg-gray-100 px-2 py-1 rounded">{item.category}</span>
-                    <span>{item.condition}</span>
+                  <p className="text-sm text-gray-600 mb-4 line-clamp-3 flex-grow">{item.description}</p>
+                  <div className="flex items-center justify-between text-sm text-gray-500 mb-5">
+                    <span className="bg-gray-100 px-3 py-1 rounded-full text-xs font-medium">{item.category}</span>
+                    <span className="text-xs text-gray-400">{item.condition}</span>
                   </div>
-                  <div className="text-sm text-gray-500 mb-3">
-                    <p>{item.location}</p>
-                  </div>
-                  <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                  <div className="flex space-x-3 mt-auto pt-2 border-t border-gray-100">
                     <button
-                      onClick={() => { if (!isInCart(item.id)) addToCart(item); else removeFromCart(item.id) }}
-                      className={`flex-1 py-2 px-3 rounded text-sm font-medium inline-flex items-center justify-center gap-2 ${isInCart(item.id) ? 'border border-red-300 text-red-700 hover:bg-red-50' : 'bg-primary-600 text-white hover:bg-primary-700 transition-colors'}`}
+                      onClick={(e) => { e.stopPropagation(); if (!isInCart(item.id)) addToCart(item); else removeFromCart(item.id) }}
+                      className={`flex-1 py-3 px-4 rounded-lg text-sm font-medium transition-all duration-200 ${isAuthenticated && isInCart(item.id) ? 'border-2 border-red-300 text-red-700 hover:bg-red-50' : 'bg-primary-600 text-white hover:bg-primary-700 shadow-sm'}`}
                     >
-                      <ShoppingCart className="w-4 h-4" />
-                      {isInCart(item.id) ? 'Remove from Cart' : 'Add to Cart'}
+                      {isAuthenticated && isInCart(item.id) ? 'Remove from Cart' : 'Add to Cart'}
                     </button>
                     <button
-                      onClick={() => { if (!isInWishlist(item.id)) addToWishlist(item); else removeFromWishlist(item.id) }}
-                      className={`p-2 border rounded transition-colors ${isInWishlist(item.id) ? 'border-red-300 text-red-600 hover:bg-red-50' : 'border-gray-300 hover:bg-gray-50'}`}
+                      onClick={(e) => { e.stopPropagation(); if (!isInWishlist(item.id)) addToWishlist(item); else removeFromWishlist(item.id) }}
+                      className={`p-3 border-2 rounded-lg transition-all duration-200 ${isAuthenticated && isInWishlist(item.id) ? 'border-red-300 text-red-600 hover:bg-red-50' : 'border-gray-300 hover:bg-gray-50 hover:border-gray-400'}`}
                       aria-label="Toggle wishlist"
                     >
-                      <Heart className={`w-4 h-4 ${isInWishlist(item.id) ? 'text-red-600' : 'text-gray-600'}`} />
+                      <svg className={`w-5 h-5 ${isAuthenticated && isInWishlist(item.id) ? 'text-red-600' : 'text-gray-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                      </svg>
                     </button>
                   </div>
                 </div>
+              </motion.div>
+            ))}
+          </div>
+          {/* Empty State */}
+          {filteredItems.length === 0 && (
+            <div className="text-center py-12">
+              <div className="text-gray-400 mb-4">
+                <Search className="w-16 h-16 mx-auto" />
               </div>
-            </motion.div>
-          ))}
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No items found</h3>
+              <p className="text-gray-500">Try adjusting your search or filters</p>
+            </div>
+          )}
         </div>
 
         {/* Global drawers are rendered at App root via ShopDrawers */}
-
-        {/* Empty State */}
-        {filteredItems.length === 0 && (
-          <div className="text-center py-12">
-            <div className="text-gray-400 mb-4">
-              <Search className="w-16 h-16 mx-auto" />
-            </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No items found</h3>
-            <p className="text-gray-500">Try adjusting your search or filters</p>
-          </div>
-        )}
       </div>
     </div>
   )
