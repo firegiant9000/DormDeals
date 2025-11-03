@@ -13,20 +13,41 @@ dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Verify dist folder exists
-const distPath = path.join(__dirname, 'dist');
-const indexPath = path.join(distPath, 'index.html');
+// Determine the correct dist path
+// Try multiple locations: relative to __dirname, relative to cwd, and parent of cwd
+const possibleDistPaths = [
+  path.join(__dirname, 'dist'),                    // Same directory as index.js
+  path.join(process.cwd(), 'dist'),                // Relative to current working directory
+  path.join(process.cwd(), '..', 'dist'),          // Parent of cwd (if running from src/)
+  path.join(process.cwd(), '..', '..', 'dist'),    // Two levels up (if running from nested dir)
+];
 
-if (!existsSync(distPath)) {
-  console.error(`❌ Error: dist folder not found at ${distPath}`);
+// Find the first existing dist folder
+let distPath = null;
+let indexPath = null;
+
+for (const possiblePath of possibleDistPaths) {
+  const possibleIndex = path.join(possiblePath, 'index.html');
+  if (existsSync(possibleIndex)) {
+    distPath = possiblePath;
+    indexPath = possibleIndex;
+    console.log(`✅ Found dist folder at: ${distPath}`);
+    break;
+  }
+}
+
+// If not found, use the first option and log all checked paths
+if (!distPath) {
+  distPath = possibleDistPaths[0];
+  indexPath = path.join(distPath, 'index.html');
+  console.error(`❌ Error: dist folder not found in any of these locations:`);
+  possibleDistPaths.forEach(p => {
+    const exists = existsSync(path.join(p, 'index.html'));
+    console.error(`   ${exists ? '✅' : '❌'} ${p}`);
+  });
   console.error(`   Current working directory: ${process.cwd()}`);
   console.error(`   __dirname: ${__dirname}`);
   console.error('   Please ensure the build completed successfully.');
-}
-
-if (!existsSync(indexPath)) {
-  console.error(`❌ Error: index.html not found at ${indexPath}`);
-  console.error('   The build may have failed. Please check build logs.');
 }
 
 // Environment variable validation
@@ -38,7 +59,13 @@ if (missingEnvVars.length > 0) {
   missingEnvVars.forEach(envVar => {
     console.error(`   - ${envVar}`);
   });
-  console.error('\nPlease check your .env file or environment configuration.');
+  console.error('\nPlease set these in the Render Dashboard under "Environment" section.');
+  console.error('For Render deployment, these MUST be set as environment variables.');
+  
+  // Don't exit in development, but warn in production
+  if (process.env.NODE_ENV === 'production') {
+    console.error('⚠️  Production deployment requires all environment variables to be set.');
+  }
 }
 
 const app = express();
@@ -67,7 +94,15 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
 // Serve static files from dist folder (Vite build output)
-app.use(express.static(path.join(__dirname, 'dist')));
+// Use the resolved distPath (which may be relative to cwd or __dirname)
+if (distPath && existsSync(distPath)) {
+  app.use(express.static(distPath));
+  console.log(`📁 Serving static files from: ${distPath}`);
+} else {
+  // Fallback to __dirname/dist if distPath resolution failed
+  app.use(express.static(path.join(__dirname, 'dist')));
+  console.log(`⚠️  Using fallback static path: ${path.join(__dirname, 'dist')}`);
+}
 
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -220,12 +255,18 @@ const PORT = process.env.PORT || 3000;
 // On Vercel, the serverless function imports this file, so we skip listening
 if (!process.env.VERCEL) {
   // Verify build exists before starting server
-  if (!existsSync(indexPath)) {
+  if (!indexPath || !existsSync(indexPath)) {
     console.error('❌ Cannot start server: dist/index.html not found');
-    console.error(`   Expected at: ${indexPath}`);
-    console.error(`   Current directory: ${process.cwd()}`);
+    console.error(`   Checked location: ${indexPath || 'unknown'}`);
+    console.error(`   Current working directory: ${process.cwd()}`);
     console.error(`   __dirname: ${__dirname}`);
-    console.error('   Please ensure the build completed successfully.');
+    console.error('\n   Searched in these locations:');
+    possibleDistPaths.forEach(p => {
+      const exists = existsSync(path.join(p, 'index.html'));
+      console.error(`   ${exists ? '✅' : '❌'} ${p}`);
+    });
+    console.error('\n   Please ensure the build completed successfully.');
+    console.error('   Check Render build logs to see if the build step succeeded.');
     process.exit(1);
   }
   
@@ -234,6 +275,7 @@ if (!process.env.VERCEL) {
     console.log(`🚀 Server running on port ${PORT}`);
     console.log(`📦 Environment: ${process.env.NODE_ENV || 'development'}`);
     console.log(`🌐 Server listening on 0.0.0.0:${PORT}`);
+    console.log(`📁 Serving static files from: ${distPath}`);
   });
 }
 
