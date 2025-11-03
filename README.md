@@ -98,20 +98,22 @@ cp env.example .env
 
 2. Update the `.env` file with your database credentials and other configuration:
 ```env
-# Database Configuration
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=dormdeals
-DB_USER=your_username
-DB_PASSWORD=your_password
+# Database Configuration (REQUIRED)
+DATABASE_URL=postgresql://username:password@hostname:port/database?sslmode=require
 
 # Server Configuration
-PORT=3001
+PORT=3000
 NODE_ENV=development
 
-# Client Configuration
-VITE_API_URL=http://localhost:3001
+# Security Keys (REQUIRED)
+SECRET_KEY=your-super-secret-key-here-change-this-in-production
+JWT_SECRET=your-jwt-secret-key-here-change-this-in-production
+
+# Optional: Frontend Configuration
+VITE_API_BASE_URL=http://localhost:3000
 ```
+
+**Note**: For production deployment, see the [Deployment Guide](#-deployment) section below.
 
 ### Database Setup
 
@@ -131,30 +133,33 @@ psql -d dormdeals -f database/schema.sql
 ```bash
 npm run dev
 ```
-This will start both the frontend (Vite dev server) and backend (Express server) concurrently.
+This will start the Vite development server for the frontend. The backend API can be run separately if needed, but for development, you can use mock data or configure the frontend to point to a separate API server.
 
 #### Production Mode
 ```bash
+# Build the application
 npm run build
+
+# Start the production server
 npm start
 ```
 
 The application will be available at:
-- **Frontend**: http://localhost:5173
-- **Backend API**: http://localhost:3001
+- **Full Stack**: http://localhost:3000 (Express serves both frontend and API)
+- **API Endpoints**: http://localhost:3000/api/*
 
 ## 📜 Available Scripts
 
 | Script | Description |
 |--------|-------------|
-| `npm run dev` | Start both frontend and backend in development mode |
-| `npm run client:dev` | Start only the frontend development server |
-| `npm run server:dev` | Start only the backend development server |
-| `npm run build` | Build the application for production |
-| `npm start` | Start the production server |
+| `npm run dev` | Start the Vite development server (frontend only) |
+| `npm run build` | Build the React app for production (outputs to `dist/`) |
+| `npm run build:production` | Type-check and build for production |
+| `npm start` | Start the production Express server (serves frontend + API) |
+| `npm run start:dev` | Preview the production build with Vite preview server |
 | `npm run lint` | Run ESLint to check code quality |
+| `npm run lint:ci` | Run ESLint with JUnit output for CI/CD |
 | `npm test` | Run Jest test suite |
-| `npm run test:coverage` | Run tests with coverage report |
 | `npm run preview` | Preview the production build |
 | `npm run type-check` | Run TypeScript type checking |
 
@@ -162,12 +167,15 @@ The application will be available at:
 
 ```
 fa25team04/
+├── api/
+│   └── server.js              # API server entry point (for Vercel)
 ├── database/
-│   └── schema.sql              # Database schema
+│   └── schema.sql             # PostgreSQL database schema
+├── dist/                      # Production build output (generated)
 ├── docs/
-│   ├── adr/                    # Architecture Decision Records
-│   ├── ai_log.md              # AI development log
-│   └── test_report.md         # Testing documentation
+│   ├── adr/                   # Architecture Decision Records
+│   ├── ai_log.md             # AI development log
+│   └── test_report.md        # Testing documentation
 ├── src/
 │   ├── components/            # Reusable UI components
 │   │   ├── Button.tsx
@@ -175,6 +183,7 @@ fa25team04/
 │   │   ├── Layout.tsx
 │   │   └── ...
 │   ├── context/               # React Context providers
+│   │   ├── AuthContext.tsx
 │   │   ├── ShopContext.tsx
 │   │   └── ThemeContext.tsx
 │   ├── pages/                 # Page components
@@ -195,13 +204,76 @@ fa25team04/
 │   │   └── App.test.tsx
 │   ├── App.tsx                # Main application component
 │   └── index.tsx              # Application entry point
-├── index.js                   # Backend entry point
+├── index.js                   # Express server entry point
+├── index.html                 # HTML template
 ├── package.json               # Dependencies and scripts
+├── render.yaml                # Render deployment configuration
 ├── tailwind.config.js         # Tailwind CSS configuration
 ├── tsconfig.json              # TypeScript configuration
 ├── vite.config.ts             # Vite configuration
+├── env.example                # Environment variables template
+├── DEPLOYMENT_RENDER.md       # Render deployment guide
 └── README.md                  # This file
 ```
+
+## 🚀 Deployment
+
+### Deploying to Render
+
+DormDeals is configured for deployment on [Render](https://render.com). The project includes a `render.yaml` configuration file for easy setup.
+
+#### Quick Deploy Steps
+
+1. **Push your code to Git** (GitHub, GitLab, or Bitbucket)
+
+2. **Create a Render Account**
+   - Go to [render.com](https://render.com)
+   - Sign up or log in
+
+3. **Create a PostgreSQL Database**
+   - In Render Dashboard, click "New +" → "PostgreSQL"
+   - Choose a name and plan (free tier available)
+   - Copy the "Internal Database URL" or "External Database URL"
+
+4. **Create a Web Service**
+   - Click "New +" → "Web Service"
+   - Connect your Git repository
+   - Render will auto-detect the `render.yaml` configuration
+   - Set the following environment variables:
+     - `DATABASE_URL`: Your PostgreSQL connection string
+     - `SECRET_KEY`: Generate with `openssl rand -base64 32`
+     - `JWT_SECRET`: Generate with `openssl rand -base64 32`
+     - `NODE_ENV`: `production` (automatically set)
+
+5. **Deploy**
+   - Click "Create Web Service"
+   - Render will build and deploy your application
+
+#### Environment Variables for Render
+
+Required environment variables:
+- `DATABASE_URL` - PostgreSQL connection string
+- `SECRET_KEY` - Session encryption key
+- `JWT_SECRET` - JWT token signing key
+- `PORT` - Automatically set by Render
+- `NODE_ENV` - Set to `production` automatically
+
+#### Build Process
+
+Render will automatically:
+1. Install dependencies with `npm ci`
+2. Build the React app with `npm run build`
+3. Verify the build output exists
+4. Start the server with `npm start`
+
+#### Deployment URL
+
+After successful deployment, your app will be available at:
+- `https://your-service-name.onrender.com`
+
+**Note**: Free tier services on Render spin down after 15 minutes of inactivity and may take 30-60 seconds to spin back up on first request.
+
+For detailed deployment instructions, see [DEPLOYMENT_RENDER.md](DEPLOYMENT_RENDER.md).
 
 ## 📄 License
 

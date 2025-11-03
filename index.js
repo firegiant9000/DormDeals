@@ -6,11 +6,28 @@ import { Pool } from 'pg';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { existsSync } from 'fs';
 
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// Verify dist folder exists
+const distPath = path.join(__dirname, 'dist');
+const indexPath = path.join(distPath, 'index.html');
+
+if (!existsSync(distPath)) {
+  console.error(`❌ Error: dist folder not found at ${distPath}`);
+  console.error(`   Current working directory: ${process.cwd()}`);
+  console.error(`   __dirname: ${__dirname}`);
+  console.error('   Please ensure the build completed successfully.');
+}
+
+if (!existsSync(indexPath)) {
+  console.error(`❌ Error: index.html not found at ${indexPath}`);
+  console.error('   The build may have failed. Please check build logs.');
+}
 
 // Environment variable validation
 const requiredEnvVars = ['DATABASE_URL', 'SECRET_KEY', 'JWT_SECRET'];
@@ -171,10 +188,25 @@ app.get('*', (req, res) => {
     return res.status(404).json({ error: 'API route not found' });
   }
   
+  // Check if dist folder and index.html exist
+  if (!existsSync(indexPath)) {
+    console.error(`❌ index.html not found at ${indexPath}`);
+    return res.status(500).json({ 
+      error: 'Application not built properly. Please check build logs.',
+      details: {
+        distPath,
+        indexPath,
+        cwd: process.cwd(),
+        __dirname
+      }
+    });
+  }
+  
   // Serve the React app for all other routes
-  res.sendFile(path.join(__dirname, 'dist', 'index.html'), (err) => {
+  res.sendFile(indexPath, (err) => {
     if (err) {
       console.error('Error serving index.html:', err);
+      console.error(`Attempted path: ${indexPath}`);
       res.status(500).json({ error: 'Failed to serve application' });
     }
   });
@@ -187,6 +219,17 @@ const PORT = process.env.PORT || 3000;
 // On Render, this file is run directly with 'node index.js'
 // On Vercel, the serverless function imports this file, so we skip listening
 if (!process.env.VERCEL) {
+  // Verify build exists before starting server
+  if (!existsSync(indexPath)) {
+    console.error('❌ Cannot start server: dist/index.html not found');
+    console.error(`   Expected at: ${indexPath}`);
+    console.error(`   Current directory: ${process.cwd()}`);
+    console.error(`   __dirname: ${__dirname}`);
+    console.error('   Please ensure the build completed successfully.');
+    process.exit(1);
+  }
+  
+  console.log(`✅ Build verified: dist/index.html exists at ${indexPath}`);
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Server running on port ${PORT}`);
     console.log(`📦 Environment: ${process.env.NODE_ENV || 'development'}`);
