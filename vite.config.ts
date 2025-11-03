@@ -18,6 +18,17 @@ export default defineConfig({
   server: {
     port: 3000,
     open: true,
+    host: true,
+  },
+  preview: {
+    port: 3000,
+    host: true,
+    allowedHosts: [
+      'fa25team04.onrender.com',
+      '.onrender.com',
+      'localhost',
+      '127.0.0.1',
+    ],
   },
   build: {
     outDir: 'dist',
