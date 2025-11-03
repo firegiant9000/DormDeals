@@ -180,7 +180,18 @@ app.get('*', (req, res) => {
   });
 });
 
-// Server startup code removed for Vercel compatibility
-// The server will be started by Vercel's serverless functions
+// Server startup for Render deployment
+const PORT = process.env.PORT || 3000;
+
+// Start server when this file is executed directly (not imported)
+// On Render, this file is run directly with 'node index.js'
+// On Vercel, the serverless function imports this file, so we skip listening
+if (!process.env.VERCEL) {
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 Server running on port ${PORT}`);
+    console.log(`📦 Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`🌐 Server listening on 0.0.0.0:${PORT}`);
+  });
+}
 
 export default app;
