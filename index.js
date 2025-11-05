@@ -256,7 +256,8 @@ const PORT = process.env.PORT || 3000;
 
 // Start server when this file is executed directly (not imported)
 // On Render, this file is run directly with 'node index.js'
-// On Vercel, the serverless function imports this file, so we skip listening
+// Vercel deployment is not used - this app deploys to Render
+// The check below ensures the server starts on Render (where VERCEL env var is not set)
 if (!process.env.VERCEL) {
   // Verify build exists before starting server
   if (!indexPath || !existsSync(indexPath)) {
