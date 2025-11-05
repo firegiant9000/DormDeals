@@ -1,3 +1,0 @@
-# This file prevents Vercel from trying to deploy when present
-# We're using Render for deployment, so ignore Vercel configs
-

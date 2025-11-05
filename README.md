@@ -168,7 +168,7 @@ The application will be available at:
 ```
 fa25team04/
 ├── api/
-│   └── server.js              # API server entry point (for Vercel)
+│   └── server.js              # API server entry point
 ├── database/
 │   └── schema.sql             # PostgreSQL database schema
 ├── dist/                      # Production build output (generated)
@@ -212,7 +212,7 @@ fa25team04/
 ├── tsconfig.json              # TypeScript configuration
 ├── vite.config.ts             # Vite configuration
 ├── env.example                # Environment variables template
-├── DEPLOYMENT_RENDER.md       # Render deployment guide
+├── DEPLOYMENT.md              # Render deployment guide
 └── README.md                  # This file
 ```
 
@@ -273,7 +273,7 @@ After successful deployment, your app will be available at:
 
 **Note**: Free tier services on Render spin down after 15 minutes of inactivity and may take 30-60 seconds to spin back up on first request.
 
-For detailed deployment instructions, see [DEPLOYMENT_RENDER.md](DEPLOYMENT_RENDER.md).
+For detailed deployment instructions, see [DEPLOYMENT.md](DEPLOYMENT.md).
 
 ## 📄 License
 
