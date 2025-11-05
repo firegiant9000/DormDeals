@@ -17,6 +17,7 @@ default:
       - node_modules/
   before_script:
     # fresh container per job → install deps in every job (including dev)
+    # Using npm ci for faster, reproducible installs with package-lock.json
     - npm ci --cache .npm --prefer-offline --include=dev
 
 lint:

@@ -33,7 +33,7 @@ The project includes a `render.yaml` file that configures:
 
 ### Build Process
 
-1. **Install Dependencies**: `npm ci` (clean install)
+1. **Install Dependencies**: `npm ci` (clean install using package-lock.json for reproducible builds)
 2. **Type Check**: `npm run type-check` (TypeScript validation)
 3. **Build Frontend**: `npm run build` (Vite builds React app to `dist/`)
 4. **Start Server**: `npm start` (runs Express server on port from `PORT` env var)

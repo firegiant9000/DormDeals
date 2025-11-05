@@ -17,7 +17,7 @@ This document provides comprehensive testing guidelines and checklists for the D
 ### Pre-Testing Setup
 - [ ] Application is running in development mode (`npm run dev`)
 - [ ] Database is properly configured and seeded with test data
-- [ ] All dependencies are installed (`npm install`)
+- [ ] All dependencies are installed (`npm ci`)
 - [ ] Environment variables are properly set
 - [ ] Browser cache is cleared
 - [ ] Test data is available (mock items, users, etc.)
