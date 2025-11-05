@@ -22,7 +22,8 @@ export interface User {
 }
 
 // Re-export user types for convenience
-export { UserType, UserProfile, CreateUserProfileData, UpdateUserProfileData } from './user';
+export { UserType } from './user';
+export type { UserProfile, CreateUserProfileData, UpdateUserProfileData } from './user';
 
 // Search and Filter Types
 export interface SearchFilters {

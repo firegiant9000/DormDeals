@@ -7,8 +7,7 @@ import {
   serverTimestamp,
   query,
   where,
-  getDocs,
-  Timestamp
+  getDocs
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { UserType, UserProfile, CreateUserProfileData, UpdateUserProfileData } from '../types/user';

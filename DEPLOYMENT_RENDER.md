@@ -34,10 +34,11 @@ render deploy
 #### Render Configuration (render.yaml)
 The project includes a `render.yaml` file that configures:
 - **Runtime**: Node.js
-- **Build Command**: `npm ci && npm run build`
+- **Build Command**: `npm ci && npm run type-check && npm run build`
 - **Start Command**: `npm start`
 - **Port**: Automatically set by Render (defaults to 10000)
 - **Environment**: Production
+- **Health Check**: `/health` endpoint
 
 #### Build Settings
 - **Build Command**: `npm ci && npm run build`
@@ -50,6 +51,7 @@ The project includes a `render.yaml` file that configures:
 #### Required Environment Variables
 Set these in the Render Dashboard under "Environment":
 
+**Server-side (Required):**
 1. **DATABASE_URL** (REQUIRED)
    - PostgreSQL connection string
    - Format: `postgresql://username:password@hostname:port/database?sslmode=require`
@@ -63,11 +65,35 @@ Set these in the Render Dashboard under "Environment":
    - Generate with: `openssl rand -base64 32`
    - Used for JWT token signing
 
-4. **NODE_ENV**
-   - Set to `production` (automatically set by render.yaml)
+**Client-side (Required for Firebase features):**
+4. **VITE_FIREBASE_API_KEY** (REQUIRED)
+   - From Firebase Console → Project Settings → Your apps → Web app
 
-5. **PORT**
-   - Automatically set by Render (defaults to 10000)
+5. **VITE_FIREBASE_AUTH_DOMAIN** (REQUIRED)
+   - Format: `your-project-id.firebaseapp.com`
+   - From Firebase Console → Project Settings
+
+6. **VITE_FIREBASE_PROJECT_ID** (REQUIRED)
+   - Your Firebase project ID
+   - From Firebase Console → Project Settings
+
+7. **VITE_FIREBASE_STORAGE_BUCKET** (REQUIRED)
+   - Format: `your-project-id.appspot.com`
+   - From Firebase Console → Project Settings
+
+8. **VITE_FIREBASE_MESSAGING_SENDER_ID** (REQUIRED)
+   - From Firebase Console → Project Settings
+
+9. **VITE_FIREBASE_APP_ID** (REQUIRED)
+   - From Firebase Console → Project Settings → Your apps → Web app
+
+10. **VITE_FIREBASE_MEASUREMENT_ID** (OPTIONAL)
+    - Only needed if using Google Analytics
+    - From Firebase Console → Project Settings
+
+**System Variables (Auto-set):**
+- **NODE_ENV**: Set to `production` (automatically set by render.yaml)
+- **PORT**: Automatically set by Render (defaults to 10000)
 
 #### Optional Environment Variables
 - `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_USER`, `EMAIL_PASS`
@@ -75,6 +101,8 @@ Set these in the Render Dashboard under "Environment":
 - `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`
 - `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`
 - `SENTRY_DSN`
+
+**Note**: All `VITE_*` environment variables are exposed to the client-side code. Do not put sensitive secrets in `VITE_*` variables.
 
 ### Database Setup
 
