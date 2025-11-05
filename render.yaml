@@ -4,7 +4,7 @@ services:
     runtime: node
     plan: free
     rootDir: .
-    buildCommand: npm ci && (npm install --no-save --include=optional || true) && npm run type-check && npm run build && test -f dist/index.html || (echo "Build failed: dist/index.html not found" && exit 1)
+    buildCommand: npm ci && rm -rf node_modules/rollup node_modules/@rollup 2>/dev/null || true && npm install --no-save rollup@4.52.4 && npm run type-check && npm run build && test -f dist/index.html || (echo "Build failed: dist/index.html not found" && exit 1)
     startCommand: npm start
     envVars:
       - key: NODE_ENV
