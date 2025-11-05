@@ -1,8 +1,12 @@
 // User and Authentication Types
+import { UserType } from './user';
+
 export interface User {
   id: string;
   email: string;
   name: string;
+  displayName?: string; // Alias for name, used with Firebase
+  userType?: UserType; // User classification: admin, premium, regular, guest
   major?: string;
   profilePicture?: string;
   profileImage?: string;
@@ -16,6 +20,9 @@ export interface User {
   totalSales: number;
   isVerified: boolean;
 }
+
+// Re-export user types for convenience
+export { UserType, UserProfile, CreateUserProfileData, UpdateUserProfileData } from './user';
 
 // Search and Filter Types
 export interface SearchFilters {

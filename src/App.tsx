@@ -16,6 +16,7 @@ import ListingDetailPage from '@/pages/ListingDetailPage'
 import MessagePage from '@/pages/MessagePage'
 import Checkout from '@/pages/Checkout'
 import LoginPage from '@/pages/LoginPage'
+import RegisterPage from '@/pages/RegisterPage'
 import NotFoundPage from '@/pages/NotFoundPage'
 
 function App() {
@@ -84,6 +85,11 @@ function App() {
             <Route path="/login" element={
               <PageTransition>
                 <LoginPage />
+              </PageTransition>
+            } />
+            <Route path="/register" element={
+              <PageTransition>
+                <RegisterPage />
               </PageTransition>
             } />
             <Route path="/home" element={

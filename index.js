@@ -15,11 +15,15 @@ const __dirname = path.dirname(__filename);
 
 // Determine the correct dist path
 // Try multiple locations: relative to __dirname, relative to cwd, and parent of cwd
+// On Render, the build happens at project root, but server might run from a subdirectory
 const possibleDistPaths = [
   path.join(__dirname, 'dist'),                    // Same directory as index.js
   path.join(process.cwd(), 'dist'),                // Relative to current working directory
   path.join(process.cwd(), '..', 'dist'),          // Parent of cwd (if running from src/)
   path.join(process.cwd(), '..', '..', 'dist'),    // Two levels up (if running from nested dir)
+  path.resolve(process.cwd(), '..', 'dist'),       // Absolute path to parent/dist
+  path.resolve(__dirname, '..', 'dist'),           // Absolute path: parent of __dirname/dist
+  '/opt/render/project/dist',                      // Render's project root dist (if build succeeds)
 ];
 
 // Find the first existing dist folder

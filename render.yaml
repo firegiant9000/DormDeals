@@ -4,8 +4,8 @@ services:
     runtime: node
     plan: free
     rootDir: .
-    buildCommand: npm ci && npm run build && ls -la dist/ && test -f dist/index.html || (echo "Build failed: dist/index.html not found" && exit 1)
-    startCommand: npm start
+    buildCommand: pwd && npm ci && npm run build && pwd && ls -la && ls -la dist/ 2>&1 && test -f dist/index.html || (echo "Build failed: dist/index.html not found" && exit 1)
+    startCommand: cd /opt/render/project && npm start
     envVars:
       - key: NODE_ENV
         value: production
