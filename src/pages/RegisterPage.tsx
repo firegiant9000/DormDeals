@@ -2,35 +2,49 @@ import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useAuth } from '../context/AuthContext'
-import { Eye, EyeOff, Mail, Lock, ArrowLeft } from 'lucide-react'
+import { Eye, EyeOff, Mail, Lock, User, ArrowLeft } from 'lucide-react'
 import toast from 'react-hot-toast'
 
-const LoginPage = () => {
+const RegisterPage = () => {
+  const [displayName, setDisplayName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-  const { login } = useAuth()
+  const { signup } = useAuth()
   const navigate = useNavigate()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    if (!email || !password) {
+    // Validation
+    if (!displayName || !email || !password || !confirmPassword) {
       toast.error('Please fill in all fields')
+      return
+    }
+
+    if (password.length < 6) {
+      toast.error('Password must be at least 6 characters long')
+      return
+    }
+
+    if (password !== confirmPassword) {
+      toast.error('Passwords do not match')
       return
     }
 
     setIsLoading(true)
     
     try {
-      const success = await login(email, password)
+      const success = await signup(email, password, displayName)
       if (success) {
         navigate('/')
       }
-      // Error handling is done in AuthContext
-    } catch {
-      toast.error('An error occurred during login')
+    } catch (error) {
+      console.error('Signup error:', error)
+      toast.error('An error occurred during signup')
     } finally {
       setIsLoading(false)
     }
@@ -53,21 +67,42 @@ const LoginPage = () => {
           Back to Home
         </Link>
 
-        {/* Login Card */}
+        {/* Signup Card */}
         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-8">
           <div className="text-center mb-8">
             <div className="w-16 h-16 bg-primary-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <Lock className="w-8 h-8 text-white" />
+              <User className="w-8 h-8 text-white" />
             </div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-              Welcome Back
+              Create Account
             </h1>
             <p className="text-gray-600 dark:text-gray-400">
-              Sign in to your DormDeals account
+              Sign up to start using DormDeals
             </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Display Name Field */}
+            <div>
+              <label htmlFor="displayName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Display Name
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <User className="h-5 w-5 text-gray-400" />
+                </div>
+                <input
+                  id="displayName"
+                  type="text"
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  className="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  placeholder="Enter your name"
+                  required
+                />
+              </div>
+            </div>
+
             {/* Email Field */}
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -106,6 +141,7 @@ const LoginPage = () => {
                   className="block w-full pl-10 pr-12 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   placeholder="Enter your password"
                   required
+                  minLength={6}
                 />
                 <button
                   type="button"
@@ -113,6 +149,42 @@ const LoginPage = () => {
                   className="absolute inset-y-0 right-0 pr-3 flex items-center"
                 >
                   {showPassword ? (
+                    <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                  ) : (
+                    <Eye className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                  )}
+                </button>
+              </div>
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                Must be at least 6 characters
+              </p>
+            </div>
+
+            {/* Confirm Password Field */}
+            <div>
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Confirm Password
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Lock className="h-5 w-5 text-gray-400" />
+                </div>
+                <input
+                  id="confirmPassword"
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="block w-full pl-10 pr-12 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  placeholder="Confirm your password"
+                  required
+                  minLength={6}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                >
+                  {showConfirmPassword ? (
                     <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600" />
                   ) : (
                     <Eye className="h-5 w-5 text-gray-400 hover:text-gray-600" />
@@ -130,10 +202,10 @@ const LoginPage = () => {
               {isLoading ? (
                 <div className="flex items-center">
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Signing in...
+                  Creating account...
                 </div>
               ) : (
-                'Sign In'
+                'Create Account'
               )}
             </button>
           </form>
@@ -141,20 +213,20 @@ const LoginPage = () => {
           {/* Additional Info */}
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600 dark:text-gray-400">
-              Don&apos;t have an account?{' '}
+              Already have an account?{' '}
               <Link
-                to="/register"
+                to="/login"
                 className="font-medium text-primary-600 hover:text-primary-500"
               >
-                Sign up here
+                Sign in here
               </Link>
             </p>
           </div>
-
         </div>
       </motion.div>
     </div>
   )
 }
 
-export default LoginPage
+export default RegisterPage
+
