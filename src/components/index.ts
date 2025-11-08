@@ -5,6 +5,7 @@ export { default as Input } from './Input';
 export { default as LoadingSpinner } from './LoadingSpinner';
 export { default as Modal } from './Modal';
 export { default as PageTransition } from './PageTransition';
+export { default as ProtectedFeature } from './ProtectedFeature';
 
 // Export types
 export type { ButtonProps } from './Button';
