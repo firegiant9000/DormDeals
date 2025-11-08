@@ -41,7 +41,7 @@ export function canAccessFeature(
 
   // Feature-specific access rules
   switch (feature) {
-    // Premium features
+    // Premium features (admin already handled above)
     case 'advanced_analytics':
     case 'premium_listings':
     case 'bulk_operations':
@@ -50,20 +50,20 @@ export function canAccessFeature(
     case 'priority_support':
     case 'unlimited_listings':
     case 'featured_listings':
-      return type === UserType.PREMIUM || type === UserType.ADMIN
+      return type === UserType.PREMIUM
 
-    // Admin-only features
+    // Admin-only features (admin already handled above, so this will never be true)
     case 'user_management':
-      return type === UserType.ADMIN
+      return false
 
-    // Regular user features (logged in users)
+    // Regular user features (admin already handled above)
     case 'create_listing':
     case 'edit_listing':
-      return type === UserType.REGULAR || type === UserType.PREMIUM || type === UserType.ADMIN
+      return type === UserType.REGULAR || type === UserType.PREMIUM
 
-    // Delete requires regular or above (not guest)
+    // Delete requires regular or above (not guest, admin already handled above)
     case 'delete_listing':
-      return type !== UserType.GUEST
+      return type === UserType.REGULAR || type === UserType.PREMIUM
 
     default:
       // By default, only guests are restricted

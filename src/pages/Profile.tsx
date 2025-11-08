@@ -13,13 +13,19 @@ const Profile = () => {
 
   // Use actual user data from auth context, with fallback
   const userData = user || {
+    id: '',
     name: 'Guest User',
+    displayName: 'Guest User',
     email: '',
     phone: '',
     location: 'UL Campus',
+    school: 'University of Louisiana',
     joinedDate: new Date().toISOString(),
+    joinDate: new Date().toISOString(),
     rating: 0,
     totalSales: 0,
+    reviewCount: 0,
+    isVerified: false,
     profileImage: null
   }
 
@@ -78,7 +84,9 @@ const Profile = () => {
                   <div className="flex items-center gap-2">
                     <h1 className="text-2xl font-bold text-gray-900">{userData.displayName || userData.name}</h1>
                     {isPremium() && (
-                      <Crown className="w-5 h-5 text-primary-600" title="Premium User" />
+                      <div title="Premium User">
+                        <Crown className="w-5 h-5 text-primary-600" />
+                      </div>
                     )}
                     {isAdmin() && (
                       <span className="px-2 py-1 text-xs font-semibold bg-red-100 text-red-800 rounded">Admin</span>
