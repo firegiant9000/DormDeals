@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { X, Camera, DollarSign } from 'lucide-react'
+import ProtectedFeature from '../components/ProtectedFeature'
 
 const CreateListing = () => {
   const [formData, setFormData] = useState({
@@ -46,13 +47,14 @@ const CreateListing = () => {
   }
 
   return (
-    <div className="min-h-[100svh] bg-transparent text-body py-8">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="dd-card bg-surface border-surface"
-        >
+    <ProtectedFeature feature="create_listing" upgradeMessage="Please sign in to create a listing.">
+      <div className="min-h-[100svh] bg-transparent text-body py-8">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="dd-card bg-surface border-surface"
+          >
           {/* Header */}
           <div className="border-b border-surface px-6 py-4">
             <h1 className="text-2xl font-bold text-body">Create New Listing</h1>
@@ -230,9 +232,10 @@ const CreateListing = () => {
               </button>
             </div>
           </form>
-        </motion.div>
+          </motion.div>
+        </div>
       </div>
-    </div>
+    </ProtectedFeature>
   )
 }
 

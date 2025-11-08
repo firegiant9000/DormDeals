@@ -1,19 +1,31 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { User, Settings, Heart, ShoppingBag, MessageSquare, Star, Edit3 } from 'lucide-react'
+import { User, Settings, Heart, ShoppingBag, MessageSquare, Star, Edit3, BarChart3, Users, Crown } from 'lucide-react'
+import { useAuth } from '../context/AuthContext'
+import { useAccessControl } from '../hooks/useAccessControl'
+import ProtectedFeature from '../components/ProtectedFeature'
+import { UserType } from '../types/user'
 
 const Profile = () => {
   const [activeTab, setActiveTab] = useState('listings')
+  const { user } = useAuth()
+  const { isAdmin, isPremium, canAccess } = useAccessControl()
 
-  // Mock user data
-  const user = {
-    name: 'John Doe',
-    email: 'john.doe@louisiana.edu',
-    phone: '(555) 123-4567',
+  // Use actual user data from auth context, with fallback
+  const userData = user || {
+    id: '',
+    name: 'Guest User',
+    displayName: 'Guest User',
+    email: '',
+    phone: '',
     location: 'UL Campus',
-    joinedDate: 'August 2023',
-    rating: 4.8,
-    totalSales: 12,
+    school: 'University of Louisiana',
+    joinedDate: new Date().toISOString(),
+    joinDate: new Date().toISOString(),
+    rating: 0,
+    totalSales: 0,
+    reviewCount: 0,
+    isVerified: false,
     profileImage: null
   }
 
@@ -40,6 +52,8 @@ const Profile = () => {
     { id: 'listings', label: 'My Listings', icon: ShoppingBag },
     { id: 'favorites', label: 'Favorites', icon: Heart },
     { id: 'messages', label: 'Messages', icon: MessageSquare },
+    ...(canAccess('advanced_analytics') ? [{ id: 'analytics', label: 'Analytics', icon: BarChart3 }] : []),
+    ...(isAdmin() ? [{ id: 'admin', label: 'Admin Panel', icon: Users }] : []),
     { id: 'settings', label: 'Settings', icon: Settings }
   ]
 
@@ -67,19 +81,29 @@ const Profile = () => {
             <div className="flex-1">
               <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-900">{user.name}</h1>
-                  <p className="text-gray-600">{user.email}</p>
+                  <div className="flex items-center gap-2">
+                    <h1 className="text-2xl font-bold text-gray-900">{userData.displayName || userData.name}</h1>
+                    {isPremium() && (
+                      <div title="Premium User">
+                        <Crown className="w-5 h-5 text-primary-600" />
+                      </div>
+                    )}
+                    {isAdmin() && (
+                      <span className="px-2 py-1 text-xs font-semibold bg-red-100 text-red-800 rounded">Admin</span>
+                    )}
+                  </div>
+                  <p className="text-gray-600">{userData.email}</p>
                 </div>
                 <div className="flex items-center gap-4 mt-4 md:mt-0">
                   <div className="text-center">
                     <div className="flex items-center gap-1">
                       <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                      <span className="font-semibold">{user.rating}</span>
+                      <span className="font-semibold">{userData.rating || 0}</span>
                     </div>
                     <p className="text-sm text-gray-500">Rating</p>
                   </div>
                   <div className="text-center">
-                    <p className="font-semibold">{user.totalSales}</p>
+                    <p className="font-semibold">{userData.totalSales || 0}</p>
                     <p className="text-sm text-gray-500">Items Sold</p>
                   </div>
                 </div>
@@ -88,15 +112,19 @@ const Profile = () => {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                 <div>
                   <span className="text-gray-500">Phone:</span>
-                  <span className="ml-2 font-medium">{user.phone}</span>
+                  <span className="ml-2 font-medium">{userData.phone || 'Not provided'}</span>
                 </div>
                 <div>
                   <span className="text-gray-500">Location:</span>
-                  <span className="ml-2 font-medium">{user.location}</span>
+                  <span className="ml-2 font-medium">{userData.location || userData.school || 'Not provided'}</span>
                 </div>
                 <div>
                   <span className="text-gray-500">Member since:</span>
-                  <span className="ml-2 font-medium">{user.joinedDate}</span>
+                  <span className="ml-2 font-medium">
+                    {userData.joinedDate 
+                      ? new Date(userData.joinedDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long' })
+                      : 'Recently'}
+                  </span>
                 </div>
               </div>
             </div>
@@ -186,6 +214,68 @@ const Profile = () => {
               </div>
             )}
 
+            {activeTab === 'analytics' && (
+              <ProtectedFeature feature="advanced_analytics">
+                <div className="space-y-6">
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Advanced Analytics</h3>
+                    <p className="text-gray-600 mb-6">Track your listing performance, views, and engagement metrics.</p>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                      <div className="dd-card bg-surface border-surface p-4">
+                        <p className="text-sm text-gray-500 mb-1">Total Views</p>
+                        <p className="text-2xl font-bold text-gray-900">1,234</p>
+                        <p className="text-xs text-green-600 mt-1">+12% from last month</p>
+                      </div>
+                      <div className="dd-card bg-surface border-surface p-4">
+                        <p className="text-sm text-gray-500 mb-1">Engagement Rate</p>
+                        <p className="text-2xl font-bold text-gray-900">8.5%</p>
+                        <p className="text-xs text-green-600 mt-1">+2.1% from last month</p>
+                      </div>
+                      <div className="dd-card bg-surface border-surface p-4">
+                        <p className="text-sm text-gray-500 mb-1">Avg. Response Time</p>
+                        <p className="text-2xl font-bold text-gray-900">2.3h</p>
+                        <p className="text-xs text-gray-600 mt-1">Faster than average</p>
+                      </div>
+                    </div>
+                    
+                    <div className="dd-card bg-surface border-surface p-6">
+                      <h4 className="font-semibold text-gray-900 mb-4">Performance Chart</h4>
+                      <div className="h-64 bg-gray-100 rounded flex items-center justify-center text-gray-400">
+                        Chart visualization would go here
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </ProtectedFeature>
+            )}
+
+            {activeTab === 'admin' && (
+              <ProtectedFeature requiredUserTypes={[UserType.ADMIN]}>
+                <div className="space-y-6">
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Admin Panel</h3>
+                    <p className="text-gray-600 mb-6">Manage users, listings, and system settings.</p>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="dd-card bg-surface border-surface p-6">
+                        <Users className="w-8 h-8 text-primary-600 mb-3" />
+                        <h4 className="font-semibold text-gray-900 mb-2">User Management</h4>
+                        <p className="text-sm text-gray-600 mb-4">View and manage all users in the system.</p>
+                        <button className="btn-primary text-sm">Manage Users</button>
+                      </div>
+                      <div className="dd-card bg-surface border-surface p-6">
+                        <ShoppingBag className="w-8 h-8 text-primary-600 mb-3" />
+                        <h4 className="font-semibold text-gray-900 mb-2">Listing Management</h4>
+                        <p className="text-sm text-gray-600 mb-4">Review and moderate all listings.</p>
+                        <button className="btn-primary text-sm">Manage Listings</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </ProtectedFeature>
+            )}
+
             {activeTab === 'settings' && (
               <div className="space-y-6">
                 <div>
@@ -193,19 +283,19 @@ const Profile = () => {
                   <div className="space-y-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Display Name</label>
-                      <input type="text" defaultValue={user.name} className="input-field" />
+                      <input type="text" defaultValue={userData.displayName || userData.name} className="input-field" />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
-                      <input type="email" defaultValue={user.email} className="input-field" />
+                      <input type="email" defaultValue={userData.email} className="input-field" />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
-                      <input type="tel" defaultValue={user.phone} className="input-field" />
+                      <input type="tel" defaultValue={userData.phone || ''} className="input-field" />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
-                      <input type="text" defaultValue={user.location} className="input-field" />
+                      <input type="text" defaultValue={userData.location || userData.school || ''} className="input-field" />
                     </div>
                   </div>
                 </div>
