@@ -1,14 +1,18 @@
 import { Link, useLocation } from 'react-router-dom'
-import { ShoppingBag, Plus, User, Home, Menu, X, ChevronDown, Moon, Sun, ShoppingCart, Heart, MessageCircle, GraduationCap, Info } from 'lucide-react'
+import { ShoppingBag, Plus, User, Home, Menu, X, ChevronDown, Moon, Sun, ShoppingCart, Heart, MessageCircle, GraduationCap, Info, LogIn, LogOut, Crown, Shield } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useState, useEffect, useRef } from 'react'
 import { useTheme } from '../context/ThemeContext'
 import { useShop } from '../context/ShopContext'
+import { useAuth } from '../context/AuthContext'
+import { useAccessControl } from '../hooks/useAccessControl'
 
 const Navbar = () => {
   const location = useLocation()
   const { theme, toggle } = useTheme()
   const { openCart, openWishlist } = useShop()
+  const { isAuthenticated, logout } = useAuth()
+  const { isAdmin, isPremium, canAccess } = useAccessControl()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
   const userMenuRef = useRef<HTMLDivElement>(null)
@@ -31,10 +35,14 @@ const Navbar = () => {
     { path: '/about', label: 'About', icon: Info },
   ]
 
-  const userMenuItems = [
-    { path: '/profile', label: 'Profile' },
-    { path: '/create-listing', label: 'Create Listing' },
-    { path: '/logout', label: 'Logout' },
+  const userMenuItems = isAuthenticated ? [
+    { path: '/profile', label: 'Profile', icon: User },
+    { path: '/create-listing', label: 'Create Listing', icon: Plus },
+    ...(canAccess('advanced_analytics') ? [{ path: '/profile#analytics', label: 'Analytics', icon: Crown }] : []),
+    ...(isAdmin() ? [{ path: '/profile#admin', label: 'Admin Panel', icon: Shield }] : []),
+    { path: '/logout', label: 'Logout', action: logout, icon: LogOut },
+  ] : [
+    { path: '/login', label: 'Login', icon: LogIn },
   ]
 
   return (
@@ -104,13 +112,24 @@ const Navbar = () => {
               </Link>
             </div>
             
-            <Link
-              to="/create-listing"
-              className="inline-flex items-center gap-2 rounded-xl px-4 py-2 font-semibold text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 border border-transparent dark:focus:ring-offset-slate-900"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Sell</span>
-            </Link>
+            {isAuthenticated && (
+              <Link
+                to="/create-listing"
+                className="inline-flex items-center gap-2 rounded-xl px-4 py-2 font-semibold text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 border border-transparent dark:focus:ring-offset-slate-900"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Sell</span>
+              </Link>
+            )}
+            {!isPremium() && isAuthenticated && (
+              <Link
+                to="/profile"
+                className="inline-flex items-center gap-2 rounded-xl px-4 py-2 font-semibold text-primary-600 bg-primary-50 hover:bg-primary-100 border border-primary-200 dark:bg-primary-900/20 dark:text-primary-400 dark:border-primary-800"
+              >
+                <Crown className="w-4 h-4" />
+                <span>Upgrade</span>
+              </Link>
+            )}
             
             {/* User Dropdown */}
             <div className="relative" ref={userMenuRef}>
@@ -118,8 +137,17 @@ const Navbar = () => {
                 onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                 className="flex items-center space-x-2 text-gray-600 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium transition-colors"
               >
-                <User className="w-4 h-4" />
-                <span>Account</span>
+                {isAuthenticated ? (
+                  <>
+                    {isAdmin() ? <Shield className="w-4 h-4" /> : isPremium() ? <Crown className="w-4 h-4" /> : <User className="w-4 h-4" />}
+                    <span>Account</span>
+                  </>
+                ) : (
+                  <>
+                    <LogIn className="w-4 h-4" />
+                    <span>Login</span>
+                  </>
+                )}
                 <ChevronDown className="w-4 h-4" />
               </button>
               
@@ -131,16 +159,32 @@ const Navbar = () => {
                     exit={{ opacity: 0, y: -10 }}
                     className="absolute right-0 mt-2 w-48 dd-card bg-surface border-surface text-body py-1 z-50"
                   >
-                    {userMenuItems.map((item) => (
-                      <Link
-                        key={item.path}
-                        to={item.path}
-                        className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-surface-2"
-                        onClick={() => setIsUserMenuOpen(false)}
-                      >
-                        {item.label}
-                      </Link>
-                    ))}
+                    {userMenuItems.map((item) => {
+                      const Icon = item.icon
+                      return item.action ? (
+                        <button
+                          key={item.path}
+                          onClick={() => {
+                            item.action?.()
+                            setIsUserMenuOpen(false)
+                          }}
+                          className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-surface-2 w-full text-left"
+                        >
+                          {Icon && <Icon className="w-4 h-4" />}
+                          {item.label}
+                        </button>
+                      ) : (
+                        <Link
+                          key={item.path}
+                          to={item.path}
+                          className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-surface-2"
+                          onClick={() => setIsUserMenuOpen(false)}
+                        >
+                          {Icon && <Icon className="w-4 h-4" />}
+                          {item.label}
+                        </Link>
+                      )
+                    })}
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -223,14 +267,37 @@ const Navbar = () => {
                       <span className="text-sm">Chat</span>
                     </Link>
                   </div>
-                  <Link
-                    to="/create-listing"
-                    className="inline-flex items-center gap-2 rounded-xl px-4 py-2 font-semibold text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 border border-transparent dark:focus:ring-offset-slate-900"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    <Plus className="w-5 h-5" />
-                    <span>Create Listing</span>
-                  </Link>
+                  {isAuthenticated ? (
+                    <>
+                      <Link
+                        to="/create-listing"
+                        className="inline-flex items-center gap-2 rounded-xl px-4 py-2 font-semibold text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 border border-transparent dark:focus:ring-offset-slate-900"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        <Plus className="w-5 h-5" />
+                        <span>Create Listing</span>
+                      </Link>
+                      {!isPremium() && (
+                        <Link
+                          to="/profile"
+                          className="inline-flex items-center gap-2 rounded-xl px-4 py-2 font-semibold text-primary-600 bg-primary-50 hover:bg-primary-100 border border-primary-200 dark:bg-primary-900/20 dark:text-primary-400 dark:border-primary-800"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                        >
+                          <Crown className="w-5 h-5" />
+                          <span>Upgrade to Premium</span>
+                        </Link>
+                      )}
+                    </>
+                  ) : (
+                    <Link
+                      to="/login"
+                      className="inline-flex items-center gap-2 rounded-xl px-4 py-2 font-semibold text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 border border-transparent dark:focus:ring-offset-slate-900"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      <LogIn className="w-5 h-5" />
+                      <span>Login</span>
+                    </Link>
+                  )}
                 </div>
               </div>
             </motion.div>

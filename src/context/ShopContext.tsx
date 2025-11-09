@@ -2,12 +2,15 @@ import React, { createContext, useContext, useMemo, useState, useCallback } from
 import { useNavigate } from 'react-router-dom'
 import { Item } from '../types'
 import { formatCurrency } from '../utils/helpers'
+import { useAuth } from './AuthContext'
 
 type ShopContextValue = {
   cartItems: Item[]
   wishlistItems: Item[]
   showCart: boolean
   showWishlist: boolean
+  showLoginPopup: boolean
+  loginPopupAction: 'cart' | 'wishlist' | null
   addToCart: (item: Item) => void
   addToWishlist: (item: Item) => void
   removeFromCart: (id: string) => void
@@ -16,6 +19,7 @@ type ShopContextValue = {
   openWishlist: () => void
   closeCart: () => void
   closeWishlist: () => void
+  closeLoginPopup: () => void
   isInCart: (id: string) => boolean
   isInWishlist: (id: string) => boolean
 }
@@ -27,23 +31,42 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [wishlistItems, setWishlistItems] = useState<Item[]>([])
   const [showCart, setShowCart] = useState(false)
   const [showWishlist, setShowWishlist] = useState(false)
+  const [showLoginPopup, setShowLoginPopup] = useState(false)
+  const [loginPopupAction, setLoginPopupAction] = useState<'cart' | 'wishlist' | null>(null)
+  const { isAuthenticated } = useAuth()
 
   const isInCart = useCallback((id: string) => cartItems.some(i => i.id === id), [cartItems])
   const isInWishlist = useCallback((id: string) => wishlistItems.some(i => i.id === id), [wishlistItems])
 
-  const addToCart = (item: Item) => {
+  const addToCart = useCallback((item: Item) => {
+    console.log('addToCart called, isAuthenticated:', isAuthenticated)
+    if (!isAuthenticated) {
+      console.log('User not authenticated, showing login popup')
+      setLoginPopupAction('cart')
+      setShowLoginPopup(true)
+      return
+    }
+    
     setCartItems(prev => (prev.some(i => i.id === item.id) ? prev : [...prev, item]))
     // Ensure exclusivity: remove from wishlist if present
     setWishlistItems(prev => prev.filter(i => i.id !== item.id))
     setShowCart(true)
-  }
+  }, [isAuthenticated])
 
-  const addToWishlist = (item: Item) => {
+  const addToWishlist = useCallback((item: Item) => {
+    console.log('addToWishlist called, isAuthenticated:', isAuthenticated)
+    if (!isAuthenticated) {
+      console.log('User not authenticated, showing login popup')
+      setLoginPopupAction('wishlist')
+      setShowLoginPopup(true)
+      return
+    }
+    
     setWishlistItems(prev => (prev.some(i => i.id === item.id) ? prev : [...prev, item]))
     // Ensure exclusivity: remove from cart if present
     setCartItems(prev => prev.filter(i => i.id !== item.id))
     setShowWishlist(true)
-  }
+  }, [isAuthenticated])
 
   const removeFromCart = (id: string) => setCartItems(prev => prev.filter(i => i.id !== id))
   const removeFromWishlist = (id: string) => setWishlistItems(prev => prev.filter(i => i.id !== id))
@@ -52,12 +75,18 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const openWishlist = () => setShowWishlist(true)
   const closeCart = () => setShowCart(false)
   const closeWishlist = () => setShowWishlist(false)
+  const closeLoginPopup = () => {
+    setShowLoginPopup(false)
+    setLoginPopupAction(null)
+  }
 
   const value = useMemo<ShopContextValue>(() => ({
     cartItems,
     wishlistItems,
     showCart,
     showWishlist,
+    showLoginPopup,
+    loginPopupAction,
     addToCart,
     addToWishlist,
     removeFromCart,
@@ -66,9 +95,10 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     openWishlist,
     closeCart,
     closeWishlist,
+    closeLoginPopup,
     isInCart,
     isInWishlist
-  }), [cartItems, wishlistItems, showCart, showWishlist, isInCart, isInWishlist])
+  }), [cartItems, wishlistItems, showCart, showWishlist, showLoginPopup, loginPopupAction, isInCart, isInWishlist, addToCart, addToWishlist])
 
   return (
     <ShopContext.Provider value={value}>
@@ -175,7 +205,8 @@ export const ShopDrawers: React.FC = () => {
                 disabled={selectedIds.size === 0}
                 className="w-full btn-primary px-4 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 onClick={() => {
-                  // Navigate to checkout page
+                  // Close the cart drawer and navigate to checkout page
+                  closeCart()
                   navigate('/checkout')
                 }}
               >

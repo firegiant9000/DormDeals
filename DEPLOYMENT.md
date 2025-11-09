@@ -1,327 +1,254 @@
-# DormDeal Deployment Guide
+# DormDeals - Render Deployment Guide
 
-This guide provides step-by-step instructions for deploying the DormDeal Express.js + SQL application to Vercel.
+Complete guide for deploying DormDeals to Render platform.
 
-## Prerequisites
+## 🚀 Quick Start
 
-- Node.js (version 16 or higher)
-- npm or yarn package manager
-- Git repository with your code
-- Vercel account (free tier available)
-- PostgreSQL database (recommended: Neon, Supabase, or Railway)
+### Prerequisites
+- Node.js 16+ project
+- PostgreSQL database (can be provisioned on Render)
+- Firebase project (for authentication and user management)
+- Git repository connected to Render
 
-## Step 1: Prepare Your Database
+### Deployment Steps
 
-### Option A: Using Neon (Recommended)
-1. Go to [Neon Console](https://console.neon.tech/)
-2. Create a new project
-3. Copy your connection string (it will look like: `postgresql://username:password@hostname:port/database?sslmode=require`)
+1. **Go to [render.com](https://render.com)**
+2. **Click "New +" → "Web Service"**
+3. **Connect your Git repository**
+4. **Render will auto-detect the `render.yaml` configuration**
+5. **Configure environment variables** (see below)
+6. **Click "Create Web Service"**
 
-### Option B: Using Supabase
-1. Go to [Supabase](https://supabase.com/)
-2. Create a new project
-3. Go to Settings > Database
-4. Copy your connection string
+## 📋 Configuration
 
-### Option C: Using Railway
-1. Go to [Railway](https://railway.app/)
-2. Create a new PostgreSQL database
-3. Copy your connection string
+### Render Configuration (render.yaml)
 
-## Step 2: Database Schema Setup
+The project includes a `render.yaml` file that configures:
+- **Runtime**: Node.js
+- **Build Command**: `npm ci && npm run type-check && npm run build`
+- **Start Command**: `npm start`
+- **Port**: Automatically set by Render (defaults to 10000)
+- **Environment**: Production
+- **Health Check**: `/health` endpoint
 
-Run the following SQL commands in your database to create the required tables:
+### Build Process
 
-```sql
--- Users table
-CREATE TABLE users (
-    id SERIAL PRIMARY KEY,
-    username VARCHAR(50) UNIQUE NOT NULL,
-    email VARCHAR(100) UNIQUE NOT NULL,
-    password_hash VARCHAR(255) NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+1. **Install Dependencies**: `npm ci` (clean install using package-lock.json for reproducible builds)
+2. **Type Check**: `npm run type-check` (TypeScript validation)
+3. **Build Frontend**: `npm run build` (Vite builds React app to `dist/`)
+4. **Start Server**: `npm start` (runs Express server on port from `PORT` env var)
 
--- Listings table
-CREATE TABLE listings (
-    id SERIAL PRIMARY KEY,
-    title VARCHAR(200) NOT NULL,
-    description TEXT,
-    price DECIMAL(10,2) NOT NULL,
-    category VARCHAR(50),
-    condition VARCHAR(20),
-    seller_id INTEGER REFERENCES users(id),
-    images TEXT[], -- Array of image URLs
-    is_active BOOLEAN DEFAULT true,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+## 🔐 Environment Variables
 
--- Messages table (for communication between users)
-CREATE TABLE messages (
-    id SERIAL PRIMARY KEY,
-    sender_id INTEGER REFERENCES users(id),
-    receiver_id INTEGER REFERENCES users(id),
-    listing_id INTEGER REFERENCES listings(id),
-    content TEXT NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+### Required Server-side Variables
 
--- Create indexes for better performance
-CREATE INDEX idx_listings_category ON listings(category);
-CREATE INDEX idx_listings_seller_id ON listings(seller_id);
-CREATE INDEX idx_messages_sender_id ON messages(sender_id);
-CREATE INDEX idx_messages_receiver_id ON messages(receiver_id);
+Set these in the Render Dashboard under "Environment":
+
+1. **DATABASE_URL** (REQUIRED)
+   - PostgreSQL connection string
+   - Format: `postgresql://username:password@hostname:port/database?sslmode=require`
+   - Can use Render's PostgreSQL service or external provider
+
+2. **SECRET_KEY** (REQUIRED)
+   - Generate with: `openssl rand -base64 32`
+   - Used for session encryption
+
+3. **JWT_SECRET** (REQUIRED)
+   - Generate with: `openssl rand -base64 32`
+   - Used for JWT token signing
+
+### Required Client-side Variables (Firebase)
+
+These are embedded in the client bundle at build time:
+
+4. **VITE_FIREBASE_API_KEY** (REQUIRED)
+   - From Firebase Console → Project Settings → Your apps → Web app
+
+5. **VITE_FIREBASE_AUTH_DOMAIN** (REQUIRED)
+   - Format: `your-project-id.firebaseapp.com`
+   - From Firebase Console → Project Settings
+
+6. **VITE_FIREBASE_PROJECT_ID** (REQUIRED)
+   - Your Firebase project ID
+   - From Firebase Console → Project Settings
+
+7. **VITE_FIREBASE_STORAGE_BUCKET** (REQUIRED)
+   - Format: `your-project-id.appspot.com`
+   - From Firebase Console → Project Settings
+
+8. **VITE_FIREBASE_MESSAGING_SENDER_ID** (REQUIRED)
+   - From Firebase Console → Project Settings
+
+9. **VITE_FIREBASE_APP_ID** (REQUIRED)
+   - From Firebase Console → Project Settings → Your apps → Web app
+
+10. **VITE_FIREBASE_MEASUREMENT_ID** (OPTIONAL)
+    - Only needed if using Google Analytics
+    - From Firebase Console → Project Settings
+
+### System Variables (Auto-set)
+- **NODE_ENV**: Set to `production` (automatically set by render.yaml)
+- **PORT**: Automatically set by Render (defaults to 10000)
+
+### Optional Variables
+- `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_USER`, `EMAIL_PASS`
+- `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`
+- `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`
+- `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`
+- `SENTRY_DSN`
+
+**⚠️ Important**: All `VITE_*` environment variables are exposed to the client-side code. Do not put sensitive secrets in `VITE_*` variables.
+
+## 🗄️ Database Setup
+
+### Option 1: Render PostgreSQL (Recommended)
+1. In Render Dashboard, click "New +" → "PostgreSQL"
+2. Choose a name and plan
+3. Copy the "Internal Database URL" or "External Database URL"
+4. Set as `DATABASE_URL` environment variable
+5. Run your database migrations if needed
+
+### Option 2: External Database
+1. Use any PostgreSQL provider (Neon, Supabase, Railway, etc.)
+2. Set the connection string as `DATABASE_URL`
+
+## 🔥 Firebase Setup
+
+See [docs/FIREBASE_SETUP.md](./docs/FIREBASE_SETUP.md) for detailed Firebase setup instructions.
+
+### Quick Firebase Setup
+1. Create a Firebase project at [Firebase Console](https://console.firebase.google.com/)
+2. Enable Email/Password authentication
+3. Create Firestore database
+4. Get your Firebase config from Project Settings
+5. Set all `VITE_FIREBASE_*` environment variables in Render
+
+## 📁 Project Structure
+
+```
+├── dist/                 # Built files (generated by build)
+├── src/                  # Source code
+│   ├── config/
+│   │   └── firebase.ts   # Firebase configuration
+│   ├── services/
+│   │   ├── apiService.ts # API service layer
+│   │   └── userService.ts # Firebase user service
+│   ├── context/
+│   │   └── AuthContext.tsx # Firebase authentication
+│   └── types/
+│       └── user.ts       # User type definitions
+├── api/                  # API server files
+├── index.js              # Express server entry point
+├── render.yaml           # Render configuration
+├── vite.config.ts        # Vite configuration
+└── package.json          # Dependencies and scripts
 ```
 
-## Step 3: Environment Variables Setup
+## 🖥️ Server Configuration
 
-Create a `.env` file in your project root with the following variables:
+The server:
+- Serves static files from `dist/` folder (Vite build output)
+- Handles API routes at `/api/*`
+- Serves React SPA for all other routes (SPA fallback)
+- Listens on port from `PORT` environment variable
+- Health check endpoint at `/health`
 
-```env
-# Database
-DATABASE_URL=postgresql://username:password@hostname:port/database?sslmode=require
+## 🧪 Local Testing
 
-# Server Configuration
-PORT=3000
-NODE_ENV=production
+Before deploying, test locally:
 
-# Security
-SECRET_KEY=your-super-secret-key-here
-JWT_SECRET=your-jwt-secret-key-here
+```bash
+# Install dependencies
+npm ci
 
-# Optional: Email Configuration (if implementing email features)
-EMAIL_HOST=smtp.gmail.com
-EMAIL_PORT=587
-EMAIL_USER=your-email@gmail.com
-EMAIL_PASS=your-app-password
+# Type check
+npm run type-check
 
-# Optional: File Upload (if using cloud storage)
-CLOUDINARY_CLOUD_NAME=your-cloud-name
-CLOUDINARY_API_KEY=your-api-key
-CLOUDINARY_API_SECRET=your-api-secret
+# Build
+npm run build
+
+# Start server
+npm start
 ```
 
-## Step 4: Deploy to Vercel
+## 🔍 GitLab CI/CD
 
-### Method 1: Using Vercel CLI (Recommended)
+The `.gitlab-ci.yml` handles:
+- Node 20 Alpine image
+- ESLint with flat config
+- TypeScript type checking
+- Production build
+- Artifact generation
 
-1. **Install Vercel CLI globally:**
-   ```bash
-   npm install -g vercel
-   ```
+## ✅ Production Checklist
 
-2. **Login to Vercel:**
-   ```bash
-   vercel login
-   ```
+Before deploying:
+- [ ] Build passes locally (`npm run build`)
+- [ ] Server starts locally (`npm start`)
+- [ ] No TypeScript errors (`npm run type-check`)
+- [ ] No linting errors (`npm run lint`)
+- [ ] All environment variables set in Render
+- [ ] Database connection working
+- [ ] Firebase configured and working
+- [ ] All routes work correctly
+- [ ] Authentication flow works
+- [ ] Responsive design on mobile
+- [ ] Performance is acceptable
 
-3. **Deploy your project:**
-   ```bash
-   vercel
-   ```
+## 🐛 Troubleshooting
 
-4. **Follow the prompts:**
-   - Set up and deploy? `Y`
-   - Which scope? (Choose your account)
-   - Link to existing project? `N`
-   - Project name: `dormdeal-api`
-   - Directory: `./`
-   - Override settings? `N`
-
-### Method 2: Using Vercel Dashboard
-
-1. **Go to [Vercel Dashboard](https://vercel.com/dashboard)**
-2. **Click "New Project"**
-3. **Import your Git repository**
-4. **Configure project settings:**
-   - Framework Preset: `Other`
-   - Root Directory: `./`
-   - Build Command: `npm run build`
-   - Output Directory: `dist`
-   - Install Command: `npm install`
-
-## Step 5: Configure Environment Variables in Vercel
-
-1. **Go to your project dashboard in Vercel**
-2. **Navigate to Settings > Environment Variables**
-3. **Add the following variables:**
-
-| Variable Name | Value | Environment |
-|---------------|-------|-------------|
-| `DATABASE_URL` | Your PostgreSQL connection string | Production, Preview, Development |
-| `NODE_ENV` | `production` | Production |
-| `SECRET_KEY` | Your secret key | Production, Preview, Development |
-| `JWT_SECRET` | Your JWT secret | Production, Preview, Development |
-
-## Step 6: Deploy and Test
-
-1. **Trigger a new deployment:**
-   ```bash
-   vercel --prod
-   ```
-
-2. **Test your API endpoints:**
-   ```bash
-   # Health check
-   curl https://your-app.vercel.app/health
-   
-   # Test listings endpoint
-   curl https://your-app.vercel.app/api/listings
-   ```
-
-## Step 7: Frontend Integration
-
-Update your React frontend to use the deployed API:
-
-```typescript
-// In your API service file
-const API_BASE_URL = process.env.NODE_ENV === 'production' 
-  ? 'https://your-app.vercel.app/api'
-  : 'http://localhost:3000/api';
-
-export const apiService = {
-  async getListings() {
-    const response = await fetch(`${API_BASE_URL}/listings`);
-    return response.json();
-  },
-  
-  async createListing(listingData) {
-    const response = await fetch(`${API_BASE_URL}/listings`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(listingData),
-    });
-    return response.json();
-  }
-};
+### Build Failures
+```bash
+# Test build locally
+npm ci
+npm run type-check
+npm run build
+npm start
 ```
 
-## Troubleshooting
+### Database Connection Issues
+- Verify `DATABASE_URL` is set correctly
+- Check SSL mode is set to `require` for external databases
+- Ensure database is accessible from Render's IPs
 
-### Common Issues and Solutions
+### Firebase Not Working
+- Verify all `VITE_FIREBASE_*` environment variables are set in Render
+- Check browser console for Firebase configuration warnings
+- Ensure Firebase project is properly set up
+- Verify Email/Password authentication is enabled in Firebase Console
 
-#### 1. Database Connection Errors
-**Error:** `Error: connect ECONNREFUSED`
-**Solution:**
-- Verify your `DATABASE_URL` is correct
-- Ensure your database allows external connections
-- Check if your database provider requires SSL
+### Port Issues
+- Render automatically sets `PORT` environment variable
+- Server listens on `process.env.PORT || 3000`
+- No need to manually configure port
 
-#### 2. Port Conflicts
-**Error:** `EADDRINUSE: address already in use :::3000`
-**Solution:**
-- Vercel automatically handles port configuration
-- Don't hardcode port numbers in production
-- Use `process.env.PORT || 3000`
+### Static Files Not Serving
+- Ensure `npm run build` completes successfully
+- Check that `dist/` folder exists after build
+- Verify Express static middleware is configured
 
-#### 3. Environment Variables Not Loading
-**Error:** `undefined` environment variables
-**Solution:**
-- Ensure variables are set in Vercel dashboard
-- Check variable names match exactly (case-sensitive)
-- Redeploy after adding new environment variables
+## 📊 Features Included
 
-#### 4. Build Failures
-**Error:** Build command fails
-**Solution:**
-- Check your `package.json` scripts
-- Ensure all dependencies are in `dependencies` (not `devDependencies`)
-- Verify Node.js version compatibility
+✅ **Firebase Authentication** - Email/password login and signup  
+✅ **User Classification** - Admin, Premium, Regular, Guest user types  
+✅ **Firestore Database** - User profiles and data storage  
+✅ **Express Server** - API endpoints and static file serving  
+✅ **React SPA** - Client-side routing with React Router  
+✅ **TypeScript** - Full type safety  
+✅ **Responsive Design** - Mobile-first approach  
+✅ **Modern UI** - Tailwind CSS with custom components  
 
-#### 5. CORS Issues
-**Error:** CORS policy blocks requests
-**Solution:**
-- Configure CORS in your Express app
-- Add your frontend domain to allowed origins
-- Use environment variables for different domains
+## 🌐 Deployment URL
 
-#### 6. Database SSL Issues
-**Error:** SSL connection required
-**Solution:**
-- Add SSL configuration to your database connection
-- Use `sslmode=require` in your connection string
-- Configure SSL in your database provider
+After successful deployment, your app will be available at:
+`https://your-service-name.onrender.com`
 
-### Performance Optimization
+**Note**: Free tier services on Render spin down after 15 minutes of inactivity and may take 30-60 seconds to spin back up.
 
-1. **Database Connection Pooling:**
-   ```javascript
-   const pool = new Pool({
-     connectionString: process.env.DATABASE_URL,
-     max: 20,
-     idleTimeoutMillis: 30000,
-     connectionTimeoutMillis: 2000,
-   });
-   ```
+## 📚 Additional Documentation
 
-2. **Caching:**
-   - Implement Redis for session storage
-   - Use Vercel's edge caching for static content
-   - Cache database queries when appropriate
-
-3. **Monitoring:**
-   - Set up Vercel Analytics
-   - Monitor database performance
-   - Use logging services like LogRocket or Sentry
-
-## Security Best Practices
-
-1. **Environment Variables:**
-   - Never commit `.env` files to version control
-   - Use strong, unique secrets
-   - Rotate secrets regularly
-
-2. **Database Security:**
-   - Use connection pooling
-   - Implement proper authentication
-   - Use prepared statements to prevent SQL injection
-
-3. **API Security:**
-   - Implement rate limiting
-   - Use HTTPS in production
-   - Validate all input data
-   - Implement proper error handling
-
-## Monitoring and Maintenance
-
-1. **Health Checks:**
-   - Monitor `/health` endpoint
-   - Set up uptime monitoring
-   - Track response times
-
-2. **Database Maintenance:**
-   - Regular backups
-   - Monitor connection usage
-   - Optimize slow queries
-
-3. **Logging:**
-   - Implement structured logging
-   - Monitor error rates
-   - Track user activity
-
-## Support
-
-If you encounter issues not covered in this guide:
-
-1. Check Vercel's [documentation](https://vercel.com/docs)
-2. Review your database provider's documentation
-3. Check the application logs in Vercel dashboard
-4. Test your API endpoints using tools like Postman or curl
-
-## Next Steps
-
-After successful deployment:
-
-1. Set up a custom domain
-2. Configure SSL certificates
-3. Implement monitoring and alerting
-4. Set up automated backups
-5. Plan for scaling as your user base grows
+- [Firebase Setup Guide](./docs/FIREBASE_SETUP.md) - Detailed Firebase configuration
 
 ---
 
-**Note:** This deployment guide assumes you're using PostgreSQL. If you're using a different database, adjust the connection string and SQL schema accordingly.
+**Ready for Production! 🎉**

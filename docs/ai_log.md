@@ -145,6 +145,21 @@ I am the feature dev for the application DormDeals. I want to create a new file 
 # Adding more features to the MessagePage to be more user friendly
 When the user is messaging the seller about an item, send the item to the chat too. The button (Contact Seller) in listing page should be able to send the item to the user and start messaging
 
+# AI prompt for login page
+I am the feature lead for DormDeals.
+
+I want to create a login page for the application
+
+The flow of the application will be as below:
+- Any user can browse the application without an account
+- The user will need to have an account to create listing, add items to cart/wishlist/use the message feature
+
+There is a button at the "account" tab that says login/log out. Make sure the button says login when the user is not logged in and says log out when the user is logged in. Create a login page that would ask user for their email & password
+
+For the current stage of the application, we dont have to enforce/actually ask the user to log in with a valid email & password. 
+
+Make sure the changes will pass the pipeline without error.
+
 # AI Development Log
 
 This document tracks the AI-assisted development process for the DormDeals application.
@@ -248,3 +263,64 @@ The user appears to prefer the original light mode styling for the listing detai
 - **Build Tool**: Vite
 - **Linting**: ESLint + TypeScript
 - **Git**: Version control with GitLab
+
+
+# DormDeals QA/Docs Lead Prompt
+
+## Initial Documentation
+
+I'm the QA/Documentation Lead for [FA25TEAM04].
+
+Please create comprehensive documentation:
+
+1. Update README.md with:
+   - Project name and slogan
+   - Description
+   - Features list
+   - Tech stack
+   - Team members section (I'll fill names)
+   - Installation instructions:
+     * Prerequisites
+     * Clone repository
+     * Install dependencies
+     * Run application
+   - Available scripts
+   - Project structure
+   - License
+
+2. Create TESTING.md with:
+   - Manual testing checklist template
+   - Test case format
+   - Browser testing checklist
+   - Responsive design testing
+
+3. Create ARCHITECTURE.md template with:
+   - Project structure explanation
+   - Component hierarchy (we'll fill this)
+   - Data flow diagram placeholder
+   - Design decisions section
+
+Make it professional and easy to follow.
+
+## Testing
+
+I'm setting up testing for [FA25TEAM04].
+
+Please:
+
+1. Update TESTING.md with specific test cases for our features:
+   - Homepage testing checklist
+   - [Main feature] testing checklist
+   - Navigation testing
+   - Responsive design testing
+   - Browser compatibility checklist
+
+2. Create a manual testing script (scripts/test-checklist.md) that testers can follow step-by-step
+
+3. Create templates for bug reports in .gitlab/issue_templates/bug_report.md
+
+Include:
+- Test case format
+- Expected vs actual results template
+- Screenshots placeholder
+- Steps to reproduce

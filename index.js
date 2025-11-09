@@ -6,11 +6,26 @@ import { Pool } from 'pg';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { existsSync } from 'fs';
 
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// Determine the correct dist path for Render deployment
+// On Render, build happens at project root, so dist is relative to process.cwd()
+const distPath = path.join(process.cwd(), 'dist');
+const indexPath = path.join(distPath, 'index.html');
+
+// Verify dist folder exists
+if (!existsSync(indexPath)) {
+  console.error('❌ Error: dist/index.html not found');
+  console.error(`   Expected location: ${indexPath}`);
+  console.error(`   Current working directory: ${process.cwd()}`);
+  console.error(`   __dirname: ${__dirname}`);
+  console.error('   Please ensure the build completed successfully.');
+}
 
 // Environment variable validation
 const requiredEnvVars = ['DATABASE_URL', 'SECRET_KEY', 'JWT_SECRET'];
@@ -21,12 +36,16 @@ if (missingEnvVars.length > 0) {
   missingEnvVars.forEach(envVar => {
     console.error(`   - ${envVar}`);
   });
-  console.error('\nPlease check your .env file or environment configuration.');
-  process.exit(1);
+  console.error('\nPlease set these in the Render Dashboard under "Environment" section.');
+  console.error('For Render deployment, these MUST be set as environment variables.');
+  
+  // Don't exit in development, but warn in production
+  if (process.env.NODE_ENV === 'production') {
+    console.error('⚠️  Production deployment requires all environment variables to be set.');
+  }
 }
 
 const app = express();
-const PORT = process.env.PORT || 3000;
 
 // Database connection with error handling
 let pool;
@@ -37,27 +56,9 @@ try {
   });
 } catch (error) {
   console.error('❌ Failed to create database pool:', error.message);
-  process.exit(1);
 }
 
-// Test database connection on startup
-const testDatabaseConnection = async () => {
-  try {
-    console.log('🔄 Testing database connection...');
-    const client = await pool.connect();
-    const result = await client.query('SELECT NOW()');
-    client.release();
-    console.log('✅ Database connection successful');
-    console.log(`   Connected at: ${result.rows[0].now}`);
-    return true;
-  } catch (error) {
-    console.error('❌ Database connection failed:');
-    console.error(`   Error: ${error.message}`);
-    console.error('   Please check your DATABASE_URL environment variable.');
-    console.error('   Make sure your database is running and accessible.');
-    return false;
-  }
-};
+// Database connection pool for Render deployment
 
 // Middleware
 app.use(helmet({
@@ -69,7 +70,12 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
 // Serve static files from dist folder (Vite build output)
-app.use(express.static(path.join(__dirname, 'dist')));
+if (existsSync(distPath)) {
+  app.use(express.static(distPath));
+  console.log(`📁 Serving static files from: ${distPath}`);
+} else {
+  console.error(`⚠️  Warning: dist folder not found at ${distPath}`);
+}
 
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -191,63 +197,39 @@ app.get('*', (req, res) => {
   }
   
   // Serve the React app for all other routes
-  res.sendFile(path.join(__dirname, 'dist', 'index.html'), (err) => {
-    if (err) {
-      console.error('Error serving index.html:', err);
-      res.status(500).json({ error: 'Failed to serve application' });
-    }
-  });
-});
-
-// Start server with database connection check
-const startServer = async () => {
-  // Test database connection before starting server
-  const dbConnected = await testDatabaseConnection();
-  
-  if (!dbConnected) {
-    console.error('❌ Server startup aborted due to database connection failure');
-    process.exit(1);
-  }
-  
-  // Start the server
-  app.listen(PORT, () => {
-    console.log('🚀 DormDeal server started successfully!');
-    console.log(`   Port: ${PORT}`);
-    console.log(`   Environment: ${process.env.NODE_ENV}`);
-    console.log(`   Health check: http://localhost:${PORT}/health`);
-    console.log(`   API base: http://localhost:${PORT}/api`);
-  });
-};
-
-// Handle graceful shutdown
-process.on('SIGTERM', () => {
-  console.log('🔄 SIGTERM received, shutting down gracefully...');
-  if (pool) {
-    pool.end(() => {
-      console.log('✅ Database pool closed');
-      process.exit(0);
-    });
+  if (existsSync(indexPath)) {
+    res.sendFile(indexPath);
   } else {
-    process.exit(0);
-  }
-});
-
-process.on('SIGINT', () => {
-  console.log('🔄 SIGINT received, shutting down gracefully...');
-  if (pool) {
-    pool.end(() => {
-      console.log('✅ Database pool closed');
-      process.exit(0);
+    res.status(500).json({ 
+      error: 'Application not built properly. Please check build logs.',
+      details: { distPath, indexPath, cwd: process.cwd() }
     });
-  } else {
-    process.exit(0);
   }
 });
 
-// Start the server
-startServer().catch((error) => {
-  console.error('❌ Failed to start server:', error.message);
+// Server startup for Render deployment
+const PORT = process.env.PORT || 3000;
+
+// Start server for Render deployment
+// This file is executed directly with 'node index.js' on Render
+// The server listens on the PORT environment variable set by Render
+
+// Verify build exists before starting server
+if (!existsSync(indexPath)) {
+  console.error('❌ Cannot start server: dist/index.html not found');
+  console.error(`   Expected location: ${indexPath}`);
+  console.error(`   Current working directory: ${process.cwd()}`);
+  console.error('   Please ensure the build completed successfully.');
+  console.error('   Check Render build logs to see if the build step succeeded.');
   process.exit(1);
+}
+
+console.log(`✅ Build verified: dist/index.html exists at ${indexPath}`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`📦 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🌐 Server listening on 0.0.0.0:${PORT}`);
+  console.log(`📁 Serving static files from: ${distPath}`);
 });
 
 export default app;

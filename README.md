@@ -1,93 +1,298 @@
-# FA25Team04
+# DormDeals 🏠
 
+**"Your Campus Marketplace - Buy, Sell, Rent with Ease"**
 
+A modern marketplace platform designed specifically for university students to buy, sell, and rent their belongings within their campus community.
 
-## Getting started
+## 📋 Description
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+DormDeals is a comprehensive marketplace application that connects university students, enabling them to easily trade items within their campus community. Whether you're looking to sell textbooks, rent furniture, or find great deals on campus essentials, DormDeals provides a secure and user-friendly platform tailored for student needs.
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+## ✨ Features
 
-## Add your files
+### Core Functionality
+- **Item Listings**: Create, browse, and manage product listings with detailed descriptions and images
+- **Search & Filter**: Advanced search capabilities with category and price filters
+- **User Profiles**: Personal profiles for buyers and sellers with transaction history
+- **Messaging System**: Built-in chat functionality for buyer-seller communication
+- **Shopping Cart**: Add multiple items to cart for batch purchasing
+- **Checkout Process**: Streamlined payment and transaction management
 
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/topics/git/add_files/#add-files-to-a-git-repository) or push an existing Git repository with the following command:
+### User Experience
+- **Responsive Design**: Optimized for desktop, tablet, and mobile devices
+- **Smooth Animations**: Enhanced UX with Framer Motion animations
+- **Dark/Light Theme**: Customizable theme preferences
+- **Page Transitions**: Seamless navigation between pages
+- **Loading States**: User-friendly loading indicators and error handling
+
+### Technical Features
+- **Real-time Updates**: Live data synchronization
+- **Type Safety**: Full TypeScript implementation
+- **Component Library**: Reusable UI components
+- **State Management**: Context-based state management
+- **API Integration**: RESTful API with Express.js backend
+
+## 🛠️ Tech Stack
+
+### Frontend
+- **React 18** - UI library
+- **TypeScript** - Type safety
+- **Vite** - Build tool and dev server
+- **Tailwind CSS** - Styling framework
+- **Framer Motion** - Animation library
+- **React Router DOM** - Client-side routing
+- **Axios** - HTTP client
+- **React Hot Toast** - Notifications
+
+### Backend
+- **Node.js** - Runtime environment
+- **Express.js** - Web framework
+- **PostgreSQL** - Database
+- **CORS** - Cross-origin resource sharing
+- **Helmet** - Security middleware
+- **Morgan** - HTTP request logger
+
+### Development Tools
+- **ESLint** - Code linting
+- **Jest** - Testing framework
+- **Testing Library** - React component testing
+- **Nodemon** - Development server
+- **Concurrently** - Run multiple commands
+
+## 👥 Team Members
+
+- **Tech Lead**: [Arlo Kharod]
+- **Feature Developer**: [Clarence Chong]
+- **QA/Documentation Lead**: [Hans Trosclair]
+- **UI/UX Designer**: [Olivia Deshotel]
+
+## 🚀 Installation
+
+### Prerequisites
+
+Before you begin, ensure you have the following installed:
+- **Node.js** (version 16.0.0 or higher)
+- **npm** (version 8.0.0 or higher)
+- **PostgreSQL** (version 12 or higher)
+- **Git**
+
+### Clone Repository
+
+```bash
+git clone https://gitlab.com/sohaikia2002/fa25team04.git
+cd fa25team04
+```
+
+### Install Dependencies
+
+```bash
+npm install
+```
+
+### Environment Setup
+
+1. Copy the environment example file:
+```bash
+cp env.example .env
+```
+
+2. Update the `.env` file with your database credentials and other configuration:
+```env
+# Database Configuration (REQUIRED)
+DATABASE_URL=postgresql://username:password@hostname:port/database?sslmode=require
+
+# Server Configuration
+PORT=3000
+NODE_ENV=development
+
+# Security Keys (REQUIRED)
+SECRET_KEY=your-super-secret-key-here-change-this-in-production
+JWT_SECRET=your-jwt-secret-key-here-change-this-in-production
+
+# Optional: Frontend Configuration
+VITE_API_BASE_URL=http://localhost:3000
+```
+
+**Note**: For production deployment, see the [Deployment Guide](#-deployment) section below.
+
+### Database Setup
+
+1. Create a PostgreSQL database:
+```sql
+CREATE DATABASE dormdeals;
+```
+
+2. Run the database schema:
+```bash
+psql -d dormdeals -f database/schema.sql
+```
+
+### Run Application
+
+#### Development Mode
+```bash
+npm run dev
+```
+This will start the Vite development server for the frontend. The backend API can be run separately if needed, but for development, you can use mock data or configure the frontend to point to a separate API server.
+
+#### Production Mode
+```bash
+# Build the application
+npm run build
+
+# Start the production server
+npm start
+```
+
+The application will be available at:
+- **Full Stack**: http://localhost:3000 (Express serves both frontend and API)
+- **API Endpoints**: http://localhost:3000/api/*
+
+## 📜 Available Scripts
+
+| Script | Description |
+|--------|-------------|
+| `npm run dev` | Start the Vite development server (frontend only) |
+| `npm run build` | Build the React app for production (outputs to `dist/`) |
+| `npm run build:production` | Type-check and build for production |
+| `npm start` | Start the production Express server (serves frontend + API) |
+| `npm run start:dev` | Preview the production build with Vite preview server |
+| `npm run lint` | Run ESLint to check code quality |
+| `npm run lint:ci` | Run ESLint with JUnit output for CI/CD |
+| `npm test` | Run Jest test suite |
+| `npm run preview` | Preview the production build |
+| `npm run type-check` | Run TypeScript type checking |
+
+## 📁 Project Structure
 
 ```
-cd existing_repo
-git remote add origin https://gitlab.com/sohaikia2002/fa25team04.git
-git branch -M main
-git push -uf origin main
+fa25team04/
+├── api/
+│   └── server.js              # API server entry point
+├── database/
+│   └── schema.sql             # PostgreSQL database schema
+├── dist/                      # Production build output (generated)
+├── docs/
+│   ├── adr/                   # Architecture Decision Records
+│   ├── ai_log.md             # AI development log
+│   └── test_report.md        # Testing documentation
+├── src/
+│   ├── components/            # Reusable UI components
+│   │   ├── Button.tsx
+│   │   ├── Card.tsx
+│   │   ├── Layout.tsx
+│   │   └── ...
+│   ├── context/               # React Context providers
+│   │   ├── AuthContext.tsx
+│   │   ├── ShopContext.tsx
+│   │   └── ThemeContext.tsx
+│   ├── pages/                 # Page components
+│   │   ├── Home.tsx
+│   │   ├── Marketplace.tsx
+│   │   ├── Profile.tsx
+│   │   └── ...
+│   ├── services/              # API services
+│   │   ├── api.ts
+│   │   └── apiService.ts
+│   ├── types/                 # TypeScript type definitions
+│   │   └── index.ts
+│   ├── utils/                 # Utility functions
+│   │   ├── constants.ts
+│   │   ├── helpers.ts
+│   │   └── animations.ts
+│   ├── __tests__/             # Test files
+│   │   └── App.test.tsx
+│   ├── App.tsx                # Main application component
+│   └── index.tsx              # Application entry point
+├── index.js                   # Express server entry point
+├── index.html                 # HTML template
+├── package.json               # Dependencies and scripts
+├── render.yaml                # Render deployment configuration
+├── tailwind.config.js         # Tailwind CSS configuration
+├── tsconfig.json              # TypeScript configuration
+├── vite.config.ts             # Vite configuration
+├── env.example                # Environment variables template
+├── DEPLOYMENT.md              # Render deployment guide
+└── README.md                  # This file
 ```
 
-## Integrate with your tools
+## 🚀 Deployment
 
-- [ ] [Set up project integrations](https://gitlab.com/sohaikia2002/fa25team04/-/settings/integrations)
+### Deploying to Render
 
-## Collaborate with your team
+DormDeals is configured for deployment on [Render](https://render.com). The project includes a `render.yaml` configuration file for easy setup.
 
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Set auto-merge](https://docs.gitlab.com/user/project/merge_requests/auto_merge/)
+#### Quick Deploy Steps
 
-## Test and Deploy
+1. **Push your code to Git** (GitHub, GitLab, or Bitbucket)
 
-Use the built-in continuous integration in GitLab.
+2. **Create a Render Account**
+   - Go to [render.com](https://render.com)
+   - Sign up or log in
 
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
+3. **Create a PostgreSQL Database**
+   - In Render Dashboard, click "New +" → "PostgreSQL"
+   - Choose a name and plan (free tier available)
+   - Copy the "Internal Database URL" or "External Database URL"
 
-***
+4. **Create a Web Service**
+   - Click "New +" → "Web Service"
+   - Connect your Git repository
+   - Render will auto-detect the `render.yaml` configuration
+   - Set the following environment variables:
+     - `DATABASE_URL`: Your PostgreSQL connection string
+     - `SECRET_KEY`: Generate with `openssl rand -base64 32`
+     - `JWT_SECRET`: Generate with `openssl rand -base64 32`
+     - `NODE_ENV`: `production` (automatically set)
 
-# Editing this README
+5. **Deploy**
+   - Click "Create Web Service"
+   - Render will build and deploy your application
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
+#### Environment Variables for Render
 
-## Suggestions for a good README
+Required environment variables:
+- `DATABASE_URL` - PostgreSQL connection string
+- `SECRET_KEY` - Session encryption key
+- `JWT_SECRET` - JWT token signing key
+- `PORT` - Automatically set by Render
+- `NODE_ENV` - Set to `production` automatically
 
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+#### Build Process
 
-## Name
-Choose a self-explaining name for your project.
+Render will automatically:
+1. Install dependencies with `npm ci`
+2. Build the React app with `npm run build`
+3. Verify the build output exists
+4. Start the server with `npm start`
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+#### Deployment URL
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+After successful deployment, your app will be available at:
+- `https://your-service-name.onrender.com`
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+**Note**: Free tier services on Render spin down after 15 minutes of inactivity and may take 30-60 seconds to spin back up on first request.
 
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+For detailed deployment instructions, see [DEPLOYMENT.md](DEPLOYMENT.md).
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+## 📄 License
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+## 🤝 Contributing
 
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
+We welcome contributions from the team! Please follow these guidelines:
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
+1. Create a feature branch from `main`
+2. Make your changes with proper TypeScript types
+3. Write tests for new functionality
+4. Run `npm run lint` and `npm test` before committing
+5. Create a merge request with a clear description
 
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
+## 📞 Support
 
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
+For questions or support, please contact the development team or create an issue in the project repository.
 
-## License
-For open source projects, say how it is licensed.
+---
 
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+**DormDeals** - Making campus life more affordable and sustainable, one transaction at a time! 🎓
