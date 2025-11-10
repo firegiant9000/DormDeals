@@ -109,6 +109,21 @@ I am the feature dev for the application DormDeals. I want to create a new file 
 # Adding more features to the MessagePage to be more user friendly
 When the user is messaging the seller about an item, send the item to the chat too. The button (Contact Seller) in listing page should be able to send the item to the user and start messaging
 
+# AI prompt for login page
+I am the feature lead for DormDeals.
+
+I want to create a login page for the application
+
+The flow of the application will be as below:
+- Any user can browse the application without an account
+- The user will need to have an account to create listing, add items to cart/wishlist/use the message feature
+
+There is a button at the "account" tab that says login/log out. Make sure the button says login when the user is not logged in and says log out when the user is logged in. Create a login page that would ask user for their email & password
+
+For the current stage of the application, we dont have to enforce/actually ask the user to log in with a valid email & password. 
+
+Make sure the changes will pass the pipeline without error.
+
 # AI Development Log
 
 This document tracks the AI-assisted development process for the DormDeals application.

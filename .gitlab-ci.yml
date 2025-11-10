@@ -16,8 +16,15 @@ default:
       - .npm/
       - node_modules/
   before_script:
-    # fresh container per job → install deps in every job (including dev)
+    # fresh container per job → install deps in every job (including dev and optional)
+    # Using npm ci for faster, reproducible installs with package-lock.json
+    # Install optional dependencies separately to ensure platform-specific binaries are installed
+    # (npm ci has known issues with optional dependencies on Alpine Linux)
     - npm ci --cache .npm --prefer-offline --include=dev
+    # Workaround for npm ci's optional dependency bug on Alpine Linux
+    # Remove rollup and reinstall to trigger optional dependency installation
+    - rm -rf node_modules/rollup node_modules/@rollup 2>/dev/null || true
+    - npm install --no-save rollup@4.52.4
 
 lint:
   stage: lint

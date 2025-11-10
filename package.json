@@ -8,10 +8,8 @@
     "dev": "vite",
     "build": "vite build",
     "build:production": "npm run type-check && npm run build",
-    "build:render": "npm ci && npm run build && node -e \"const fs=require('fs'); if(!fs.existsSync('dist/index.html')){console.error('Build failed: dist/index.html not found'); process.exit(1);}\"",
     "preview": "vite preview",
     "start": "node index.js",
-    "start:dev": "vite preview --port 3000 --host",
     "type-check": "tsc --noEmit",
     "lint": "eslint . --report-unused-disable-directives --max-warnings 0",
     "lint:ci": "eslint . --report-unused-disable-directives --max-warnings 0 -f junit -o lint-results.xml"
