@@ -164,14 +164,52 @@ tmp/
 temp/
 .env
 
-# Firebase
-.firebase/
-firebase-debug.log
-# Build output
+# Vite
 dist/
+dist-ssr/
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS generated files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Logs
+logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+
+# Build outputs
+build/
+dist/
+
+# Testing
+coverage/
+
+# Storybook build outputs
+storybook-static/
+
+# Temporary folders
+tmp/
+temp/
+
+# dotenv environment variable files
+.env
 
 # Firebase (generated)
 .firebase/
 firebase-debug.log
-# Build output
-/dist/
