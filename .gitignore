@@ -163,3 +163,9 @@ storybook-static/
 tmp/
 temp/
 .env
+
+# Firebase (generated)
+.firebase/
+firebase-debug.log
+# Build output
+/dist/
