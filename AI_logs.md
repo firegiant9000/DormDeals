@@ -286,3 +286,109 @@ Include:
 - Expected vs actual results template
 - Screenshots placeholder
 - Steps to reproduce
+
+You are working in a Vite + React + TypeScript repo named DormDeals.
+
+Make the following changes. Keep code modular and typed. Do not expose any real secret values—use placeholders that pull from import.meta.env.
+
+1) Env scaffolding
+- Ensure a file `.env.example` exists at repo root with these placeholder keys (one per line):
+  VITE_FIREBASE_API_KEY=YOUR_API_KEY_HERE
+  VITE_FIREBASE_AUTH_DOMAIN=YOUR_AUTH_DOMAIN_HERE
+  VITE_FIREBASE_PROJECT_ID=YOUR_PROJECT_ID_HERE
+  VITE_FIREBASE_APP_ID=YOUR_APP_ID_HERE
+  VITE_FIREBASE_MESSAGING_SENDER_ID=YOUR_SENDER_ID_HERE
+  VITE_FIREBASE_MEASUREMENT_ID=YOUR_MEASUREMENT_ID_HERE
+- Ensure `.gitignore` contains `.env`.
+
+2) Centralized Firebase initialization
+- Create or overwrite `src/firebase.ts`:
+  - Use modular SDK only (no compat).
+  - Initialize once using getApps()/getApp().
+  - Export `app` and `auth`.
+  - Read config from import.meta.env:
+    apiKey -> VITE_FIREBASE_API_KEY
+    authDomain -> VITE_FIREBASE_AUTH_DOMAIN
+    projectId -> VITE_FIREBASE_PROJECT_ID
+    appId -> VITE_FIREBASE_APP_ID
+    messagingSenderId -> VITE_FIREBASE_MESSAGING_SENDER_ID
+  - Optionally init analytics only if `window` exists AND `VITE_FIREBASE_MEASUREMENT_ID` is set, via dynamic import('firebase/analytics') + isSupported(). Export `analytics?`.
+
+- Remove any old hardcoded Firebase config and direct getAnalytics(app) calls elsewhere. Update imports to use `src/firebase.ts`.
+
+3) Auth handlers
+- Create `src/authHandlers.ts`:
+  - handleLogin(email, password) uses signInWithEmailAndPassword(auth, ...). Return { ok: true, uid } or { ok: false, code }. Console.error with "AUTH ERROR (login)" including err.code.
+  - handleRegister(email, password, displayName?) uses createUserWithEmailAndPassword + optional updateProfile. Same return shape; log "AUTH ERROR (register)".
+
+4) Dev-only ENV sanity log
+- At the top of `src/main.tsx` (or `src/App.tsx`) behind `if (import.meta.env.DEV)`, log:
+  console.log('ENV CHECK', {
+    HAS_API_KEY: !!import.meta.env.VITE_FIREBASE_API_KEY,
+    AUTH_DOMAIN: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+    PROJECT_ID: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  });
+
+5) Optional Auth smoke test
+- Add `src/pages/AuthSmokeTest.tsx` with simple inputs/buttons to call handleLogin and handleRegister, showing "OK" or "FAIL: <code>".
+- If router is centralized, add a dev-only route `/auth-smoke-test` guarded by `if (import.meta.env.DEV)`; otherwise omit.
+
+6) Cleanups
+- Remove any `firebase/compat/*`.
+- Replace `process.env.*` in client with `import.meta.env.VITE_*`.
+- Remove hardcoded Firebase configs anywhere else.
+
+7) Fix types/lint as needed.
+
+Create (or update) Firebase Hosting config for a Vite SPA:
+
+- Create `.firebaserc` at repo root:
+  {
+    "projects": { "default": "dormdeals-9cb29" }
+  }
+
+- Create `firebase.json` at repo root:
+  {
+    "hosting": {
+      "public": "dist",
+      "ignore": ["**/.*", "**/node_modules/**"],
+      "rewrites": [{ "source": "**", "destination": "/index.html" }]
+    }
+  }
+
+- Ensure `.gitignore` ignores:
+  .firebase/
+  firebase-debug.log
+  dist/
+
+
+  Append (or ensure present) at the end of `.gitignore`:
+
+# Firebase (generated)
+.firebase/
+firebase-debug.log
+
+# Build output
+dist/
+
+If these were tracked previously, stop tracking (run locally, not in editor):
+git rm -r --cached .firebase || true
+git rm -r --cached dist || true
+
+
+In the login/register submit handlers, add robust error logging and return codes:
+
+catch (err: any) {
+  console.error('AUTH ERROR (login|register)', err?.code, err?.message, err);
+  return { ok: false, code: err?.code || 'unknown' };
+}
+
+Temporarily surface `code` in the UI toast/message when a call fails.
+
+Common codes to expect: 
+- auth/operation-not-allowed
+- auth/unauthorized-domain
+- auth/invalid-api-key
+- auth/email-already-in-use
+- auth/weak-password
+- auth/network-request-failed
