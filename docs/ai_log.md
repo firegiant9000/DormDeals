@@ -109,6 +109,90 @@ I am the feature dev for the application DormDeals. I want to create a new file 
 # Adding more features to the MessagePage to be more user friendly
 When the user is messaging the seller about an item, send the item to the chat too. The button (Contact Seller) in listing page should be able to send the item to the user and start messaging
 
+# User classification
+I need to implement user classification for DormDeals,
+
+We have Firebase Authentication set up. Users can login and signup.
+
+Please:
+
+1. Define user types TypeScript interface:
+   - Create src/types/user.ts
+   - Define UserType enum: 'admin' | 'premium' | 'regular' | 'guest'
+   - Define User interface with type field
+
+2. Update authentication context:
+   - Add userType to user state
+   - Fetch user type from database on login
+   - Set default user type to 'regular' on signup
+   - Store user type in Firestore/user profile
+
+3. Create user profile in database:
+   - On signup, create user document in Firestore
+   - Include: email, displayName, userType, createdAt
+   - Update user type when changed
+
+4. Update signup flow:
+   - After successful signup, create user profile
+   - Set userType to 'regular' by default
+   - Store in Firestore collection 'users'
+
+5. Update login flow:
+   - Fetch user profile from Firestore
+   - Include userType in auth context
+   - Handle missing user profile gracefully
+
+Provide complete TypeScript types.
+Handle errors properly.
+Add loading states.
+
+# Access control based on user type
+I need to implement access control for DormDeals based on user types.
+
+User types defined:
+- Admin: Full access to everything
+- Premium: Access to premium features
+- Regular: Access to basic features
+- Guest: Limited read-only access
+
+Please create:
+
+1. Access control utilities (src/utils/accessControl.ts):
+   - Function: canAccessFeature(userType, feature)
+   - Function: isAdmin(userType)
+   - Function: isPremium(userType)
+   - Function: canEdit(userType)
+   - Function: canDelete(userType)
+
+2. Custom React hook (src/hooks/useAccessControl.ts):
+   - useAccessControl() hook
+   - Returns: canAccess, isAdmin, isPremium helper functions
+   - Uses authentication context
+
+3. ProtectedFeature component (src/components/ProtectedFeature.tsx):
+   - Props: requiredUserTypes, children, fallback
+   - Shows children only if user has required type
+   - Shows fallback message/upgrade prompt otherwise
+
+4. Update pages to use access control:
+   - Hide premium features for regular users
+   - Show upgrade prompts
+   - Protect admin-only pages
+   - Add role checks before actions
+
+5. Update navigation:
+   - Hide menu items based on user type
+   - Show/hide "Upgrade" button based on type
+
+Example:
+- Premium feature: "Advanced Analytics" - only visible to Premium/Admin
+- Admin feature: "User Management" - only visible to Admin
+- Regular feature: "Basic Dashboard" - visible to all logged-in users
+
+Use TypeScript throughout.
+Provide clear upgrade prompts for locked features.
+
+
 # AI prompt for login page
 I am the feature lead for DormDeals.
 
