@@ -1,5 +1,5 @@
 import React from 'react'
-import { Filter } from 'lucide-react'
+import { Filter, Search } from 'lucide-react'
 import { ItemCondition, PickupMethod, SortOption } from '../types'
 
 type Props = {
@@ -64,12 +64,13 @@ const SearchFiltersBar: React.FC<Props> = ({
       <div className="flex flex-col gap-4">
         <div className="flex flex-col lg:flex-row gap-3 lg:items-center">
           <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted w-5 h-5" />
             <input
               type="text"
               placeholder="Search within results..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              className="dd-input"
+              className="dd-input pl-12"
             />
           </div>
         </div>
