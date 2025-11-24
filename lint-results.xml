@@ -21,6 +21,9 @@
 <testsuite package="org.eslint" time="0" tests="1" errors="0" name="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\jest.config.js">
 <testcase time="0" name="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\jest.config.js" classname="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\jest.config" />
 </testsuite>
+<testsuite package="org.eslint" time="0" tests="1" errors="0" name="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\playwright.config.ts">
+<testcase time="0" name="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\playwright.config.ts" classname="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\playwright.config" />
+</testsuite>
 <testsuite package="org.eslint" time="0" tests="1" errors="0" name="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\postcss.config.js">
 <testcase time="0" name="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\postcss.config.js" classname="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\postcss.config" />
 </testsuite>
@@ -51,6 +54,12 @@
 <testsuite package="org.eslint" time="0" tests="1" errors="0" name="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\src\components\LoadingSpinner.tsx">
 <testcase time="0" name="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\src\components\LoadingSpinner.tsx" classname="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\src\components\LoadingSpinner" />
 </testsuite>
+<testsuite package="org.eslint" time="0" tests="1" errors="0" name="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\src\components\LoginPopup.tsx">
+<testcase time="0" name="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\src\components\LoginPopup.tsx" classname="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\src\components\LoginPopup" />
+</testsuite>
+<testsuite package="org.eslint" time="0" tests="1" errors="0" name="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\src\components\LoginPopupWrapper.tsx">
+<testcase time="0" name="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\src\components\LoginPopupWrapper.tsx" classname="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\src\components\LoginPopupWrapper" />
+</testsuite>
 <testsuite package="org.eslint" time="0" tests="1" errors="0" name="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\src\components\Modal.tsx">
 <testcase time="0" name="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\src\components\Modal.tsx" classname="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\src\components\Modal" />
 </testsuite>
@@ -60,11 +69,20 @@
 <testsuite package="org.eslint" time="0" tests="1" errors="0" name="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\src\components\PageTransition.tsx">
 <testcase time="0" name="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\src\components\PageTransition.tsx" classname="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\src\components\PageTransition" />
 </testsuite>
+<testsuite package="org.eslint" time="0" tests="1" errors="0" name="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\src\components\ProtectedFeature.tsx">
+<testcase time="0" name="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\src\components\ProtectedFeature.tsx" classname="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\src\components\ProtectedFeature" />
+</testsuite>
 <testsuite package="org.eslint" time="0" tests="1" errors="0" name="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\src\components\SearchFiltersBar.tsx">
 <testcase time="0" name="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\src\components\SearchFiltersBar.tsx" classname="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\src\components\SearchFiltersBar" />
 </testsuite>
 <testsuite package="org.eslint" time="0" tests="1" errors="0" name="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\src\components\index.ts">
 <testcase time="0" name="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\src\components\index.ts" classname="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\src\components\index" />
+</testsuite>
+<testsuite package="org.eslint" time="0" tests="1" errors="0" name="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\src\config\firebase.ts">
+<testcase time="0" name="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\src\config\firebase.ts" classname="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\src\config\firebase" />
+</testsuite>
+<testsuite package="org.eslint" time="0" tests="1" errors="0" name="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\src\context\AuthContext.tsx">
+<testcase time="0" name="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\src\context\AuthContext.tsx" classname="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\src\context\AuthContext" />
 </testsuite>
 <testsuite package="org.eslint" time="0" tests="1" errors="0" name="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\src\context\ShopContext.tsx">
 <testcase time="0" name="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\src\context\ShopContext.tsx" classname="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\src\context\ShopContext" />
@@ -74,6 +92,9 @@
 </testsuite>
 <testsuite package="org.eslint" time="0" tests="1" errors="0" name="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\src\data\mockData.ts">
 <testcase time="0" name="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\src\data\mockData.ts" classname="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\src\data\mockData" />
+</testsuite>
+<testsuite package="org.eslint" time="0" tests="1" errors="0" name="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\src\hooks\useAccessControl.ts">
+<testcase time="0" name="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\src\hooks\useAccessControl.ts" classname="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\src\hooks\useAccessControl" />
 </testsuite>
 <testsuite package="org.eslint" time="0" tests="1" errors="0" name="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\src\index.tsx">
 <testcase time="0" name="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\src\index.tsx" classname="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\src\index" />
@@ -96,6 +117,9 @@
 <testsuite package="org.eslint" time="0" tests="1" errors="0" name="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\src\pages\ListingDetailPage.tsx">
 <testcase time="0" name="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\src\pages\ListingDetailPage.tsx" classname="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\src\pages\ListingDetailPage" />
 </testsuite>
+<testsuite package="org.eslint" time="0" tests="1" errors="0" name="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\src\pages\LoginPage.tsx">
+<testcase time="0" name="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\src\pages\LoginPage.tsx" classname="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\src\pages\LoginPage" />
+</testsuite>
 <testsuite package="org.eslint" time="0" tests="1" errors="0" name="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\src\pages\MainFeaturePage.tsx">
 <testcase time="0" name="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\src\pages\MainFeaturePage.tsx" classname="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\src\pages\MainFeaturePage" />
 </testsuite>
@@ -111,6 +135,9 @@
 <testsuite package="org.eslint" time="0" tests="1" errors="0" name="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\src\pages\Profile.tsx">
 <testcase time="0" name="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\src\pages\Profile.tsx" classname="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\src\pages\Profile" />
 </testsuite>
+<testsuite package="org.eslint" time="0" tests="1" errors="0" name="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\src\pages\RegisterPage.tsx">
+<testcase time="0" name="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\src\pages\RegisterPage.tsx" classname="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\src\pages\RegisterPage" />
+</testsuite>
 <testsuite package="org.eslint" time="0" tests="1" errors="0" name="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\src\pages\ResultsPage.tsx">
 <testcase time="0" name="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\src\pages\ResultsPage.tsx" classname="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\src\pages\ResultsPage" />
 </testsuite>
@@ -120,11 +147,20 @@
 <testsuite package="org.eslint" time="0" tests="1" errors="0" name="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\src\services\apiService.ts">
 <testcase time="0" name="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\src\services\apiService.ts" classname="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\src\services\apiService" />
 </testsuite>
+<testsuite package="org.eslint" time="0" tests="1" errors="0" name="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\src\services\userService.ts">
+<testcase time="0" name="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\src\services\userService.ts" classname="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\src\services\userService" />
+</testsuite>
 <testsuite package="org.eslint" time="0" tests="1" errors="0" name="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\src\setupTests.ts">
 <testcase time="0" name="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\src\setupTests.ts" classname="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\src\setupTests" />
 </testsuite>
 <testsuite package="org.eslint" time="0" tests="1" errors="0" name="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\src\types\index.ts">
 <testcase time="0" name="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\src\types\index.ts" classname="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\src\types\index" />
+</testsuite>
+<testsuite package="org.eslint" time="0" tests="1" errors="0" name="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\src\types\user.ts">
+<testcase time="0" name="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\src\types\user.ts" classname="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\src\types\user" />
+</testsuite>
+<testsuite package="org.eslint" time="0" tests="1" errors="0" name="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\src\utils\accessControl.ts">
+<testcase time="0" name="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\src\utils\accessControl.ts" classname="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\src\utils\accessControl" />
 </testsuite>
 <testsuite package="org.eslint" time="0" tests="1" errors="0" name="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\src\utils\animations.ts">
 <testcase time="0" name="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\src\utils\animations.ts" classname="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\src\utils\animations" />
@@ -137,6 +173,21 @@
 </testsuite>
 <testsuite package="org.eslint" time="0" tests="1" errors="0" name="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\tailwind.config.js">
 <testcase time="0" name="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\tailwind.config.js" classname="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\tailwind.config" />
+</testsuite>
+<testsuite package="org.eslint" time="0" tests="1" errors="0" name="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\tests\e2e\fixtures\test-data.ts">
+<testcase time="0" name="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\tests\e2e\fixtures\test-data.ts" classname="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\tests\e2e\fixtures\test-data" />
+</testsuite>
+<testsuite package="org.eslint" time="0" tests="1" errors="0" name="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\tests\e2e\helpers\auth-helper.ts">
+<testcase time="0" name="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\tests\e2e\helpers\auth-helper.ts" classname="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\tests\e2e\helpers\auth-helper" />
+</testsuite>
+<testsuite package="org.eslint" time="0" tests="1" errors="0" name="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\tests\e2e\pages\feature.page.ts">
+<testcase time="0" name="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\tests\e2e\pages\feature.page.ts" classname="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\tests\e2e\pages\feature.page" />
+</testsuite>
+<testsuite package="org.eslint" time="0" tests="1" errors="0" name="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\tests\e2e\pages\home.page.ts">
+<testcase time="0" name="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\tests\e2e\pages\home.page.ts" classname="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\tests\e2e\pages\home.page" />
+</testsuite>
+<testsuite package="org.eslint" time="0" tests="1" errors="0" name="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\tests\e2e\specs\example.spec.ts">
+<testcase time="0" name="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\tests\e2e\specs\example.spec.ts" classname="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\tests\e2e\specs\example.spec" />
 </testsuite>
 <testsuite package="org.eslint" time="0" tests="1" errors="0" name="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\vite.config.ts">
 <testcase time="0" name="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\vite.config.ts" classname="C:\Users\Clarence\Documents\CMPS453Project\fa25team04\vite.config" />

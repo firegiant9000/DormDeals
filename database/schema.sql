@@ -83,6 +83,17 @@ CREATE TABLE favorites (
     UNIQUE(user_id, listing_id)
 );
 
+-- Cart table (for users to save items in shopping cart)
+CREATE TABLE cart (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id),
+    listing_id INTEGER REFERENCES listings(id),
+    quantity INTEGER DEFAULT 1 CHECK (quantity > 0),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, listing_id)
+);
+
 -- Reviews table (for user ratings and reviews)
 CREATE TABLE reviews (
     id SERIAL PRIMARY KEY,
@@ -132,6 +143,9 @@ CREATE INDEX idx_conversations_seller_id ON conversations(seller_id);
 CREATE INDEX idx_favorites_user_id ON favorites(user_id);
 CREATE INDEX idx_favorites_listing_id ON favorites(listing_id);
 
+CREATE INDEX idx_cart_user_id ON cart(user_id);
+CREATE INDEX idx_cart_listing_id ON cart(listing_id);
+
 CREATE INDEX idx_reviews_reviewee_id ON reviews(reviewee_id);
 CREATE INDEX idx_reviews_listing_id ON reviews(listing_id);
 
@@ -163,6 +177,9 @@ CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_listings_updated_at BEFORE UPDATE ON listings
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_cart_updated_at BEFORE UPDATE ON cart
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_reports_updated_at BEFORE UPDATE ON reports

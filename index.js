@@ -320,7 +320,7 @@ app.get('/api/users/:id/listings', async (req, res) => {
   }
 });
 
-// Get user's favorites
+// Get user's favorites (wishlist)
 app.get('/api/users/:id/favorites', async (req, res) => {
   try {
     const { id } = req.params;
@@ -353,6 +353,175 @@ app.get('/api/users/:id/favorites', async (req, res) => {
     res.json(favorites);
   } catch (error) {
     console.error('Error fetching user favorites:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Add item to favorites (wishlist)
+app.post('/api/users/:id/favorites', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { listing_id } = req.body;
+    
+    if (!listing_id) {
+      return res.status(400).json({ error: 'listing_id is required' });
+    }
+    
+    const { rows } = await pool.query(
+      `INSERT INTO favorites (user_id, listing_id) 
+       VALUES ($1, $2) 
+       ON CONFLICT (user_id, listing_id) DO NOTHING
+       RETURNING *`,
+      [id, listing_id]
+    );
+    
+    if (rows.length === 0) {
+      return res.status(200).json({ message: 'Item already in favorites' });
+    }
+    
+    res.status(201).json(rows[0]);
+  } catch (error) {
+    console.error('Error adding to favorites:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Remove item from favorites (wishlist)
+app.delete('/api/users/:id/favorites/:listing_id', async (req, res) => {
+  try {
+    const { id, listing_id } = req.params;
+    
+    const { rows } = await pool.query(
+      `DELETE FROM favorites 
+       WHERE user_id = $1 AND listing_id = $2 
+       RETURNING *`,
+      [id, listing_id]
+    );
+    
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Favorite not found' });
+    }
+    
+    res.status(204).send();
+  } catch (error) {
+    console.error('Error removing from favorites:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get user's cart items
+app.get('/api/users/:id/cart', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { rows } = await pool.query(
+      `SELECT l.*, cat.name as category_name, cart.quantity, cart.created_at as added_at, cart.updated_at
+       FROM cart
+       JOIN listings l ON cart.listing_id = l.id
+       LEFT JOIN categories cat ON l.category_id = cat.id
+       WHERE cart.user_id = $1
+       ORDER BY cart.created_at DESC`,
+      [id]
+    );
+    
+    // Transform to match frontend format
+    const cartItems = rows.map(item => ({
+      id: item.id,
+      listing_id: item.listing_id,
+      title: item.title,
+      description: item.description,
+      price: parseFloat(item.price),
+      category: item.category_name || 'Other',
+      condition: item.condition,
+      images: item.images || [],
+      location: item.location,
+      status: item.is_sold ? 'Sold' : (item.is_active ? 'Active' : 'Inactive'),
+      views: item.views_count || 0,
+      quantity: item.quantity || 1,
+      addedAt: item.added_at,
+      createdAt: item.created_at
+    }));
+    
+    res.json(cartItems);
+  } catch (error) {
+    console.error('Error fetching cart items:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Add item to cart
+app.post('/api/users/:id/cart', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { listing_id, quantity = 1 } = req.body;
+    
+    if (!listing_id) {
+      return res.status(400).json({ error: 'listing_id is required' });
+    }
+    
+    const { rows } = await pool.query(
+      `INSERT INTO cart (user_id, listing_id, quantity) 
+       VALUES ($1, $2, $3) 
+       ON CONFLICT (user_id, listing_id) 
+       DO UPDATE SET quantity = cart.quantity + $3, updated_at = NOW()
+       RETURNING *`,
+      [id, listing_id, quantity]
+    );
+    
+    res.status(201).json(rows[0]);
+  } catch (error) {
+    console.error('Error adding to cart:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Update cart item quantity
+app.put('/api/users/:id/cart/:listing_id', async (req, res) => {
+  try {
+    const { id, listing_id } = req.params;
+    const { quantity } = req.body;
+    
+    if (!quantity || quantity < 1) {
+      return res.status(400).json({ error: 'quantity must be at least 1' });
+    }
+    
+    const { rows } = await pool.query(
+      `UPDATE cart 
+       SET quantity = $1, updated_at = NOW() 
+       WHERE user_id = $2 AND listing_id = $3 
+       RETURNING *`,
+      [quantity, id, listing_id]
+    );
+    
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Cart item not found' });
+    }
+    
+    res.json(rows[0]);
+  } catch (error) {
+    console.error('Error updating cart item:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Remove item from cart
+app.delete('/api/users/:id/cart/:listing_id', async (req, res) => {
+  try {
+    const { id, listing_id } = req.params;
+    
+    const { rows } = await pool.query(
+      `DELETE FROM cart 
+       WHERE user_id = $1 AND listing_id = $2 
+       RETURNING *`,
+      [id, listing_id]
+    );
+    
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Cart item not found' });
+    }
+    
+    res.status(204).send();
+  } catch (error) {
+    console.error('Error removing from cart:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
