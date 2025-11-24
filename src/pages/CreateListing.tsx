@@ -4,11 +4,12 @@ import { X, Camera } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import ProtectedFeature from '../components/ProtectedFeature'
-import { apiService } from '../services/apiService'
-import { CreateListingForm, ItemCondition, ItemCategory } from '../types'
+import { useAuth } from '../context/AuthContext'
+import { userApi, itemApi } from '../services/api'
 
 const CreateListing = () => {
   const navigate = useNavigate()
+  const { user } = useAuth()
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -91,50 +92,59 @@ const CreateListing = () => {
     }
 
     try {
-      // Map form data to CreateListingForm format
-      const conditionMap: Record<string, ItemCondition> = {
-        New: ItemCondition.NEW,
-        'Like New': ItemCondition.LIKE_NEW,
-        Good: ItemCondition.GOOD,
-        Fair: ItemCondition.FAIR,
-        Poor: ItemCondition.POOR
+      // Get user's database ID
+      if (!user?.email) {
+        toast.error('Please sign in to create a listing')
+        return
       }
 
-      const categoryMap: Record<string, ItemCategory> = {
-        Electronics: ItemCategory.ELECTRONICS,
-        Books: ItemCategory.BOOKS,
-        Appliances: ItemCategory.APPLIANCES,
-        Furniture: ItemCategory.FURNITURE,
-        Clothing: ItemCategory.CLOTHING,
-        'Sports & Recreation': ItemCategory.SPORTS,
-        Other: ItemCategory.OTHER
+      const dbUser = await userApi.getByEmail(user.email) as { id: number; email: string } | null
+      if (!dbUser?.id) {
+        toast.error('User not found in database. Please contact support.')
+        return
       }
 
-      const listingForm: CreateListingForm = {
+      // Map condition to database format (lowercase with underscores)
+      const conditionMap: Record<string, string> = {
+        'New': 'new',
+        'Like New': 'like_new',
+        'Good': 'good',
+        'Fair': 'fair',
+        'Poor': 'poor'
+      }
+
+      // Convert images to URLs (for now, use placeholder - in production, upload to storage first)
+      const imageUrls = formData.images.map((file) => {
+        // In production, upload to cloud storage and get URLs
+        // For now, create a data URL or placeholder
+        return URL.createObjectURL(file)
+      })
+
+      // Prepare listing data for database
+      const listingData = {
         title: formData.title.trim(),
         description: formData.description.trim(),
         price: parseFloat(formData.price),
-        condition: conditionMap[formData.condition] || ItemCondition.GOOD,
-        category: categoryMap[formData.category] || ItemCategory.OTHER,
-        images: formData.images,
-        location: formData.location.trim() || 'UL Campus',
-        pickupAvailable: true,
-        deliveryAvailable: false,
-        tags: []
+        category: formData.category, // Backend will map to category_id
+        condition: conditionMap[formData.condition] || 'good',
+        seller_id: dbUser.id,
+        images: imageUrls,
+        location: formData.location.trim() || 'UL Campus'
       }
 
-      const response = await apiService.createListing(listingForm)
+      // Create listing using real API
+      const createdListing = await itemApi.create(listingData) as any
 
-      if (response.success && response.data) {
+      if (createdListing && createdListing.id) {
         toast.success('Listing created successfully!')
         // Navigate to the new listing page
-        navigate(`/listing/${response.data.id}`, { state: { listing: response.data } })
+        navigate(`/listing/${createdListing.id}`, { state: { listing: createdListing } })
       } else {
-        toast.error(response.error || 'Failed to create listing')
+        toast.error('Failed to create listing')
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating listing:', error)
-      toast.error('An error occurred while creating the listing. Please try again.')
+      toast.error(error?.response?.data?.error || 'An error occurred while creating the listing. Please try again.')
     }
   }
 

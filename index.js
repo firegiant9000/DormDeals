@@ -115,14 +115,68 @@ app.get('/api/listings/:id', async (req, res) => {
 
 app.post('/api/listings', async (req, res) => {
   try {
-    const { title, description, price, category, condition, seller_id, images } = req.body;
+    const { title, description, price, category, condition, seller_id, images, location } = req.body;
+    
+    if (!title || !description || !price || !seller_id) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+    
+    // Map category name to category_id
+    let categoryId = null;
+    if (category) {
+      const categoryMap = {
+        'Electronics': 'Electronics',
+        'Books': 'Books',
+        'Appliances': 'Appliances',
+        'Furniture': 'Furniture',
+        'Clothing': 'Clothing',
+        'Sports & Recreation': 'Sports & Recreation',
+        'Other': 'Other'
+      };
+      
+      const categoryName = categoryMap[category] || category;
+      const categoryResult = await pool.query(
+        'SELECT id FROM categories WHERE name = $1',
+        [categoryName]
+      );
+      
+      if (categoryResult.rows.length > 0) {
+        categoryId = categoryResult.rows[0].id;
+      } else {
+        // Create category if it doesn't exist
+        const newCategory = await pool.query(
+          'INSERT INTO categories (name) VALUES ($1) RETURNING id',
+          [categoryName]
+        );
+        categoryId = newCategory.rows[0].id;
+      }
+    }
     
     const { rows } = await pool.query(
-      'INSERT INTO listings (title, description, price, category, condition, seller_id, images) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
-      [title, description, price, category, condition, seller_id, images]
+      `INSERT INTO listings (title, description, price, category_id, condition, seller_id, images, location) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+      [title, description, price, categoryId, condition, seller_id, images || [], location || 'UL Campus']
     );
     
-    res.status(201).json(rows[0]);
+    // Transform response to match frontend format
+    const listing = rows[0];
+    const transformedListing = {
+      id: listing.id,
+      title: listing.title,
+      description: listing.description,
+      price: parseFloat(listing.price),
+      category: category || 'Other',
+      condition: listing.condition,
+      images: listing.images || [],
+      location: listing.location,
+      status: listing.is_sold ? 'Sold' : (listing.is_active ? 'Active' : 'Inactive'),
+      views: listing.views_count || 0,
+      createdAt: listing.created_at,
+      isSold: listing.is_sold,
+      isActive: listing.is_active
+    };
+    
+    res.status(201).json(transformedListing);
   } catch (error) {
     console.error('Error creating listing:', error);
     res.status(500).json({ error: 'Internal server error' });

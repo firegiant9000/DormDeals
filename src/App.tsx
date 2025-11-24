@@ -4,6 +4,7 @@ import Layout from '@/components/Layout'
 import { ShopDrawers } from '@/context/ShopContext'
 import LoginPopupWrapper from '@/components/LoginPopupWrapper'
 import PageTransition from '@/components/PageTransition'
+import ProtectedRoute from '@/components/ProtectedRoute'
 import Home from '@/pages/Home'
 import Marketplace from '@/pages/Marketplace'
 import ItemDetail from '@/pages/ItemDetail'
@@ -53,9 +54,11 @@ function App() {
               </PageTransition>
             } />
             <Route path="/profile" element={
-              <PageTransition>
-                <Profile />
-              </PageTransition>
+              <ProtectedRoute>
+                <PageTransition>
+                  <Profile />
+                </PageTransition>
+              </ProtectedRoute>
             } />
             <Route path="/item/:id" element={
               <PageTransition>
@@ -68,14 +71,18 @@ function App() {
               </PageTransition>
             } />
             <Route path="/create-listing" element={
-              <PageTransition>
-                <CreateListing />
-              </PageTransition>
+              <ProtectedRoute>
+                <PageTransition>
+                  <CreateListing />
+                </PageTransition>
+              </ProtectedRoute>
             } />
             <Route path="/checkout" element={
-              <PageTransition>
-                <Checkout />
-              </PageTransition>
+              <ProtectedRoute>
+                <PageTransition>
+                  <Checkout />
+                </PageTransition>
+              </ProtectedRoute>
             } />
             <Route path="/chat" element={
               <PageTransition>
