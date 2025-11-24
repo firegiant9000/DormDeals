@@ -149,16 +149,27 @@ const Profile = () => {
   // Fetch listings when listings tab is active
   useEffect(() => {
     const fetchListings = async () => {
+      // Only fetch if we have a valid database user ID
       if (activeTab !== 'listings' || !userData?.id || userData.id === 0) {
+        // Clear listings if user is not in database
+        setListings([])
         return
       }
 
       try {
         setIsLoadingListings(true)
+        // Fetch only real listings from database for this user
         const userListings = await userApi.getListings(userData.id.toString()) as Listing[]
-        setListings(userListings)
-      } catch {
-        console.error('Error fetching listings')
+        // Only set listings if we got valid data from the API
+        if (Array.isArray(userListings)) {
+          setListings(userListings)
+        } else {
+          setListings([])
+        }
+      } catch (error) {
+        console.error('Error fetching listings from database:', error)
+        // Clear listings on error - don't show any mock data
+        setListings([])
         toast.error('Failed to load listings')
       } finally {
         setIsLoadingListings(false)
@@ -171,16 +182,27 @@ const Profile = () => {
   // Fetch favorites when favorites tab is active
   useEffect(() => {
     const fetchFavorites = async () => {
+      // Only fetch if we have a valid database user ID
       if (activeTab !== 'favorites' || !userData?.id || userData.id === 0) {
+        // Clear favorites if user is not in database
+        setFavorites([])
         return
       }
 
       try {
         setIsLoadingFavorites(true)
+        // Fetch only real favorites from database for this user
         const userFavorites = await userApi.getFavorites(userData.id.toString()) as Listing[]
-        setFavorites(userFavorites)
-      } catch {
-        console.error('Error fetching favorites')
+        // Only set favorites if we got valid data from the API
+        if (Array.isArray(userFavorites)) {
+          setFavorites(userFavorites)
+        } else {
+          setFavorites([])
+        }
+      } catch (error) {
+        console.error('Error fetching favorites from database:', error)
+        // Clear favorites on error - don't show any mock data
+        setFavorites([])
         toast.error('Failed to load favorites')
       } finally {
         setIsLoadingFavorites(false)

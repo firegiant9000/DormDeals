@@ -1,7 +1,18 @@
 import { Mail, ShoppingBag, GraduationCap } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
 
 const Footer = () => {
+  const { isAuthenticated } = useAuth()
+  const navigate = useNavigate()
+
+  const handleProfileClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (!isAuthenticated) {
+      e.preventDefault()
+      navigate('/login')
+    }
+  }
+
   return (
     <footer className="bg-gray-900 dark:bg-slate-900 text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -25,7 +36,11 @@ const Footer = () => {
             <Link to="/about" className="text-gray-300 hover:text-white transition-colors text-sm">
               About
             </Link>
-            <Link to="/profile" className="text-gray-300 hover:text-white transition-colors text-sm">
+            <Link 
+              to="/profile" 
+              onClick={handleProfileClick}
+              className="text-gray-300 hover:text-white transition-colors text-sm"
+            >
               Profile
             </Link>
             <a href="mailto:support@dormdeals.com" className="flex items-center text-gray-300 hover:text-white transition-colors text-sm">
