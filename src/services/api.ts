@@ -115,6 +115,11 @@ export const userApi = {
   getProfile: () => apiGet(endpoints.userProfile),
   updateProfile: (data: any) => apiPut(endpoints.userProfile, data),
   getById: (id: string) => apiGet(endpoints.userById(id)),
+  getProfileById: (id: string) => apiGet(`/users/${id}/profile`),
+  getListings: (id: string) => apiGet(`/users/${id}/listings`),
+  getFavorites: (id: string) => apiGet(`/users/${id}/favorites`),
+  getByEmail: (email: string) => apiGet(`/users/email/${encodeURIComponent(email)}`),
+  updateProfileById: (id: string, data: any) => apiPut(`/users/${id}/profile`, data),
 }
 
 // Specific API functions for categories
