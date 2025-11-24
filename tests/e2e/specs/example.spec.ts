@@ -1,7 +1,5 @@
 import { test, expect } from '@playwright/test';
 import { HomePage } from '../pages/home.page';
-import { FeaturePage } from '../pages/feature.page';
-import { AuthHelper } from '../helpers/auth-helper';
 
 /**
  * Example E2E tests demonstrating Playwright best practices
@@ -23,7 +21,7 @@ test.describe('Homepage Tests', () => {
     await expect(homePage.logo).toBeVisible();
   });
 
-  test('should display navigation elements', async ({ page }) => {
+  test('should display navigation elements', async () => {
     // Check navigation is visible
     await expect(homePage.navigation).toBeVisible();
     
@@ -153,7 +151,6 @@ test.describe('Responsive Design Tests', () => {
 
 test.describe('Authentication Flow', () => {
   test('should allow user to login', async ({ page }) => {
-    const authHelper = new AuthHelper(page);
     const homePage = new HomePage(page);
     
     await homePage.goto();
@@ -165,6 +162,7 @@ test.describe('Authentication Flow', () => {
       await homePage.clickLogin();
       
       // Attempt login (adjust based on your auth flow)
+      // const authHelper = new AuthHelper(page);
       // await authHelper.login();
       
       // Verify user is logged in

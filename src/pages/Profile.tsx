@@ -1,52 +1,215 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { User, Settings, Heart, ShoppingBag, MessageSquare, Star, Edit3, BarChart3, Users, Crown } from 'lucide-react'
+import { User, Settings, Heart, ShoppingBag, MessageSquare, Star, Edit3, BarChart3, Users, Crown, Loader2 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useAccessControl } from '../hooks/useAccessControl'
 import ProtectedFeature from '../components/ProtectedFeature'
 import { UserType } from '../types/user'
+import { userApi } from '../services/api'
+import { useNavigate } from 'react-router-dom'
+import toast from 'react-hot-toast'
+
+interface UserProfile {
+  id: number
+  email: string
+  username: string
+  first_name?: string
+  last_name?: string
+  displayName?: string
+  name?: string
+  phone?: string
+  university?: string
+  location?: string
+  school?: string
+  profile_image_url?: string
+  profileImage?: string
+  is_verified?: boolean
+  isVerified?: boolean
+  rating: number
+  reviewCount: number
+  totalSales: number
+  totalListings: number
+  totalFavorites: number
+  created_at: string | Date
+  joinedDate?: string | Date
+  joinDate?: string | Date
+  graduation_year?: number
+}
+
+interface Listing {
+  id: number
+  title: string
+  price: number
+  status: string
+  views: number
+  images?: string[]
+  image?: string
+  description?: string
+  category?: string
+}
 
 const Profile = () => {
   const [activeTab, setActiveTab] = useState('listings')
   const { user } = useAuth()
   const { isAdmin, isPremium, canAccess } = useAccessControl()
+  const navigate = useNavigate()
+  
+  const [userData, setUserData] = useState<UserProfile | null>(null)
+  const [listings, setListings] = useState<Listing[]>([])
+  const [favorites, setFavorites] = useState<Listing[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [isLoadingListings, setIsLoadingListings] = useState(false)
+  const [isLoadingFavorites, setIsLoadingFavorites] = useState(false)
 
-  // Use actual user data from auth context, with fallback
-  const userData = user || {
-    id: '',
-    name: 'Guest User',
-    displayName: 'Guest User',
-    email: '',
-    phone: '',
-    location: 'UL Campus',
-    school: 'University of Louisiana',
-    joinedDate: new Date().toISOString(),
-    joinDate: new Date().toISOString(),
-    rating: 0,
-    totalSales: 0,
-    reviewCount: 0,
-    isVerified: false,
-    profileImage: null
-  }
+  // Fetch user profile from database
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      if (!user?.email) {
+        setIsLoading(false)
+        return
+      }
 
-  const listings = [
-    {
-      id: 1,
-      title: 'MacBook Pro 13"',
-      price: 800,
-      status: 'Active',
-      views: 45,
-      image: '/api/placeholder/200/150'
-    },
-    {
-      id: 2,
-      title: 'Calculus Textbook',
-      price: 50,
-      status: 'Sold',
-      views: 23,
-      image: '/api/placeholder/200/150'
+      try {
+        setIsLoading(true)
+        
+        // First, try to get user by email
+        let dbUser
+        try {
+          dbUser = await userApi.getByEmail(user.email) as { id: number; email: string }
+        } catch {
+          // If user not found by email, they might not exist in PostgreSQL yet
+          console.warn('User not found in database by email:', user.email)
+          // Use Firebase user data as fallback
+          const joinDateStr = user.joinDate || new Date().toISOString()
+          setUserData({
+            id: 0,
+            email: user.email,
+            username: user.displayName || user.name || 'User',
+            displayName: user.displayName || user.name || 'User',
+            name: user.displayName || user.name || 'User',
+            phone: user.phone,
+            university: user.school,
+            location: user.school || 'UL Campus',
+            school: user.school || 'University of Louisiana',
+            is_verified: user.isVerified,
+            isVerified: user.isVerified,
+            rating: user.rating || 0,
+            reviewCount: user.reviewCount || 0,
+            totalSales: user.totalSales || 0,
+            totalListings: 0,
+            totalFavorites: 0,
+            created_at: joinDateStr,
+            joinedDate: joinDateStr,
+            joinDate: joinDateStr
+          })
+          setIsLoading(false)
+          return
+        }
+
+        // If user found, get full profile with stats
+        if (dbUser?.id) {
+          const profile = await userApi.getProfileById(dbUser.id.toString()) as UserProfile
+          setUserData(profile)
+        } else {
+          throw new Error('User profile not found')
+        }
+      } catch {
+        console.error('Error fetching user profile')
+        // Fallback to Firebase user data
+        const joinDateStr = user.joinDate || new Date().toISOString()
+        setUserData({
+          id: 0,
+          email: user.email,
+          username: user.displayName || user.name || 'User',
+          displayName: user.displayName || user.name || 'User',
+          name: user.displayName || user.name || 'User',
+          phone: user.phone,
+          university: user.school,
+          location: user.school || 'UL Campus',
+          school: user.school || 'University of Louisiana',
+          is_verified: user.isVerified,
+          isVerified: user.isVerified,
+          rating: user.rating || 0,
+          reviewCount: user.reviewCount || 0,
+          totalSales: user.totalSales || 0,
+          totalListings: 0,
+          totalFavorites: 0,
+          created_at: joinDateStr,
+          joinedDate: joinDateStr,
+          joinDate: joinDateStr
+        })
+      } finally {
+        setIsLoading(false)
+      }
     }
-  ]
+
+    fetchUserProfile()
+  }, [user])
+
+  // Fetch listings when listings tab is active
+  useEffect(() => {
+    const fetchListings = async () => {
+      if (activeTab !== 'listings' || !userData?.id || userData.id === 0) {
+        return
+      }
+
+      try {
+        setIsLoadingListings(true)
+        const userListings = await userApi.getListings(userData.id.toString()) as Listing[]
+        setListings(userListings)
+      } catch {
+        console.error('Error fetching listings')
+        toast.error('Failed to load listings')
+      } finally {
+        setIsLoadingListings(false)
+      }
+    }
+
+    fetchListings()
+  }, [activeTab, userData?.id])
+
+  // Fetch favorites when favorites tab is active
+  useEffect(() => {
+    const fetchFavorites = async () => {
+      if (activeTab !== 'favorites' || !userData?.id || userData.id === 0) {
+        return
+      }
+
+      try {
+        setIsLoadingFavorites(true)
+        const userFavorites = await userApi.getFavorites(userData.id.toString()) as Listing[]
+        setFavorites(userFavorites)
+      } catch {
+        console.error('Error fetching favorites')
+        toast.error('Failed to load favorites')
+      } finally {
+        setIsLoadingFavorites(false)
+      }
+    }
+
+    fetchFavorites()
+  }, [activeTab, userData?.id])
+
+  // Fallback user data
+  const displayUserData = userData || {
+    id: 0,
+    email: user?.email || '',
+    username: user?.displayName || user?.name || 'Guest User',
+    displayName: user?.displayName || user?.name || 'Guest User',
+    name: user?.displayName || user?.name || 'Guest User',
+    phone: user?.phone || '',
+    location: user?.school || 'UL Campus',
+    school: user?.school || 'University of Louisiana',
+    joinedDate: user?.joinDate || new Date().toISOString(),
+    joinDate: user?.joinDate || new Date().toISOString(),
+    rating: user?.rating || 0,
+    totalSales: user?.totalSales || 0,
+    reviewCount: user?.reviewCount || 0,
+    isVerified: user?.isVerified || false,
+    profileImage: user?.profileImage || null,
+    totalListings: 0,
+    totalFavorites: 0
+  }
 
   const tabs = [
     { id: 'listings', label: 'My Listings', icon: ShoppingBag },
@@ -69,64 +232,92 @@ const Profile = () => {
           <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
             {/* Profile Image */}
             <div className="relative">
-              <div className="w-24 h-24 bg-primary-100 rounded-full flex items-center justify-center">
-                <User className="w-12 h-12 text-primary-600" />
-              </div>
-              <button className="absolute bottom-0 right-0 w-8 h-8 bg-primary-600 text-white rounded-full flex items-center justify-center hover:bg-primary-700">
+              {(displayUserData as UserProfile).profile_image_url || displayUserData.profileImage ? (
+                <img 
+                  src={(displayUserData as UserProfile).profile_image_url || displayUserData.profileImage || ''} 
+                  alt={displayUserData.displayName || displayUserData.name}
+                  className="w-24 h-24 rounded-full object-cover"
+                />
+              ) : (
+                <div className="w-24 h-24 bg-primary-100 rounded-full flex items-center justify-center">
+                  <User className="w-12 h-12 text-primary-600" />
+                </div>
+              )}
+              <button 
+                className="absolute bottom-0 right-0 w-8 h-8 bg-primary-600 text-white rounded-full flex items-center justify-center hover:bg-primary-700"
+                onClick={() => setActiveTab('settings')}
+                title="Edit Profile"
+              >
                 <Edit3 className="w-4 h-4" />
               </button>
             </div>
 
             {/* User Info */}
             <div className="flex-1">
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h1 className="text-2xl font-bold text-gray-900">{userData.displayName || userData.name}</h1>
-                    {isPremium() && (
-                      <div title="Premium User">
-                        <Crown className="w-5 h-5 text-primary-600" />
+              {isLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-6 h-6 animate-spin text-primary-600" />
+                  <span className="ml-2 text-gray-600">Loading profile...</span>
+                </div>
+              ) : (
+                <>
+                  <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h1 className="text-2xl font-bold text-gray-900">{displayUserData.displayName || displayUserData.name || displayUserData.username}</h1>
+                        {isPremium() && (
+                          <div title="Premium User">
+                            <Crown className="w-5 h-5 text-primary-600" />
+                          </div>
+                        )}
+                        {isAdmin() && (
+                          <span className="px-2 py-1 text-xs font-semibold bg-red-100 text-red-800 rounded">Admin</span>
+                        )}
+                        {displayUserData.isVerified && (
+                          <span className="px-2 py-1 text-xs font-semibold bg-green-100 text-green-800 rounded">Verified</span>
+                        )}
                       </div>
-                    )}
-                    {isAdmin() && (
-                      <span className="px-2 py-1 text-xs font-semibold bg-red-100 text-red-800 rounded">Admin</span>
-                    )}
-                  </div>
-                  <p className="text-gray-600">{userData.email}</p>
-                </div>
-                <div className="flex items-center gap-4 mt-4 md:mt-0">
-                  <div className="text-center">
-                    <div className="flex items-center gap-1">
-                      <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                      <span className="font-semibold">{userData.rating || 0}</span>
+                      <p className="text-gray-600">{displayUserData.email}</p>
                     </div>
-                    <p className="text-sm text-gray-500">Rating</p>
+                    <div className="flex items-center gap-4 mt-4 md:mt-0">
+                      <div className="text-center">
+                        <div className="flex items-center gap-1">
+                          <Star className="w-4 h-4 text-yellow-400 fill-current" />
+                          <span className="font-semibold">{displayUserData.rating?.toFixed(1) || '0.0'}</span>
+                        </div>
+                        <p className="text-sm text-gray-500">Rating</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="font-semibold">{displayUserData.totalSales || 0}</p>
+                        <p className="text-sm text-gray-500">Items Sold</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="font-semibold">{displayUserData.totalListings || 0}</p>
+                        <p className="text-sm text-gray-500">Listings</p>
+                      </div>
+                    </div>
                   </div>
-                  <div className="text-center">
-                    <p className="font-semibold">{userData.totalSales || 0}</p>
-                    <p className="text-sm text-gray-500">Items Sold</p>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                    <div>
+                      <span className="text-gray-500">Phone:</span>
+                      <span className="ml-2 font-medium">{displayUserData.phone || 'Not provided'}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-500">Location:</span>
+                      <span className="ml-2 font-medium">{displayUserData.location || (displayUserData as UserProfile).university || displayUserData.school || 'Not provided'}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-500">Member since:</span>
+                      <span className="ml-2 font-medium">
+                        {displayUserData.joinedDate || (displayUserData as UserProfile).created_at
+                          ? new Date(displayUserData.joinedDate || (displayUserData as UserProfile).created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long' })
+                          : 'Recently'}
+                      </span>
+                    </div>
                   </div>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                <div>
-                  <span className="text-gray-500">Phone:</span>
-                  <span className="ml-2 font-medium">{userData.phone || 'Not provided'}</span>
-                </div>
-                <div>
-                  <span className="text-gray-500">Location:</span>
-                  <span className="ml-2 font-medium">{userData.location || userData.school || 'Not provided'}</span>
-                </div>
-                <div>
-                  <span className="text-gray-500">Member since:</span>
-                  <span className="ml-2 font-medium">
-                    {userData.joinedDate 
-                      ? new Date(userData.joinedDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long' })
-                      : 'Recently'}
-                  </span>
-                </div>
-              </div>
+                </>
+              )}
             </div>
           </div>
         </motion.div>
@@ -161,49 +352,136 @@ const Profile = () => {
               <div>
                 <div className="flex justify-between items-center mb-6">
                   <h2 className="text-lg font-semibold text-gray-900">My Listings</h2>
-                  <button className="btn-primary">
+                  <button 
+                    className="btn-primary"
+                    onClick={() => navigate('/create-listing')}
+                  >
                     Create New Listing
                   </button>
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {listings.map((listing) => (
-                    <motion.div
-                      key={listing.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="dd-card bg-surface border-surface overflow-hidden hover:shadow-md transition-shadow"
+                {isLoadingListings ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="w-6 h-6 animate-spin text-primary-600" />
+                    <span className="ml-2 text-gray-600">Loading listings...</span>
+                  </div>
+                ) : listings.length === 0 ? (
+                  <div className="text-center py-12">
+                    <ShoppingBag className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">No listings yet</h3>
+                    <p className="text-gray-500 mb-4">Create your first listing to start selling</p>
+                    <button 
+                      className="btn-primary"
+                      onClick={() => navigate('/create-listing')}
                     >
-                      <div className="h-32 bg-gray-200 flex items-center justify-center">
-                        <span className="text-gray-400">Image</span>
-                      </div>
-                      <div className="p-4">
-                        <h3 className="font-semibold text-gray-900 mb-1">{listing.title}</h3>
-                        <p className="text-lg font-bold text-primary-600 mb-2">${listing.price}</p>
-                        <div className="flex justify-between items-center text-sm text-gray-500">
-                          <span className={`px-2 py-1 rounded text-xs ${
-                            listing.status === 'Active' 
-                              ? 'bg-green-100 text-green-800' 
-                              : 'bg-gray-100 text-gray-800'
-                          }`}>
-                            {listing.status}
-                          </span>
-                          <span>{listing.views} views</span>
+                      Create New Listing
+                    </button>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {listings.map((listing) => (
+                      <motion.div
+                        key={listing.id}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="dd-card bg-surface border-surface overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
+                        onClick={() => navigate(`/listing/${listing.id}`)}
+                      >
+                        <div className="h-32 bg-gray-200 flex items-center justify-center overflow-hidden">
+                          {listing.images && listing.images.length > 0 ? (
+                            <img 
+                              src={listing.images[0]} 
+                              alt={listing.title}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <span className="text-gray-400">No Image</span>
+                          )}
                         </div>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
+                        <div className="p-4">
+                          <h3 className="font-semibold text-gray-900 mb-1">{listing.title}</h3>
+                          <p className="text-lg font-bold text-primary-600 mb-2">${listing.price}</p>
+                          <div className="flex justify-between items-center text-sm text-gray-500">
+                            <span className={`px-2 py-1 rounded text-xs ${
+                              listing.status === 'Active' 
+                                ? 'bg-green-100 text-green-800' 
+                                : listing.status === 'Sold'
+                                ? 'bg-gray-100 text-gray-800'
+                                : 'bg-yellow-100 text-yellow-800'
+                            }`}>
+                              {listing.status}
+                            </span>
+                            <span>{listing.views || 0} views</span>
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
             {activeTab === 'favorites' && (
-              <div className="text-center py-12">
-                <Heart className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No favorites yet</h3>
-                <p className="text-gray-500 mb-4">Items you favorite will appear here</p>
-                <button className="btn-primary">Browse Marketplace</button>
-              </div>
+              <>
+                {isLoadingFavorites ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="w-6 h-6 animate-spin text-primary-600" />
+                    <span className="ml-2 text-gray-600">Loading favorites...</span>
+                  </div>
+                ) : favorites.length === 0 ? (
+                  <div className="text-center py-12">
+                    <Heart className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">No favorites yet</h3>
+                    <p className="text-gray-500 mb-4">Items you favorite will appear here</p>
+                    <button 
+                      className="btn-primary"
+                      onClick={() => navigate('/marketplace')}
+                    >
+                      Browse Marketplace
+                    </button>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {favorites.map((listing) => (
+                      <motion.div
+                        key={listing.id}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="dd-card bg-surface border-surface overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
+                        onClick={() => navigate(`/listing/${listing.id}`)}
+                      >
+                        <div className="h-32 bg-gray-200 flex items-center justify-center overflow-hidden">
+                          {listing.images && listing.images.length > 0 ? (
+                            <img 
+                              src={listing.images[0]} 
+                              alt={listing.title}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <span className="text-gray-400">No Image</span>
+                          )}
+                        </div>
+                        <div className="p-4">
+                          <h3 className="font-semibold text-gray-900 mb-1">{listing.title}</h3>
+                          <p className="text-lg font-bold text-primary-600 mb-2">${listing.price}</p>
+                          <div className="flex justify-between items-center text-sm text-gray-500">
+                            <span className={`px-2 py-1 rounded text-xs ${
+                              listing.status === 'Active' 
+                                ? 'bg-green-100 text-green-800' 
+                                : listing.status === 'Sold'
+                                ? 'bg-gray-100 text-gray-800'
+                                : 'bg-yellow-100 text-yellow-800'
+                            }`}>
+                              {listing.status}
+                            </span>
+                            <span>{listing.views || 0} views</span>
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
+              </>
             )}
 
             {activeTab === 'messages' && (
@@ -280,28 +558,120 @@ const Profile = () => {
               <div className="space-y-6">
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">Account Settings</h3>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Display Name</label>
-                      <input type="text" defaultValue={userData.displayName || userData.name} className="input-field" />
+                  <form onSubmit={async (e) => {
+                    e.preventDefault()
+                    if (!userData?.id || userData.id === 0) {
+                      toast.error('Cannot update profile: User not found in database')
+                      return
+                    }
+
+                    const formData = new FormData(e.currentTarget)
+                    try {
+                      await userApi.updateProfileById(userData.id.toString(), {
+                        first_name: formData.get('first_name')?.toString() || null,
+                        last_name: formData.get('last_name')?.toString() || null,
+                        phone: formData.get('phone')?.toString() || null,
+                        university: formData.get('university')?.toString() || null,
+                        graduation_year: formData.get('graduation_year')?.toString() ? parseInt(formData.get('graduation_year')!.toString()) : null,
+                        profile_image_url: formData.get('profile_image_url')?.toString() || null
+                      })
+                      
+                      // Refresh profile data
+                      const updatedProfile = await userApi.getProfileById(userData.id.toString()) as UserProfile
+                      setUserData(updatedProfile)
+                      toast.success('Profile updated successfully!')
+                    } catch (err: any) {
+                      console.error('Error updating profile:', err)
+                      toast.error('Failed to update profile')
+                    }
+                  }}>
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">First Name</label>
+                        <input 
+                          type="text" 
+                          name="first_name"
+                          defaultValue={(displayUserData as UserProfile).first_name || ''} 
+                          className="input-field" 
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
+                        <input 
+                          type="text" 
+                          name="last_name"
+                          defaultValue={(displayUserData as UserProfile).last_name || ''} 
+                          className="input-field" 
+                        />
+                      </div>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                        <input 
+                          type="email" 
+                          defaultValue={displayUserData.email} 
+                          className="input-field" 
+                          disabled
+                        />
+                        <p className="text-xs text-gray-500 mt-1">Email cannot be changed</p>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
+                        <input 
+                          type="tel" 
+                          name="phone"
+                          defaultValue={displayUserData.phone || ''} 
+                          className="input-field" 
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">University</label>
+                        <input 
+                          type="text" 
+                          name="university"
+                          defaultValue={(displayUserData as UserProfile).university || displayUserData.location || displayUserData.school || ''} 
+                          className="input-field" 
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Graduation Year</label>
+                        <input 
+                          type="number" 
+                          name="graduation_year"
+                          min="2020"
+                          max="2030"
+                          defaultValue={(displayUserData as UserProfile).graduation_year || ''} 
+                          className="input-field" 
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Profile Image URL</label>
+                        <input 
+                          type="url" 
+                          name="profile_image_url"
+                          defaultValue={(displayUserData as UserProfile).profile_image_url || displayUserData.profileImage || ''} 
+                          className="input-field" 
+                          placeholder="https://example.com/image.jpg"
+                        />
+                      </div>
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
-                      <input type="email" defaultValue={userData.email} className="input-field" />
+                    
+                    <div className="pt-6 border-t border-gray-200">
+                      <button 
+                        type="submit"
+                        className="btn-primary"
+                        disabled={!userData?.id || userData.id === 0}
+                      >
+                        Save Changes
+                      </button>
+                      {(!userData?.id || userData.id === 0) && (
+                        <p className="text-sm text-gray-500 mt-2">
+                          Profile not found in database. Please contact support.
+                        </p>
+                      )}
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
-                      <input type="tel" defaultValue={userData.phone || ''} className="input-field" />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
-                      <input type="text" defaultValue={userData.location || userData.school || ''} className="input-field" />
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="pt-6 border-t border-gray-200">
-                  <button className="btn-primary">Save Changes</button>
+                  </form>
                 </div>
               </div>
             )}
