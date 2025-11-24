@@ -1,9 +1,14 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { X, Camera, DollarSign } from 'lucide-react'
+import { X, Camera } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import toast from 'react-hot-toast'
 import ProtectedFeature from '../components/ProtectedFeature'
+import { apiService } from '../services/apiService'
+import { CreateListingForm, ItemCondition, ItemCategory } from '../types'
 
 const CreateListing = () => {
+  const navigate = useNavigate()
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -40,10 +45,69 @@ const CreateListing = () => {
     setFormData(prev => ({ ...prev, images: prev.images.filter((_, i) => i !== index) }))
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Handle form submission
-    // Form submitted successfully
+    
+    console.log('Creating listing with data:', formData)
+    
+    // Validate required fields
+    if (!formData.title || !formData.description || !formData.price || !formData.category || !formData.condition) {
+      toast.error('Please fill in all required fields')
+      return
+    }
+
+    // Validate images
+    if (formData.images.length === 0) {
+      toast.error('Please upload at least one photo')
+      return
+    }
+
+    try {
+      // Map form data to CreateListingForm format
+      const conditionMap: Record<string, ItemCondition> = {
+        'New': ItemCondition.NEW,
+        'Like New': ItemCondition.LIKE_NEW,
+        'Good': ItemCondition.GOOD,
+        'Fair': ItemCondition.FAIR,
+        'Poor': ItemCondition.POOR
+      }
+
+      const categoryMap: Record<string, ItemCategory> = {
+        'Electronics': ItemCategory.ELECTRONICS,
+        'Books': ItemCategory.BOOKS,
+        'Appliances': ItemCategory.APPLIANCES,
+        'Furniture': ItemCategory.FURNITURE,
+        'Clothing': ItemCategory.CLOTHING,
+        'Sports & Recreation': ItemCategory.SPORTS,
+        'Other': ItemCategory.OTHER
+      }
+
+      const listingForm: CreateListingForm = {
+        title: formData.title,
+        description: formData.description,
+        price: parseFloat(formData.price),
+        condition: conditionMap[formData.condition] || ItemCondition.GOOD,
+        category: categoryMap[formData.category] || ItemCategory.OTHER,
+        images: formData.images,
+        location: formData.location || 'UL Campus',
+        pickupAvailable: true,
+        deliveryAvailable: false,
+        tags: []
+      }
+
+      const response = await apiService.createListing(listingForm)
+
+      if (response.success && response.data) {
+        toast.success('Listing created successfully!')
+        // Navigate to the new listing or marketplace
+        navigate(`/listing/${response.data.id}`, { state: { listing: response.data } })
+      } else {
+        toast.error(response.error || 'Failed to create listing')
+      }
+    } catch (error) {
+      console.error('Error creating listing:', error)
+      toast.error('An error occurred while creating the listing. Please try again.')
+    }
   }
 
   return (
@@ -130,14 +194,18 @@ const CreateListing = () => {
                   Price <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
-                  <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted w-5 h-5" />
+                  <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-gray-400">
+                    $
+                  </span>
                   <input
                     type="number"
+                    inputMode="decimal"
+                    step="0.01"
                     name="price"
                     value={formData.price}
                     onChange={handleInputChange}
                     placeholder="0.00"
-                    className="dd-input pl-10"
+                    className="dd-input pl-8"
                     required
                   />
                 </div>
