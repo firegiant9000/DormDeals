@@ -56,9 +56,12 @@ export const auth = getAuth(app);
 // Firebase Auth uses LOCAL persistence by default, which stores sessions in localStorage/indexedDB
 // This means users will stay logged in after page refresh
 // Explicitly set persistence to LOCAL to ensure sessions persist across page refreshes
-setPersistence(auth, browserLocalPersistence).catch((error) => {
-  console.error('Error setting auth persistence:', error);
-});
+// This must be done before any auth operations
+if (typeof window !== 'undefined') {
+  setPersistence(auth, browserLocalPersistence).catch((error) => {
+    console.error('Error setting auth persistence:', error);
+  });
+}
 export const db = getFirestore(app);
 export const storage = getStorage(app);
 

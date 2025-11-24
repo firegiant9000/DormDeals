@@ -352,7 +352,7 @@ app.get('/api/users/:id/listings', async (req, res) => {
     
     // Transform to match frontend format
     const listings = rows.map(listing => ({
-      id: listing.id,
+      id: listing.id?.toString() || '',
       title: listing.title,
       description: listing.description,
       price: parseFloat(listing.price),
@@ -390,7 +390,8 @@ app.get('/api/users/:id/favorites', async (req, res) => {
     
     // Transform to match frontend format
     const favorites = rows.map(listing => ({
-      id: listing.id,
+      id: listing.id?.toString() || '',
+      listing_id: listing.id,
       title: listing.title,
       description: listing.description,
       price: parseFloat(listing.price),
@@ -479,7 +480,7 @@ app.get('/api/users/:id/cart', async (req, res) => {
     
     // Transform to match frontend format
     const cartItems = rows.map(item => ({
-      id: item.id,
+      id: item.listing_id?.toString() || item.id?.toString() || '',
       listing_id: item.listing_id,
       title: item.title,
       description: item.description,

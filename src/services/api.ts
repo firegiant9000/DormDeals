@@ -49,10 +49,10 @@ api.interceptors.response.use(
 
 // API endpoints
 export const endpoints = {
-  // Items
-  items: '/items',
-  itemById: (id: string) => `/items/${id}`,
-  userItems: '/items/user',
+  // Items/Listings (backend uses /api/listings)
+  items: '/listings',
+  itemById: (id: string) => `/listings/${id}`,
+  userItems: '/listings/user',
   
   // Users
   users: '/users',

@@ -174,8 +174,52 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Save to database
       await userApi.addToCart(dbUser.id.toString(), item.id.toString(), 1)
       
-      // Update local state
-      setCartItems(prev => (prev.some(i => i.id === item.id) ? prev : [...prev, item]))
+      // Reload cart from database to get the latest state
+      try {
+        const updatedCartData = await userApi.getCart(dbUser.id.toString()) as any[]
+        if (Array.isArray(updatedCartData)) {
+          const transformedCart: Item[] = updatedCartData.map((cartItem: any) => ({
+            id: cartItem.id?.toString() || cartItem.listing_id?.toString() || '',
+            title: cartItem.title || '',
+            price: parseFloat(cartItem.price) || 0,
+            description: cartItem.description || '',
+            category: (cartItem.category as any) || 'other',
+            images: cartItem.images || [],
+            location: cartItem.location || '',
+            condition: (cartItem.condition as any) || 'good',
+            seller: {
+              id: '',
+              email: '',
+              name: '',
+              school: 'University of Louisiana',
+              joinDate: new Date(),
+              joinedDate: new Date().toISOString(),
+              rating: 0,
+              reviewCount: 0,
+              totalSales: 0,
+              isVerified: false
+            },
+            pickupAvailable: true,
+            deliveryAvailable: false,
+            createdAt: new Date(cartItem.createdAt || cartItem.created_at || Date.now()),
+            updatedAt: new Date(cartItem.updatedAt || cartItem.updated_at || Date.now()),
+            posted: new Date(cartItem.createdAt || cartItem.created_at || Date.now()).toISOString(),
+            status: (cartItem.status as any) || 'active',
+            views: cartItem.views || 0,
+            likes: 0,
+            isLiked: false,
+            isInCart: true,
+            isInWishlist: false,
+            tags: []
+          }))
+          setCartItems(transformedCart)
+        }
+      } catch (reloadError) {
+        console.error('Error reloading cart:', reloadError)
+        // Fallback to local update if reload fails
+        setCartItems(prev => (prev.some(i => i.id === item.id) ? prev : [...prev, item]))
+      }
+      
       // Ensure exclusivity: remove from wishlist if present
       const updatedWishlist = wishlistItems.filter(i => i.id !== item.id)
       setWishlistItems(updatedWishlist)
@@ -189,6 +233,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }
       
+      toast.success('Item added to cart')
       setShowCart(true)
     } catch (error) {
       console.error('Error adding to cart:', error)
@@ -216,8 +261,52 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Save to database
       await userApi.addToFavorites(dbUser.id.toString(), item.id.toString())
       
-      // Update local state
-      setWishlistItems(prev => (prev.some(i => i.id === item.id) ? prev : [...prev, item]))
+      // Reload wishlist from database to get the latest state
+      try {
+        const updatedWishlistData = await userApi.getFavorites(dbUser.id.toString()) as any[]
+        if (Array.isArray(updatedWishlistData)) {
+          const transformedWishlist: Item[] = updatedWishlistData.map((wishlistItem: any) => ({
+            id: wishlistItem.id?.toString() || '',
+            title: wishlistItem.title || '',
+            price: parseFloat(wishlistItem.price) || 0,
+            description: wishlistItem.description || '',
+            category: (wishlistItem.category as any) || 'other',
+            images: wishlistItem.images || [],
+            location: wishlistItem.location || '',
+            condition: (wishlistItem.condition as any) || 'good',
+            seller: {
+              id: '',
+              email: '',
+              name: '',
+              school: 'University of Louisiana',
+              joinDate: new Date(),
+              joinedDate: new Date().toISOString(),
+              rating: 0,
+              reviewCount: 0,
+              totalSales: 0,
+              isVerified: false
+            },
+            pickupAvailable: true,
+            deliveryAvailable: false,
+            createdAt: new Date(wishlistItem.createdAt || wishlistItem.created_at || wishlistItem.favoritedAt || Date.now()),
+            updatedAt: new Date(wishlistItem.updatedAt || wishlistItem.updated_at || Date.now()),
+            posted: new Date(wishlistItem.createdAt || wishlistItem.created_at || wishlistItem.favoritedAt || Date.now()).toISOString(),
+            status: (wishlistItem.status as any) || 'active',
+            views: wishlistItem.views || 0,
+            likes: 0,
+            isLiked: false,
+            isInCart: false,
+            isInWishlist: true,
+            tags: []
+          }))
+          setWishlistItems(transformedWishlist)
+        }
+      } catch (reloadError) {
+        console.error('Error reloading wishlist:', reloadError)
+        // Fallback to local update if reload fails
+        setWishlistItems(prev => (prev.some(i => i.id === item.id) ? prev : [...prev, item]))
+      }
+      
       // Ensure exclusivity: remove from cart if present
       const updatedCart = cartItems.filter(i => i.id !== item.id)
       setCartItems(updatedCart)
@@ -231,6 +320,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }
       
+      toast.success('Item added to wishlist')
       setShowWishlist(true)
     } catch (error) {
       console.error('Error adding to wishlist:', error)
