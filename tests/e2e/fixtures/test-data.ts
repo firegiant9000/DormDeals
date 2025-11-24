@@ -113,7 +113,7 @@ export const mockApiResponses = {
 };
 
 /**
- * Test form data
+ * Test form data for DormDeals features
  */
 export const testFormData = {
   login: {
@@ -128,11 +128,123 @@ export const testFormData = {
     confirmPassword: 'NewTest123!',
   },
   
+  // Search and filter form data
   search: {
+    validInput: {
+      query: 'laptop',
+      category: 'Electronics',
+      minPrice: '50',
+      maxPrice: '1000',
+      condition: 'Like New',
+      pickupMethod: 'Both Available',
+      location: 'Lafayette, LA',
+      sortBy: 'Newest',
+    },
+    invalidInput: {
+      query: '',
+      category: '',
+      minPrice: 'abc',
+      maxPrice: '50', // Less than minPrice
+      condition: '',
+      pickupMethod: '',
+      location: '',
+      sortBy: '',
+    },
+    edgeCases: {
+      veryLongQuery: 'a'.repeat(1000),
+      specialChars: '!@#$%^&*()',
+      unicodeChars: '你好世界',
+      negativePrice: '-100',
+      zeroPrice: '0',
+      veryHighPrice: '999999999',
+    },
+  },
+
+  // Create listing form data
+  createListing: {
+    validInput: {
+      title: 'MacBook Pro 13-inch M2',
+      description: 'Excellent condition MacBook Pro with M2 chip. Perfect for students. Includes original charger and box.',
+      price: '1200',
+      category: 'Electronics',
+      condition: 'Like New',
+      location: 'Lafayette, LA',
+      pickupAvailable: true,
+      deliveryAvailable: true,
+      deliveryFee: '5',
+    },
+    invalidInput: {
+      title: '',
+      description: '',
+      price: '',
+      category: '',
+      condition: '',
+      location: '',
+      pickupAvailable: false,
+      deliveryAvailable: false,
+      deliveryFee: '',
+    },
+    minimalInput: {
+      title: 'Test Item',
+      description: 'Test description',
+      price: '50',
+      category: 'Other',
+      condition: 'Good',
+      location: 'Lafayette, LA',
+      pickupAvailable: true,
+      deliveryAvailable: false,
+    },
+  },
+
+  // Checkout form data
+  checkout: {
+    validInput: {
+      fullName: 'John Doe',
+      email: 'john.doe@example.com',
+      address: '123 Main Street',
+      city: 'Lafayette',
+      state: 'LA',
+      zipCode: '70503',
+      cardNumber: '1234567890123456',
+      expiryDate: '12/25',
+      cvc: '123',
+      cardName: 'John Doe',
+    },
+    invalidInput: {
+      fullName: '',
+      email: 'invalid-email',
+      address: '',
+      city: '',
+      state: '',
+      zipCode: '123',
+      cardNumber: '1234',
+      expiryDate: '13/20',
+      cvc: '12',
+      cardName: '',
+    },
+  },
+};
+
+/**
+ * Test data for edge cases and special scenarios
+ */
+export const testData = {
+  validInput: {
     query: 'laptop',
     category: 'Electronics',
-    minPrice: 0,
-    maxPrice: 1000,
+    minPrice: '50',
+    maxPrice: '1000',
+  },
+  invalidInput: {
+    query: '',
+    category: '',
+    minPrice: 'abc',
+    maxPrice: '50',
+  },
+  edgeCases: {
+    veryLongInput: 'a'.repeat(1000),
+    specialChars: '!@#$%^&*()',
+    unicodeChars: '你好世界',
   },
 };
 
