@@ -55,14 +55,14 @@ build:
 deploy_production:
   stage: deploy
   needs:
-    - build          # wait for build job to pass
+    - build
   dependencies:
-    - build          # download dist/ artifact from build job
+    - build
   script:
     - npm install -g firebase-tools
-    # uses default project from .firebaserc and FIREBASE_TOKEN from GitLab CI variables
     - firebase deploy --only hosting --token "$FIREBASE_TOKEN"
   only:
-    - main           # run only when changes land on main
+    - main
   environment:
     name: production
+    url: https://dormdeals-9cb29.web.app
