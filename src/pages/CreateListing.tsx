@@ -1,9 +1,14 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { X, Camera, DollarSign } from 'lucide-react'
+import { X, Camera } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import toast from 'react-hot-toast'
 import ProtectedFeature from '../components/ProtectedFeature'
+import { apiService } from '../services/apiService'
+import { CreateListingForm, ItemCondition, ItemCategory } from '../types'
 
 const CreateListing = () => {
+  const navigate = useNavigate()
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -13,6 +18,7 @@ const CreateListing = () => {
     location: '',
     images: [] as File[]
   })
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
 
   const categories = [
     'Electronics',
@@ -40,10 +46,94 @@ const CreateListing = () => {
     setFormData(prev => ({ ...prev, images: prev.images.filter((_, i) => i !== index) }))
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Handle form submission
-    // Form submitted successfully
+    
+    console.log('Creating listing with data:', formData)
+    
+    // Clear previous validation errors
+    setValidationErrors({})
+    
+    // Validate required fields
+    const errors: Record<string, string> = {}
+    
+    if (!formData.title.trim()) {
+      errors.title = 'Title is required'
+    }
+    
+    if (!formData.description.trim()) {
+      errors.description = 'Description is required'
+    }
+    
+    if (!formData.price || parseFloat(formData.price) <= 0) {
+      errors.price = 'Price must be greater than 0'
+    }
+    
+    if (!formData.category) {
+      errors.category = 'Category is required'
+    }
+    
+    if (!formData.condition) {
+      errors.condition = 'Condition is required'
+    }
+    
+    if (formData.images.length === 0) {
+      errors.images = 'Please upload at least one photo'
+    }
+    
+    // If there are validation errors, show them and return
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors)
+      toast.error('Please fix the errors in the form')
+      return
+    }
+
+    try {
+      // Map form data to CreateListingForm format
+      const conditionMap: Record<string, ItemCondition> = {
+        'New': ItemCondition.NEW,
+        'Like New': ItemCondition.LIKE_NEW,
+        'Good': ItemCondition.GOOD,
+        'Fair': ItemCondition.FAIR,
+        'Poor': ItemCondition.POOR
+      }
+
+      const categoryMap: Record<string, ItemCategory> = {
+        'Electronics': ItemCategory.ELECTRONICS,
+        'Books': ItemCategory.BOOKS,
+        'Appliances': ItemCategory.APPLIANCES,
+        'Furniture': ItemCategory.FURNITURE,
+        'Clothing': ItemCategory.CLOTHING,
+        'Sports & Recreation': ItemCategory.SPORTS,
+        'Other': ItemCategory.OTHER
+      }
+
+      const listingForm: CreateListingForm = {
+        title: formData.title.trim(),
+        description: formData.description.trim(),
+        price: parseFloat(formData.price),
+        condition: conditionMap[formData.condition] || ItemCondition.GOOD,
+        category: categoryMap[formData.category] || ItemCategory.OTHER,
+        images: formData.images,
+        location: formData.location.trim() || 'UL Campus',
+        pickupAvailable: true,
+        deliveryAvailable: false,
+        tags: []
+      }
+
+      const response = await apiService.createListing(listingForm)
+
+      if (response.success && response.data) {
+        toast.success('Listing created successfully!')
+        // Navigate to the new listing page
+        navigate(`/listing/${response.data.id}`, { state: { listing: response.data } })
+      } else {
+        toast.error(response.error || 'Failed to create listing')
+      }
+    } catch (error) {
+      console.error('Error creating listing:', error)
+      toast.error('An error occurred while creating the listing. Please try again.')
+    }
   }
 
   return (
@@ -83,6 +173,9 @@ const CreateListing = () => {
                   <p className="text-sm text-muted">PNG, JPG up to 10MB each</p>
                 </label>
               </div>
+              {validationErrors.images && (
+                <p className="mt-1 text-sm text-red-500">{validationErrors.images}</p>
+              )}
               
               {/* Preview Images */}
               {formData.images.length > 0 && (
@@ -121,6 +214,9 @@ const CreateListing = () => {
                 className="dd-input"
                 required
               />
+              {validationErrors.title && (
+                <p className="mt-1 text-sm text-red-500">{validationErrors.title}</p>
+              )}
             </div>
 
             {/* Price and Category */}
@@ -130,17 +226,24 @@ const CreateListing = () => {
                   Price <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
-                  <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted w-5 h-5" />
+                  <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-gray-400">
+                    $
+                  </span>
                   <input
                     type="number"
+                    inputMode="decimal"
+                    step="0.01"
                     name="price"
                     value={formData.price}
                     onChange={handleInputChange}
                     placeholder="0.00"
-                    className="dd-input pl-10"
+                    className="dd-input pl-8"
                     required
                   />
                 </div>
+                {validationErrors.price && (
+                  <p className="mt-1 text-sm text-red-500">{validationErrors.price}</p>
+                )}
               </div>
 
               <div>
@@ -159,6 +262,9 @@ const CreateListing = () => {
                     <option key={category} value={category}>{category}</option>
                   ))}
                 </select>
+                {validationErrors.category && (
+                  <p className="mt-1 text-sm text-red-500">{validationErrors.category}</p>
+                )}
               </div>
             </div>
 
@@ -183,6 +289,9 @@ const CreateListing = () => {
                   </label>
                 ))}
               </div>
+              {validationErrors.condition && (
+                <p className="mt-1 text-sm text-red-500">{validationErrors.condition}</p>
+              )}
             </div>
 
             {/* Description */}
@@ -199,6 +308,9 @@ const CreateListing = () => {
                 className="dd-input"
                 required
               />
+              {validationErrors.description && (
+                <p className="mt-1 text-sm text-red-500">{validationErrors.description}</p>
+              )}
             </div>
 
             {/* Location */}
