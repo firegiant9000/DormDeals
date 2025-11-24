@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { User, Settings, Heart, ShoppingBag, MessageSquare, Star, Edit3, BarChart3, Users, Crown, Loader2 } from 'lucide-react'
+import { User, Settings, Heart, ShoppingBag, MessageSquare, Star, Edit3, BarChart3, Users, Crown, Loader2, ShoppingCart } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useAccessControl } from '../hooks/useAccessControl'
 import ProtectedFeature from '../components/ProtectedFeature'
@@ -57,9 +57,11 @@ const Profile = () => {
   const [userData, setUserData] = useState<UserProfile | null>(null)
   const [listings, setListings] = useState<Listing[]>([])
   const [favorites, setFavorites] = useState<Listing[]>([])
+  const [cartItems, setCartItems] = useState<Listing[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isLoadingListings, setIsLoadingListings] = useState(false)
   const [isLoadingFavorites, setIsLoadingFavorites] = useState(false)
+  const [isLoadingCart, setIsLoadingCart] = useState(false)
 
   // Fetch user profile from database
   useEffect(() => {
@@ -212,6 +214,39 @@ const Profile = () => {
     fetchFavorites()
   }, [activeTab, userData?.id])
 
+  // Fetch cart items when cart tab is active
+  useEffect(() => {
+    const fetchCart = async () => {
+      // Only fetch if we have a valid database user ID
+      if (activeTab !== 'cart' || !userData?.id || userData.id === 0) {
+        // Clear cart if user is not in database
+        setCartItems([])
+        return
+      }
+
+      try {
+        setIsLoadingCart(true)
+        // Fetch only real cart items from database for this user
+        const userCart = await userApi.getCart(userData.id.toString()) as Listing[]
+        // Only set cart items if we got valid data from the API
+        if (Array.isArray(userCart)) {
+          setCartItems(userCart)
+        } else {
+          setCartItems([])
+        }
+      } catch (error) {
+        console.error('Error fetching cart from database:', error)
+        // Clear cart on error - don't show any mock data
+        setCartItems([])
+        toast.error('Failed to load cart')
+      } finally {
+        setIsLoadingCart(false)
+      }
+    }
+
+    fetchCart()
+  }, [activeTab, userData?.id])
+
   // Fallback user data
   const displayUserData = userData || {
     id: 0,
@@ -235,6 +270,7 @@ const Profile = () => {
 
   const tabs = [
     { id: 'listings', label: 'My Listings', icon: ShoppingBag },
+    { id: 'cart', label: 'Cart', icon: ShoppingCart },
     { id: 'favorites', label: 'Favorites', icon: Heart },
     { id: 'messages', label: 'Messages', icon: MessageSquare },
     ...(canAccess('advanced_analytics') ? [{ id: 'analytics', label: 'Analytics', icon: BarChart3 }] : []),
@@ -441,6 +477,69 @@ const Profile = () => {
                   </div>
                 )}
               </div>
+            )}
+
+            {activeTab === 'cart' && (
+              <>
+                {isLoadingCart ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="w-6 h-6 animate-spin text-primary-600" />
+                    <span className="ml-2 text-gray-600">Loading cart...</span>
+                  </div>
+                ) : cartItems.length === 0 ? (
+                  <div className="text-center py-12">
+                    <ShoppingCart className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">Your cart is empty</h3>
+                    <p className="text-gray-500 mb-4">Items you add to cart will appear here</p>
+                    <button 
+                      className="btn-primary"
+                      onClick={() => navigate('/marketplace')}
+                    >
+                      Browse Marketplace
+                    </button>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {cartItems.map((listing) => (
+                      <motion.div
+                        key={listing.id}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="dd-card bg-surface border-surface overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
+                        onClick={() => navigate(`/listing/${listing.id}`)}
+                      >
+                        <div className="h-32 bg-gray-200 flex items-center justify-center overflow-hidden">
+                          {listing.images && listing.images.length > 0 ? (
+                            <img 
+                              src={listing.images[0]} 
+                              alt={listing.title}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <span className="text-gray-400">No Image</span>
+                          )}
+                        </div>
+                        <div className="p-4">
+                          <h3 className="font-semibold text-gray-900 mb-1">{listing.title}</h3>
+                          <p className="text-lg font-bold text-primary-600 mb-2">${listing.price}</p>
+                          <div className="flex justify-between items-center text-sm text-gray-500">
+                            <span className={`px-2 py-1 rounded text-xs ${
+                              listing.status === 'Active' 
+                                ? 'bg-green-100 text-green-800' 
+                                : listing.status === 'Sold'
+                                ? 'bg-gray-100 text-gray-800'
+                                : 'bg-yellow-100 text-yellow-800'
+                            }`}>
+                              {listing.status}
+                            </span>
+                            <span>{listing.views || 0} views</span>
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
+              </>
             )}
 
             {activeTab === 'favorites' && (
