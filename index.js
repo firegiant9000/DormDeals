@@ -167,10 +167,16 @@ app.delete('/api/listings/:id', async (req, res) => {
 });
 
 // User routes
+// Get user by ID
 app.get('/api/users/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { rows } = await pool.query('SELECT id, username, email, created_at FROM users WHERE id = $1', [id]);
+    const { rows } = await pool.query(
+      `SELECT id, uuid, username, email, first_name, last_name, phone, university, 
+       graduation_year, profile_image_url, is_verified, is_active, created_at, updated_at
+       FROM users WHERE id = $1`,
+      [id]
+    );
     
     if (rows.length === 0) {
       return res.status(404).json({ error: 'User not found' });
@@ -179,6 +185,375 @@ app.get('/api/users/:id', async (req, res) => {
     res.json(rows[0]);
   } catch (error) {
     console.error('Error fetching user:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get user by email (for linking Firebase auth to PostgreSQL)
+app.get('/api/users/email/:email', async (req, res) => {
+  try {
+    const { email } = req.params;
+    const { rows } = await pool.query(
+      `SELECT id, uuid, username, email, first_name, last_name, phone, university, 
+       graduation_year, profile_image_url, is_verified, is_active, created_at, updated_at
+       FROM users WHERE email = $1`,
+      [email]
+    );
+    
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    res.json(rows[0]);
+  } catch (error) {
+    console.error('Error fetching user by email:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get full user profile with stats
+app.get('/api/users/:id/profile', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Get user data
+    const userQuery = await pool.query(
+      `SELECT id, uuid, username, email, first_name, last_name, phone, university, 
+       graduation_year, profile_image_url, is_verified, is_active, created_at, updated_at
+       FROM users WHERE id = $1`,
+      [id]
+    );
+    
+    if (userQuery.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    const user = userQuery.rows[0];
+    
+    // Get user stats
+    const statsQuery = await pool.query(
+      `SELECT 
+        COUNT(DISTINCT l.id) as total_listings,
+        COUNT(DISTINCT CASE WHEN l.is_sold = true THEN l.id END) as total_sales,
+        COUNT(DISTINCT f.id) as total_favorites,
+        COALESCE(AVG(r.rating), 0) as avg_rating,
+        COUNT(DISTINCT r.id) as review_count
+       FROM users u
+       LEFT JOIN listings l ON l.seller_id = u.id
+       LEFT JOIN favorites f ON f.user_id = u.id
+       LEFT JOIN reviews r ON r.reviewee_id = u.id
+       WHERE u.id = $1
+       GROUP BY u.id`,
+      [id]
+    );
+    
+    const stats = statsQuery.rows[0] || {
+      total_listings: 0,
+      total_sales: 0,
+      total_favorites: 0,
+      avg_rating: 0,
+      review_count: 0
+    };
+    
+    // Combine user data with stats
+    const profile = {
+      ...user,
+      displayName: user.first_name && user.last_name 
+        ? `${user.first_name} ${user.last_name}` 
+        : user.username,
+      name: user.first_name && user.last_name 
+        ? `${user.first_name} ${user.last_name}` 
+        : user.username,
+      location: user.university || 'UL Campus',
+      school: user.university || 'University of Louisiana',
+      rating: parseFloat(stats.avg_rating) || 0,
+      reviewCount: parseInt(stats.review_count) || 0,
+      totalSales: parseInt(stats.total_sales) || 0,
+      totalListings: parseInt(stats.total_listings) || 0,
+      totalFavorites: parseInt(stats.total_favorites) || 0,
+      profileImage: user.profile_image_url,
+      joinedDate: user.created_at,
+      joinDate: user.created_at
+    };
+    
+    res.json(profile);
+  } catch (error) {
+    console.error('Error fetching user profile:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get user's listings
+app.get('/api/users/:id/listings', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { rows } = await pool.query(
+      `SELECT l.*, c.name as category_name
+       FROM listings l
+       LEFT JOIN categories c ON l.category_id = c.id
+       WHERE l.seller_id = $1
+       ORDER BY l.created_at DESC`,
+      [id]
+    );
+    
+    // Transform to match frontend format
+    const listings = rows.map(listing => ({
+      id: listing.id,
+      title: listing.title,
+      description: listing.description,
+      price: parseFloat(listing.price),
+      category: listing.category_name || 'Other',
+      condition: listing.condition,
+      images: listing.images || [],
+      location: listing.location,
+      status: listing.is_sold ? 'Sold' : (listing.is_active ? 'Active' : 'Inactive'),
+      views: listing.views_count || 0,
+      createdAt: listing.created_at,
+      isSold: listing.is_sold,
+      isActive: listing.is_active
+    }));
+    
+    res.json(listings);
+  } catch (error) {
+    console.error('Error fetching user listings:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get user's favorites (wishlist)
+app.get('/api/users/:id/favorites', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { rows } = await pool.query(
+      `SELECT l.*, c.name as category_name, f.created_at as favorited_at
+       FROM favorites f
+       JOIN listings l ON f.listing_id = l.id
+       LEFT JOIN categories c ON l.category_id = c.id
+       WHERE f.user_id = $1
+       ORDER BY f.created_at DESC`,
+      [id]
+    );
+    
+    // Transform to match frontend format
+    const favorites = rows.map(listing => ({
+      id: listing.id,
+      title: listing.title,
+      description: listing.description,
+      price: parseFloat(listing.price),
+      category: listing.category_name || 'Other',
+      condition: listing.condition,
+      images: listing.images || [],
+      location: listing.location,
+      status: listing.is_sold ? 'Sold' : (listing.is_active ? 'Active' : 'Inactive'),
+      views: listing.views_count || 0,
+      createdAt: listing.created_at,
+      favoritedAt: listing.favorited_at
+    }));
+    
+    res.json(favorites);
+  } catch (error) {
+    console.error('Error fetching user favorites:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Add item to favorites (wishlist)
+app.post('/api/users/:id/favorites', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { listing_id } = req.body;
+    
+    if (!listing_id) {
+      return res.status(400).json({ error: 'listing_id is required' });
+    }
+    
+    const { rows } = await pool.query(
+      `INSERT INTO favorites (user_id, listing_id) 
+       VALUES ($1, $2) 
+       ON CONFLICT (user_id, listing_id) DO NOTHING
+       RETURNING *`,
+      [id, listing_id]
+    );
+    
+    if (rows.length === 0) {
+      return res.status(200).json({ message: 'Item already in favorites' });
+    }
+    
+    res.status(201).json(rows[0]);
+  } catch (error) {
+    console.error('Error adding to favorites:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Remove item from favorites (wishlist)
+app.delete('/api/users/:id/favorites/:listing_id', async (req, res) => {
+  try {
+    const { id, listing_id } = req.params;
+    
+    const { rows } = await pool.query(
+      `DELETE FROM favorites 
+       WHERE user_id = $1 AND listing_id = $2 
+       RETURNING *`,
+      [id, listing_id]
+    );
+    
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Favorite not found' });
+    }
+    
+    res.status(204).send();
+  } catch (error) {
+    console.error('Error removing from favorites:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get user's cart items
+app.get('/api/users/:id/cart', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { rows } = await pool.query(
+      `SELECT l.*, cat.name as category_name, cart.quantity, cart.created_at as added_at, cart.updated_at
+       FROM cart
+       JOIN listings l ON cart.listing_id = l.id
+       LEFT JOIN categories cat ON l.category_id = cat.id
+       WHERE cart.user_id = $1
+       ORDER BY cart.created_at DESC`,
+      [id]
+    );
+    
+    // Transform to match frontend format
+    const cartItems = rows.map(item => ({
+      id: item.id,
+      listing_id: item.listing_id,
+      title: item.title,
+      description: item.description,
+      price: parseFloat(item.price),
+      category: item.category_name || 'Other',
+      condition: item.condition,
+      images: item.images || [],
+      location: item.location,
+      status: item.is_sold ? 'Sold' : (item.is_active ? 'Active' : 'Inactive'),
+      views: item.views_count || 0,
+      quantity: item.quantity || 1,
+      addedAt: item.added_at,
+      createdAt: item.created_at
+    }));
+    
+    res.json(cartItems);
+  } catch (error) {
+    console.error('Error fetching cart items:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Add item to cart
+app.post('/api/users/:id/cart', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { listing_id, quantity = 1 } = req.body;
+    
+    if (!listing_id) {
+      return res.status(400).json({ error: 'listing_id is required' });
+    }
+    
+    const { rows } = await pool.query(
+      `INSERT INTO cart (user_id, listing_id, quantity) 
+       VALUES ($1, $2, $3) 
+       ON CONFLICT (user_id, listing_id) 
+       DO UPDATE SET quantity = cart.quantity + $3, updated_at = NOW()
+       RETURNING *`,
+      [id, listing_id, quantity]
+    );
+    
+    res.status(201).json(rows[0]);
+  } catch (error) {
+    console.error('Error adding to cart:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Update cart item quantity
+app.put('/api/users/:id/cart/:listing_id', async (req, res) => {
+  try {
+    const { id, listing_id } = req.params;
+    const { quantity } = req.body;
+    
+    if (!quantity || quantity < 1) {
+      return res.status(400).json({ error: 'quantity must be at least 1' });
+    }
+    
+    const { rows } = await pool.query(
+      `UPDATE cart 
+       SET quantity = $1, updated_at = NOW() 
+       WHERE user_id = $2 AND listing_id = $3 
+       RETURNING *`,
+      [quantity, id, listing_id]
+    );
+    
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Cart item not found' });
+    }
+    
+    res.json(rows[0]);
+  } catch (error) {
+    console.error('Error updating cart item:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Remove item from cart
+app.delete('/api/users/:id/cart/:listing_id', async (req, res) => {
+  try {
+    const { id, listing_id } = req.params;
+    
+    const { rows } = await pool.query(
+      `DELETE FROM cart 
+       WHERE user_id = $1 AND listing_id = $2 
+       RETURNING *`,
+      [id, listing_id]
+    );
+    
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Cart item not found' });
+    }
+    
+    res.status(204).send();
+  } catch (error) {
+    console.error('Error removing from cart:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Update user profile
+app.put('/api/users/:id/profile', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { first_name, last_name, phone, university, graduation_year, profile_image_url } = req.body;
+    
+    const { rows } = await pool.query(
+      `UPDATE users 
+       SET first_name = COALESCE($1, first_name),
+           last_name = COALESCE($2, last_name),
+           phone = COALESCE($3, phone),
+           university = COALESCE($4, university),
+           graduation_year = COALESCE($5, graduation_year),
+           profile_image_url = COALESCE($6, profile_image_url),
+           updated_at = NOW()
+       WHERE id = $7
+       RETURNING id, uuid, username, email, first_name, last_name, phone, university, 
+                 graduation_year, profile_image_url, is_verified, is_active, created_at, updated_at`,
+      [first_name, last_name, phone, university, graduation_year, profile_image_url, id]
+    );
+    
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    res.json(rows[0]);
+  } catch (error) {
+    console.error('Error updating user profile:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

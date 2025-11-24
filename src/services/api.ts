@@ -115,6 +115,19 @@ export const userApi = {
   getProfile: () => apiGet(endpoints.userProfile),
   updateProfile: (data: any) => apiPut(endpoints.userProfile, data),
   getById: (id: string) => apiGet(endpoints.userById(id)),
+  getProfileById: (id: string) => apiGet(`/users/${id}/profile`),
+  getListings: (id: string) => apiGet(`/users/${id}/listings`),
+  getFavorites: (id: string) => apiGet(`/users/${id}/favorites`),
+  getByEmail: (email: string) => apiGet(`/users/email/${encodeURIComponent(email)}`),
+  updateProfileById: (id: string, data: any) => apiPut(`/users/${id}/profile`, data),
+  // Cart operations
+  getCart: (id: string) => apiGet(`/users/${id}/cart`),
+  addToCart: (id: string, listingId: string, quantity?: number) => apiPost(`/users/${id}/cart`, { listing_id: listingId, quantity: quantity || 1 }),
+  updateCartItem: (id: string, listingId: string, quantity: number) => apiPut(`/users/${id}/cart/${listingId}`, { quantity }),
+  removeFromCart: (id: string, listingId: string) => apiDelete(`/users/${id}/cart/${listingId}`),
+  // Wishlist/Favorites operations
+  addToFavorites: (id: string, listingId: string) => apiPost(`/users/${id}/favorites`, { listing_id: listingId }),
+  removeFromFavorites: (id: string, listingId: string) => apiDelete(`/users/${id}/favorites/${listingId}`),
 }
 
 // Specific API functions for categories
