@@ -241,6 +241,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }
       
+      toast.success('Item added to cart')
       setShowCart(true)
     } catch (error) {
       console.error('Error adding to cart:', error)
@@ -278,6 +279,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }
       
+      toast.success('Item added to wishlist')
       setShowWishlist(true)
     } catch (error) {
       console.error('Error adding to wishlist:', error)

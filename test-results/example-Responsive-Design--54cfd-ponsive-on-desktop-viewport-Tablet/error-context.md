@@ -1,0 +1,202 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e4]:
+  - navigation [ref=e5]:
+    - generic [ref=e7]:
+      - link "DormDeals" [ref=e8] [cursor=pointer]:
+        - /url: /
+        - generic [ref=e9]:
+          - img [ref=e10]
+          - img [ref=e14]
+        - generic [ref=e17]: DormDeals
+      - generic [ref=e18]:
+        - link "Home" [ref=e19] [cursor=pointer]:
+          - /url: /
+          - img [ref=e20]
+          - generic [ref=e23]: Home
+        - link "Marketplace" [ref=e24] [cursor=pointer]:
+          - /url: /marketplace
+          - img [ref=e25]
+          - generic [ref=e28]: Marketplace
+        - link "About" [ref=e29] [cursor=pointer]:
+          - /url: /about
+          - img [ref=e30]
+          - generic [ref=e32]: About
+      - generic [ref=e33]:
+        - button "Switch to dark mode" [ref=e34] [cursor=pointer]:
+          - img [ref=e35]
+        - generic [ref=e37]:
+          - button [ref=e38] [cursor=pointer]:
+            - img [ref=e39]
+          - button [ref=e43] [cursor=pointer]:
+            - img [ref=e44]
+          - link [ref=e46] [cursor=pointer]:
+            - /url: /chat
+            - img [ref=e47]
+        - button "Login" [ref=e50] [cursor=pointer]:
+          - img [ref=e51]
+          - generic [ref=e54]: Login
+          - img [ref=e55]
+  - main [ref=e57]:
+    - main [ref=e60]:
+      - generic [ref=e62]:
+        - heading "Find Your Perfect Dorm Items" [level=1] [ref=e63]
+        - paragraph [ref=e64]: Browse items from fellow UL students and discover great deals on campus
+      - generic [ref=e65]:
+        - heading "Search Items" [level=2] [ref=e66]
+        - generic [ref=e68]:
+          - generic [ref=e70]:
+            - img [ref=e71]
+            - textbox "Search within results..." [ref=e74]
+          - generic [ref=e75]:
+            - combobox [ref=e76]:
+              - option "All Categories" [selected]
+              - option "Furniture"
+              - option "Electronics"
+              - option "Textbooks"
+              - option "Clothing"
+              - option "Kitchen"
+              - option "Decor"
+              - option "Appliances"
+              - option "Other"
+            - combobox [ref=e77]:
+              - option "Any Condition" [selected]
+              - option "new"
+              - option "like_new"
+              - option "good"
+              - option "fair"
+              - option "poor"
+            - combobox [ref=e78]:
+              - option "Any Pickup Method" [selected]
+              - option "Pickup Only"
+              - option "Delivery Only"
+              - option "Both Available"
+            - combobox [ref=e79]:
+              - option "Relevance"
+              - option "Newest" [selected]
+              - option "Oldest"
+              - 'option "Price: Low to High"'
+              - 'option "Price: High to Low"'
+              - option "Most Viewed"
+              - option "Most Liked"
+          - generic [ref=e80]:
+            - spinbutton [ref=e81]
+            - spinbutton [ref=e82]
+            - button "Reset Filters" [ref=e83] [cursor=pointer]:
+              - img [ref=e84]
+              - text: Reset Filters
+        - button "Search Items" [ref=e87] [cursor=pointer]:
+          - img [ref=e88]
+          - generic [ref=e90]: Search Items
+      - generic [ref=e91]:
+        - generic [ref=e92]:
+          - heading "Featured Items" [level=3] [ref=e93]
+          - button "View All" [ref=e94] [cursor=pointer]:
+            - generic [ref=e95]: View All
+            - img [ref=e96]
+        - generic [ref=e98]:
+          - generic [ref=e99] [cursor=pointer]:
+            - img "MacBook Pro 13-inch M2" [ref=e101]
+            - generic [ref=e102]:
+              - generic [ref=e103]:
+                - heading "MacBook Pro 13-inch M2" [level=4] [ref=e104]
+                - generic [ref=e105]: $1,200.00
+              - paragraph [ref=e106]: Excellent condition MacBook Pro with M2 chip. Perfect for students. Includes original charger and box. No scratches or dents. Used for one semester only.
+              - generic [ref=e107]:
+                - generic [ref=e108]: ELECTRONICS
+                - generic [ref=e109]: 23 months ago
+              - generic [ref=e110]:
+                - button "Add to Cart" [ref=e111]
+                - button "Toggle wishlist" [ref=e112]:
+                  - img [ref=e113]
+          - generic [ref=e115] [cursor=pointer]:
+            - img "Calculus Textbook - Stewart 8th Edition" [ref=e117]
+            - generic [ref=e118]:
+              - generic [ref=e119]:
+                - heading "Calculus Textbook - Stewart 8th Edition" [level=4] [ref=e120]
+                - generic [ref=e121]: $80.00
+              - paragraph [ref=e122]: "Calculus: Early Transcendentals 8th Edition by James Stewart. Great condition, minimal highlighting. Perfect for MATH 2500."
+              - generic [ref=e123]:
+                - generic [ref=e124]: TEXTBOOKS
+                - generic [ref=e125]: 23 months ago
+              - generic [ref=e126]:
+                - button "Add to Cart" [ref=e127]
+                - button "Toggle wishlist" [ref=e128]:
+                  - img [ref=e129]
+          - generic [ref=e131] [cursor=pointer]:
+            - img "Dorm Room Desk Chair" [ref=e133]
+            - generic [ref=e134]:
+              - generic [ref=e135]:
+                - heading "Dorm Room Desk Chair" [level=4] [ref=e136]
+                - generic [ref=e137]: $45.00
+              - paragraph [ref=e138]: Comfortable ergonomic desk chair perfect for studying. Adjustable height, good back support. Moving out of dorm, must sell.
+              - generic [ref=e139]:
+                - generic [ref=e140]: FURNITURE
+                - generic [ref=e141]: 23 months ago
+              - generic [ref=e142]:
+                - button "Add to Cart" [ref=e143]
+                - button "Toggle wishlist" [ref=e144]:
+                  - img [ref=e145]
+          - generic [ref=e147] [cursor=pointer]:
+            - img "Coffee Maker - Keurig K-Mini" [ref=e149]
+            - generic [ref=e150]:
+              - generic [ref=e151]:
+                - heading "Coffee Maker - Keurig K-Mini" [level=4] [ref=e152]
+                - generic [ref=e153]: $35.00
+              - paragraph [ref=e154]: Compact Keurig K-Mini coffee maker. Perfect for dorm rooms. Includes reusable K-cup. Works great, just upgraded to a bigger model.
+              - generic [ref=e155]:
+                - generic [ref=e156]: APPLIANCES
+                - generic [ref=e157]: 23 months ago
+              - generic [ref=e158]:
+                - button "Add to Cart" [ref=e159]
+                - button "Toggle wishlist" [ref=e160]:
+                  - img [ref=e161]
+          - generic [ref=e163] [cursor=pointer]:
+            - img "Basketball - Wilson NCAA Official" [ref=e165]
+            - generic [ref=e166]:
+              - generic [ref=e167]:
+                - heading "Basketball - Wilson NCAA Official" [level=4] [ref=e168]
+                - generic [ref=e169]: $25.00
+              - paragraph [ref=e170]: Wilson NCAA Official basketball. Used for intramural games. Good condition, still holds air well. Moving and can't take it with me.
+              - generic [ref=e171]:
+                - generic [ref=e172]: SPORTS
+                - generic [ref=e173]: 24 months ago
+              - generic [ref=e174]:
+                - button "Add to Cart" [ref=e175]
+                - button "Toggle wishlist" [ref=e176]:
+                  - img [ref=e177]
+          - generic [ref=e179] [cursor=pointer]:
+            - img "Graphing Calculator - TI-84 Plus CE" [ref=e181]
+            - generic [ref=e182]:
+              - generic [ref=e183]:
+                - heading "Graphing Calculator - TI-84 Plus CE" [level=4] [ref=e184]
+                - generic [ref=e185]: $90.00
+              - paragraph [ref=e186]: Texas Instruments TI-84 Plus CE graphing calculator. Perfect for calculus, statistics, and engineering classes. Includes USB cable and manual.
+              - generic [ref=e187]:
+                - generic [ref=e188]: ELECTRONICS
+                - generic [ref=e189]: 24 months ago
+              - generic [ref=e190]:
+                - button "Add to Cart" [ref=e191]
+                - button "Toggle wishlist" [ref=e192]:
+                  - img [ref=e193]
+  - contentinfo [ref=e195]:
+    - generic [ref=e197]:
+      - generic [ref=e198]:
+        - generic [ref=e199]:
+          - img [ref=e200]
+          - img [ref=e204]
+        - generic [ref=e207]: DormDeals
+      - generic [ref=e208]:
+        - link "Marketplace" [ref=e209] [cursor=pointer]:
+          - /url: /marketplace
+        - link "About" [ref=e210] [cursor=pointer]:
+          - /url: /about
+        - link "Profile" [ref=e211] [cursor=pointer]:
+          - /url: /profile
+        - link "Support" [ref=e212] [cursor=pointer]:
+          - /url: mailto:support@dormdeals.com
+          - img [ref=e213]
+          - text: Support
+      - generic [ref=e216]: © 2024 DormDeals. Made with ❤️ for UL students.
+```

@@ -91,6 +91,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Listen to Firebase auth state changes
   useEffect(() => {
+    // Set up auth state listener
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       try {
         setIsLoading(true)
@@ -117,6 +118,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           } catch (profileError) {
             console.error('Error fetching user profile:', profileError)
             // Create a minimal user object if profile fetch fails
+            // This ensures the user stays logged in even if Firestore is unavailable
             const minimalUser: User = {
               id: firebaseUser.uid,
               email: firebaseUser.email || '',
@@ -136,7 +138,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             await syncUserWithDatabase(firebaseUser, minimalUser)
           }
         } else {
-          // User is signed out
+          // User is signed out - only set to null if Firebase confirms no user
           setUser(null)
         }
       } catch (error) {

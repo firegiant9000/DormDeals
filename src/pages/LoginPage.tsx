@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useAuth } from '../context/AuthContext'
 import { Eye, EyeOff, Mail, Lock, ArrowLeft } from 'lucide-react'
@@ -10,8 +10,17 @@ const LoginPage = () => {
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-  const { login } = useAuth()
+  const { login, isAuthenticated } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
+
+  // Redirect if already authenticated
+  React.useEffect(() => {
+    if (isAuthenticated) {
+      const from = (location.state as any)?.from?.pathname || '/'
+      navigate(from, { replace: true })
+    }
+  }, [isAuthenticated, navigate, location])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -26,7 +35,9 @@ const LoginPage = () => {
     try {
       const success = await login(email, password)
       if (success) {
-        navigate('/')
+        // Redirect to the page user was trying to access, or home
+        const from = (location.state as any)?.from?.pathname || '/'
+        navigate(from, { replace: true })
       }
       // Error handling is done in AuthContext
     } catch {
