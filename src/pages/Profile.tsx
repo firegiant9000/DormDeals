@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { User, Settings, Heart, ShoppingBag, MessageSquare, Star, Edit3, BarChart3, Users, Crown, Loader2, ShoppingCart } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
@@ -6,7 +6,7 @@ import { useAccessControl } from '../hooks/useAccessControl'
 import ProtectedFeature from '../components/ProtectedFeature'
 import { UserType } from '../types/user'
 import { userApi } from '../services/api'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import toast from 'react-hot-toast'
 
 interface UserProfile {
@@ -53,6 +53,8 @@ const Profile = () => {
   const { user } = useAuth()
   const { isAdmin, isPremium, canAccess } = useAccessControl()
   const navigate = useNavigate()
+  const location = useLocation()
+  const prevUserDataIdRef = useRef<number | null>(null)
   
   const [userData, setUserData] = useState<UserProfile | null>(null)
   const [listings, setListings] = useState<Listing[]>([])
@@ -148,12 +150,15 @@ const Profile = () => {
     fetchUserProfile()
   }, [user])
 
-  // Fetch listings when listings tab is active
+  // Fetch listings when listings tab is active or when userData changes
   useEffect(() => {
     const fetchListings = async () => {
-      // Only fetch if we have a valid database user ID
+      // Only fetch if we have a valid database user ID and listings tab is active
       if (activeTab !== 'listings' || !userData?.id || userData.id === 0) {
-        // Clear listings if user is not in database
+        // Clear listings if user is not in database or wrong tab
+        if (activeTab !== 'listings') {
+          return // Don't clear if just switching tabs
+        }
         setListings([])
         return
       }
@@ -168,6 +173,12 @@ const Profile = () => {
         } else {
           setListings([])
         }
+        // Update ref to track current userData.id
+        prevUserDataIdRef.current = userData.id
+        // Clear refresh flag if it was set
+        if ((location.state as any)?.refreshListings) {
+          navigate(location.pathname, { replace: true, state: {} })
+        }
       } catch (error) {
         console.error('Error fetching listings from database:', error)
         // Clear listings on error - don't show any mock data
@@ -179,7 +190,7 @@ const Profile = () => {
     }
 
     fetchListings()
-  }, [activeTab, userData?.id])
+  }, [activeTab, userData?.id, location.state, navigate, location.pathname])
 
   // Fetch favorites when favorites tab is active
   useEffect(() => {
