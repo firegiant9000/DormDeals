@@ -74,7 +74,9 @@
     "ts-jest": "^29.1.1",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.46.1",
-    "vite": "^6.4.1"
+    "vite": "^6.4.1",
+    "vitest": "^1.0.0",
+    "jsdom": "^22.1.0"
   },
   "keywords": [
     "marketplace",
