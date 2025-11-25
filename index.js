@@ -7,6 +7,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { existsSync } from 'fs';
+import crypto from 'crypto';
 
 dotenv.config();
 
@@ -406,6 +407,117 @@ app.delete('/api/users/:id/favorites/:listing_id', async (req, res) => {
   } catch (error) {
     console.error('Error removing from favorites:', error);
     res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+const sanitizeUsername = (value) => {
+  if (!value) return 'user';
+  return value.toLowerCase().replace(/[^a-z0-9]/g, '') || 'user';
+};
+
+const generateUniqueUsername = async (base) => {
+  let attempt = 0;
+  let candidate = sanitizeUsername(base);
+
+  while (attempt < 1000) {
+    const { rows } = await pool.query('SELECT 1 FROM users WHERE username = $1', [candidate]);
+    if (rows.length === 0) {
+      return candidate;
+    }
+    attempt += 1;
+    candidate = `${sanitizeUsername(base)}${attempt}`;
+  }
+
+  // Fallback to timestamp-based username if too many collisions
+  return `user${Date.now()}`;
+};
+
+app.post('/api/users/sync', async (req, res) => {
+  try {
+    if (!pool) {
+      return res.status(500).json({ error: 'Database pool not initialized' });
+    }
+
+    const {
+      firebaseUid,
+      email,
+      displayName,
+      firstName,
+      lastName,
+      phone,
+      university,
+      profileImageUrl
+    } = req.body || {};
+
+    if (!firebaseUid || !email) {
+      return res.status(400).json({ error: 'firebaseUid and email are required' });
+    }
+
+    const normalizedEmail = email.toLowerCase();
+    const defaultFirst = firstName || displayName?.split(' ')?.[0] || '';
+    const defaultLast = lastName || displayName?.split(' ')?.slice(1).join(' ') || '';
+
+    const existingUser = await pool.query(
+      `SELECT id, username, email FROM users WHERE email = $1`,
+      [normalizedEmail]
+    );
+
+    if (existingUser.rows.length > 0) {
+      const currentUsername = existingUser.rows[0].username;
+      const usernameToUse = currentUsername || await generateUniqueUsername(displayName || normalizedEmail.split('@')[0]);
+
+      const { rows } = await pool.query(
+        `UPDATE users
+         SET username = $2,
+             first_name = COALESCE($3, first_name),
+             last_name = COALESCE($4, last_name),
+             phone = COALESCE($5, phone),
+             university = COALESCE($6, university),
+             profile_image_url = COALESCE($7, profile_image_url),
+             updated_at = NOW()
+         WHERE email = $1
+         RETURNING id, uuid, username, email, first_name, last_name, phone, university,
+                   graduation_year, profile_image_url, is_verified, is_active, created_at, updated_at`,
+        [
+          normalizedEmail,
+          usernameToUse,
+          defaultFirst || null,
+          defaultLast || null,
+          phone || null,
+          university || 'University of Louisiana',
+          profileImageUrl || null
+        ]
+      );
+
+      return res.json(rows[0]);
+    }
+
+    const username = await generateUniqueUsername(displayName || normalizedEmail.split('@')[0]);
+    const passwordHash = crypto.randomBytes(32).toString('hex');
+
+    const { rows } = await pool.query(
+      `INSERT INTO users
+        (username, email, password_hash, first_name, last_name, phone, university, is_verified, is_active, profile_image_url)
+       VALUES
+        ($1, $2, $3, $4, $5, $6, $7, false, true, $8)
+       RETURNING id, uuid, username, email, first_name, last_name, phone, university,
+                 graduation_year, profile_image_url, is_verified, is_active, created_at, updated_at`,
+      [
+        username,
+        normalizedEmail,
+        passwordHash,
+        defaultFirst || null,
+        defaultLast || null,
+        phone || null,
+        university || 'University of Louisiana',
+        profileImageUrl || null
+      ]
+    );
+
+    return res.status(201).json(rows[0]);
+  } catch (error) {
+    console.error('Error syncing Firebase user:', error);
+    return res.status(500).json({ error: 'Failed to sync user record' });
   }
 });
 

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react'
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react'
 import { 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword,
@@ -13,6 +13,7 @@ import {
   createUserProfile
 } from '../services/userService'
 import toast from 'react-hot-toast'
+import { userApi } from '../services/api'
 
 type AuthContextValue = {
   user: User | null
@@ -54,6 +55,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  const syncUserWithDatabase = useCallback(async (firebaseUser: FirebaseUser, profileData?: any) => {
+    if (!firebaseUser?.email) return null
+
+    try {
+      const syncedUser = await userApi.syncUser({
+        firebaseUid: firebaseUser.uid,
+        email: firebaseUser.email,
+        displayName: profileData?.displayName || firebaseUser.displayName || firebaseUser.email?.split('@')[0],
+        firstName: profileData?.firstName || profileData?.displayName?.split(' ')?.[0],
+        lastName: profileData?.lastName || profileData?.displayName?.split(' ')?.slice(1).join(' '),
+        phone: profileData?.phone,
+        university: profileData?.school,
+        profileImageUrl: profileData?.profileImage || firebaseUser.photoURL || undefined
+      }) as { id?: number; university?: string } | null
+
+      if (syncedUser?.id) {
+        setUser(prev => {
+          if (!prev) return prev
+          return {
+            ...prev,
+            dbId: syncedUser.id,
+            school: prev.school || syncedUser.university || 'University of Louisiana',
+            location: prev.location || syncedUser.university || 'University of Louisiana'
+          }
+        })
+      }
+
+      return syncedUser
+    } catch (syncError) {
+      console.error('Failed to sync user with database:', syncError)
+      return null
+    }
+  }, [])
+
   // Listen to Firebase auth state changes
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -78,6 +113,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
             const mappedUser = mapFirebaseUserToUser(firebaseUser, profile)
             setUser(mappedUser)
+            await syncUserWithDatabase(firebaseUser, profile)
           } catch (profileError) {
             console.error('Error fetching user profile:', profileError)
             // Create a minimal user object if profile fetch fails
@@ -97,6 +133,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
             setUser(minimalUser)
             setError('Failed to load user profile. Some features may be limited.')
+            await syncUserWithDatabase(firebaseUser, minimalUser)
           }
         } else {
           // User is signed out
@@ -104,15 +141,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       } catch (error) {
         console.error('Auth state change error:', error)
-        setError('Authentication error occurred')
-        setUser(null)
+        // Don't clear user on error - Firebase auth state is the source of truth
+        // If Firebase says user is authenticated, keep them logged in even if profile fetch fails
+        if (firebaseUser) {
+          // Create minimal user from Firebase auth to keep them logged in
+          const minimalUser: User = {
+            id: firebaseUser.uid,
+            email: firebaseUser.email || '',
+            name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
+            displayName: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
+            userType: UserType.REGULAR,
+            school: 'University of Louisiana',
+            joinDate: new Date().toISOString(),
+            joinedDate: new Date().toISOString(),
+            rating: 0,
+            reviewCount: 0,
+            totalSales: 0,
+            isVerified: false
+          }
+          setUser(minimalUser)
+          setError('Failed to load complete profile. Some features may be limited.')
+          await syncUserWithDatabase(firebaseUser, minimalUser)
+        } else {
+          // Only clear user if Firebase confirms no user
+          setUser(null)
+        }
       } finally {
         setIsLoading(false)
       }
     })
 
     return () => unsubscribe()
-  }, [])
+  }, [syncUserWithDatabase])
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
@@ -138,6 +198,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         const mappedUser = mapFirebaseUserToUser(firebaseUser, profile)
         setUser(mappedUser)
+        await syncUserWithDatabase(firebaseUser, profile)
         toast.success('Login successful!')
         return true
       } catch (profileError) {
@@ -160,6 +221,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(minimalUser)
         toast.success('Login successful!')
         toast.error('Failed to load complete profile. Some features may be limited.')
+        await syncUserWithDatabase(firebaseUser, minimalUser)
         return true
       }
     } catch (error: any) {
@@ -200,6 +262,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         const mappedUser = mapFirebaseUserToUser(firebaseUser, profile)
         setUser(mappedUser)
+        await syncUserWithDatabase(firebaseUser, profile)
         toast.success('Account created successfully!')
         return true
       } catch (profileError: any) {
