@@ -271,7 +271,6 @@ describe('Input', () => {
 
     it('supports aria-describedby for error', () => {
       render(<Input error="Error message" id="input-id" />);
-      const input = screen.getByRole('textbox');
       // Error message should be associated with input
       const errorMessage = screen.getByText('Error message');
       expect(errorMessage).toHaveAttribute('role', 'alert');

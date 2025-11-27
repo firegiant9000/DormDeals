@@ -230,7 +230,7 @@ describe('Modal', () => {
 
   describe('Sizes', () => {
     it('renders with default md size', () => {
-      const { container } = render(
+      render(
         <Modal isOpen={true} onClose={vi.fn()}>
           Content
         </Modal>

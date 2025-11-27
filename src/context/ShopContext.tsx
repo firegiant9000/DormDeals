@@ -149,28 +149,6 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return id
   }, [resolveDbUserId])
 
-  const reloadCartFromDb = useCallback(async (id: string) => {
-    try {
-      const updatedCartData = await userApi.getCart(id) as any[]
-      if (Array.isArray(updatedCartData)) {
-        setCartItems(transformCartData(updatedCartData))
-      }
-    } catch (reloadError) {
-      console.error('Error reloading cart:', reloadError)
-    }
-  }, [transformCartData])
-
-  const reloadWishlistFromDb = useCallback(async (id: string) => {
-    try {
-      const updatedWishlistData = await userApi.getFavorites(id) as any[]
-      if (Array.isArray(updatedWishlistData)) {
-        setWishlistItems(transformWishlistData(updatedWishlistData))
-      }
-    } catch (reloadError) {
-      console.error('Error reloading wishlist:', reloadError)
-    }
-  }, [transformWishlistData])
-
   // Load cart and wishlist from database when user logs in
   useEffect(() => {
     const loadUserData = async () => {
@@ -189,18 +167,98 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       try {
-        const [cartData, wishlistData] = await Promise.all([
-          userApi.getCart(resolvedId) as Promise<any[]>,
-          userApi.getFavorites(resolvedId) as Promise<any[]>
-        ])
+        // Load cart items from database
+        try {
+          const cartData = await userApi.getCart(resolvedId) as any[]
+          if (Array.isArray(cartData)) {
+            // Transform database cart items to Item format
+            // Backend returns listing_id as the primary identifier for cart items
+            const transformedCart: Item[] = cartData.map((item: any) => ({
+              id: item.listing_id?.toString() || item.id?.toString() || '',
+              title: item.title || '',
+              price: parseFloat(item.price) || 0,
+              description: item.description || '',
+              category: (item.category as any) || 'other',
+              images: item.images || [],
+              location: item.location || '',
+              condition: (item.condition as any) || 'good',
+              seller: {
+                id: '',
+                email: '',
+                name: '',
+                school: 'University of Louisiana',
+                joinDate: new Date(),
+                joinedDate: new Date().toISOString(),
+                rating: 0,
+                reviewCount: 0,
+                totalSales: 0,
+                isVerified: false
+              },
+              pickupAvailable: true,
+              deliveryAvailable: false,
+              createdAt: new Date(item.createdAt || item.created_at || Date.now()),
+              updatedAt: new Date(item.updatedAt || item.updated_at || Date.now()),
+              posted: new Date(item.createdAt || item.created_at || Date.now()).toISOString(),
+              status: (item.status as any) || 'active',
+              views: item.views || 0,
+              likes: 0,
+              isLiked: false,
+              isInCart: true,
+              isInWishlist: false,
+              tags: []
+            }))
+            setCartItems(transformedCart)
+          }
+        } catch (error: any) {
+          console.error('Error loading cart from database:', error)
+        }
 
-        if (Array.isArray(cartData)) {
-          setCartItems(transformCartData(cartData))
+        // Load wishlist items from database
+        try {
+          const wishlistData = await userApi.getFavorites(resolvedId) as any[]
+          if (Array.isArray(wishlistData)) {
+            // Transform database favorites to Item format
+            // Backend returns listing_id for favorites
+            const transformedWishlist: Item[] = wishlistData.map((item: any) => ({
+              id: item.listing_id?.toString() || item.id?.toString() || '',
+              title: item.title || '',
+              price: parseFloat(item.price) || 0,
+              description: item.description || '',
+              category: (item.category as any) || 'other',
+              images: item.images || [],
+              location: item.location || '',
+              condition: (item.condition as any) || 'good',
+              seller: {
+                id: '',
+                email: '',
+                name: '',
+                school: 'University of Louisiana',
+                joinDate: new Date(),
+                joinedDate: new Date().toISOString(),
+                rating: 0,
+                reviewCount: 0,
+                totalSales: 0,
+                isVerified: false
+              },
+              pickupAvailable: true,
+              deliveryAvailable: false,
+              createdAt: new Date(item.createdAt || item.created_at || item.favoritedAt || Date.now()),
+              updatedAt: new Date(item.updatedAt || item.updated_at || Date.now()),
+              posted: new Date(item.createdAt || item.created_at || item.favoritedAt || Date.now()).toISOString(),
+              status: (item.status as any) || 'active',
+              views: item.views || 0,
+              likes: 0,
+              isLiked: false,
+              isInCart: false,
+              isInWishlist: true,
+              tags: []
+            }))
+            setWishlistItems(transformedWishlist)
+          }
+        } catch (error: any) {
+          console.error('Error loading wishlist from database:', error)
         }
-        if (Array.isArray(wishlistData)) {
-          setWishlistItems(transformWishlistData(wishlistData))
-        }
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error loading user data:', error)
       }
     }
@@ -226,28 +284,104 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return
       }
 
-      await userApi.addToCart(id, item.id.toString(), 1)
-      await reloadCartFromDb(id)
+      // Convert item ID to integer for backend (backend expects integer)
+      const listingId = parseInt(item.id.toString(), 10)
+      if (isNaN(listingId)) {
+        toast.error('Invalid item ID')
+        console.error('Invalid item ID:', item.id)
+        return
+      }
+
+      // Save to database
+      await userApi.addToCart(id, listingId.toString(), 1)
       
+      // Reload cart from database to get the latest state
+      try {
+        const updatedCartData = await userApi.getCart(id) as any[]
+        if (Array.isArray(updatedCartData)) {
+          const transformedCart: Item[] = updatedCartData.map((cartItem: any) => ({
+            // Backend returns listing_id as the primary identifier for cart items
+            id: cartItem.listing_id?.toString() || cartItem.id?.toString() || '',
+            title: cartItem.title || '',
+            price: parseFloat(cartItem.price) || 0,
+            description: cartItem.description || '',
+            category: (cartItem.category as any) || 'other',
+            images: cartItem.images || [],
+            location: cartItem.location || '',
+            condition: (cartItem.condition as any) || 'good',
+            seller: {
+              id: '',
+              email: '',
+              name: '',
+              school: 'University of Louisiana',
+              joinDate: new Date(),
+              joinedDate: new Date().toISOString(),
+              rating: 0,
+              reviewCount: 0,
+              totalSales: 0,
+              isVerified: false
+            },
+            pickupAvailable: true,
+            deliveryAvailable: false,
+            createdAt: new Date(cartItem.createdAt || cartItem.created_at || Date.now()),
+            updatedAt: new Date(cartItem.updatedAt || cartItem.updated_at || Date.now()),
+            posted: new Date(cartItem.createdAt || cartItem.created_at || Date.now()).toISOString(),
+            status: (cartItem.status as any) || 'active',
+            views: cartItem.views || 0,
+            likes: 0,
+            isLiked: false,
+            isInCart: true,
+            isInWishlist: false,
+            tags: []
+          }))
+          setCartItems(transformedCart)
+        }
+      } catch (reloadError: any) {
+        console.error('Error reloading cart:', reloadError)
+        console.error('Reload error details:', {
+          message: reloadError?.message,
+          response: reloadError?.response?.data,
+          status: reloadError?.response?.status
+        })
+        // Fallback to local update if reload fails
+        setCartItems(prev => (prev.some(i => i.id === item.id) ? prev : [...prev, item]))
+      }
+      
+      // Ensure exclusivity: remove from wishlist if present
       const updatedWishlist = wishlistItems.filter(i => i.id !== item.id)
       setWishlistItems(updatedWishlist)
       
-      if (wishlistItems.some(i => i.id === item.id)) {
+      // Remove from wishlist in database if it was there
+      if (wishlistItems.some(i => i.id === item.id) && id) {
         try {
-          await userApi.removeFromFavorites(id, item.id.toString())
-          await reloadWishlistFromDb(id)
-        } catch (error) {
+          const wishlistListingId = parseInt(item.id.toString(), 10)
+          if (!isNaN(wishlistListingId)) {
+            await userApi.removeFromFavorites(id, wishlistListingId.toString())
+          }
+        } catch (error: any) {
           console.error('Error removing from favorites:', error)
+          console.error('Remove favorites error details:', {
+            message: error?.message,
+            response: error?.response?.data,
+            status: error?.response?.status
+          })
         }
       }
       
       toast.success('Item added to cart')
       setShowCart(true)
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error adding to cart:', error)
-      toast.error('Failed to add item to cart')
+      console.error('Add to cart error details:', {
+        message: error?.message,
+        response: error?.response?.data,
+        status: error?.response?.status,
+        data: error?.response?.data?.error || error?.response?.data?.message
+      })
+      const errorMessage = error?.response?.data?.error || error?.response?.data?.message || error?.message || 'Failed to add item to cart'
+      toast.error(errorMessage)
     }
-  }, [isAuthenticated, user?.email, wishlistItems, ensureDbUserId, reloadCartFromDb, reloadWishlistFromDb])
+  }, [isAuthenticated, user?.email, wishlistItems, ensureDbUserId])
 
   const addToWishlist = useCallback(async (item: Item) => {
     console.log('addToWishlist called, isAuthenticated:', isAuthenticated)
@@ -264,58 +398,150 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return
       }
 
-      await userApi.addToFavorites(id, item.id.toString())
-      await reloadWishlistFromDb(id)
+      // Convert item ID to integer for backend (backend expects integer)
+      const listingId = parseInt(item.id.toString(), 10)
+      if (isNaN(listingId)) {
+        toast.error('Invalid item ID')
+        console.error('Invalid item ID:', item.id)
+        return
+      }
+
+      // Save to database
+      await userApi.addToFavorites(id, listingId.toString())
       
+      // Reload wishlist from database to get the latest state
+      try {
+        const updatedWishlistData = await userApi.getFavorites(id) as any[]
+        if (Array.isArray(updatedWishlistData)) {
+          const transformedWishlist: Item[] = updatedWishlistData.map((wishlistItem: any) => ({
+            // Backend returns listing_id for favorites
+            id: wishlistItem.listing_id?.toString() || wishlistItem.id?.toString() || '',
+            title: wishlistItem.title || '',
+            price: parseFloat(wishlistItem.price) || 0,
+            description: wishlistItem.description || '',
+            category: (wishlistItem.category as any) || 'other',
+            images: wishlistItem.images || [],
+            location: wishlistItem.location || '',
+            condition: (wishlistItem.condition as any) || 'good',
+            seller: {
+              id: '',
+              email: '',
+              name: '',
+              school: 'University of Louisiana',
+              joinDate: new Date(),
+              joinedDate: new Date().toISOString(),
+              rating: 0,
+              reviewCount: 0,
+              totalSales: 0,
+              isVerified: false
+            },
+            pickupAvailable: true,
+            deliveryAvailable: false,
+            createdAt: new Date(wishlistItem.createdAt || wishlistItem.created_at || wishlistItem.favoritedAt || Date.now()),
+            updatedAt: new Date(wishlistItem.updatedAt || wishlistItem.updated_at || Date.now()),
+            posted: new Date(wishlistItem.createdAt || wishlistItem.created_at || wishlistItem.favoritedAt || Date.now()).toISOString(),
+            status: (wishlistItem.status as any) || 'active',
+            views: wishlistItem.views || 0,
+            likes: 0,
+            isLiked: false,
+            isInCart: false,
+            isInWishlist: true,
+            tags: []
+          }))
+          setWishlistItems(transformedWishlist)
+        }
+      } catch (reloadError: any) {
+        console.error('Error reloading wishlist:', reloadError)
+        console.error('Reload error details:', {
+          message: reloadError?.message,
+          response: reloadError?.response?.data,
+          status: reloadError?.response?.status
+        })
+        // Fallback to local update if reload fails
+        setWishlistItems(prev => (prev.some(i => i.id === item.id) ? prev : [...prev, item]))
+      }
+      
+      // Ensure exclusivity: remove from cart if present
       const updatedCart = cartItems.filter(i => i.id !== item.id)
       setCartItems(updatedCart)
       
-      if (cartItems.some(i => i.id === item.id)) {
+      // Remove from cart in database if it was there
+      if (cartItems.some(i => i.id === item.id) && id) {
         try {
-          await userApi.removeFromCart(id, item.id.toString())
-          await reloadCartFromDb(id)
-        } catch (error) {
+          const cartListingId = parseInt(item.id.toString(), 10)
+          if (!isNaN(cartListingId)) {
+            await userApi.removeFromCart(id, cartListingId.toString())
+          }
+        } catch (error: any) {
           console.error('Error removing from cart:', error)
+          console.error('Remove cart error details:', {
+            message: error?.message,
+            response: error?.response?.data,
+            status: error?.response?.status
+          })
         }
       }
       
       toast.success('Item added to wishlist')
       setShowWishlist(true)
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error adding to wishlist:', error)
-      toast.error('Failed to add item to wishlist')
+      console.error('Add to wishlist error details:', {
+        message: error?.message,
+        response: error?.response?.data,
+        status: error?.response?.status,
+        data: error?.response?.data?.error || error?.response?.data?.message
+      })
+      const errorMessage = error?.response?.data?.error || error?.response?.data?.message || error?.message || 'Failed to add item to wishlist'
+      toast.error(errorMessage)
     }
-  }, [isAuthenticated, user?.email, cartItems, ensureDbUserId, reloadWishlistFromDb, reloadCartFromDb])
+  }, [isAuthenticated, user?.email, cartItems, ensureDbUserId])
 
   const removeFromCart = useCallback(async (id: string) => {
     setCartItems(prev => prev.filter(i => i.id !== id))
     
     if (isAuthenticated && user?.email) {
       try {
-        const resolvedId = await resolveDbUserId()
-        if (resolvedId) {
-          await userApi.removeFromCart(resolvedId, id)
+        const dbUser = await userApi.getByEmail(user.email) as { id: number; email: string } | null
+        if (dbUser?.id) {
+          const listingId = parseInt(id, 10)
+          if (!isNaN(listingId)) {
+            await userApi.removeFromCart(dbUser.id.toString(), listingId.toString())
+          }
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error removing from cart in database:', error)
+        console.error('Remove cart error details:', {
+          message: error?.message,
+          response: error?.response?.data,
+          status: error?.response?.status
+        })
       }
     }
-  }, [isAuthenticated, user?.email, resolveDbUserId])
+  }, [isAuthenticated, user?.email])
 
   const removeFromWishlist = useCallback(async (id: string) => {
     setWishlistItems(prev => prev.filter(i => i.id !== id))
     
     if (isAuthenticated && user?.email) {
       try {
-        const resolvedId = await resolveDbUserId()
-        if (resolvedId) {
-          await userApi.removeFromFavorites(resolvedId, id)
+        const dbUser = await userApi.getByEmail(user.email) as { id: number; email: string } | null
+        if (dbUser?.id) {
+          const listingId = parseInt(id, 10)
+          if (!isNaN(listingId)) {
+            await userApi.removeFromFavorites(dbUser.id.toString(), listingId.toString())
+          }
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error removing from wishlist in database:', error)
+        console.error('Remove wishlist error details:', {
+          message: error?.message,
+          response: error?.response?.data,
+          status: error?.response?.status
+        })
       }
     }
-  }, [isAuthenticated, user?.email, resolveDbUserId])
+  }, [isAuthenticated, user?.email])
 
   const openCart = () => setShowCart(true)
   const openWishlist = () => setShowWishlist(true)
