@@ -241,7 +241,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setWishlistItems(updatedWishlist)
       
       // Remove from wishlist in database if it was there
-      if (wishlistItems.some(i => i.id === item.id)) {
+      if (wishlistItems.some(i => i.id === item.id) && dbUser?.id) {
         try {
           const wishlistListingId = parseInt(item.id.toString(), 10)
           if (!isNaN(wishlistListingId)) {
@@ -357,7 +357,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setCartItems(updatedCart)
       
       // Remove from cart in database if it was there
-      if (cartItems.some(i => i.id === item.id)) {
+      if (cartItems.some(i => i.id === item.id) && dbUser?.id) {
         try {
           const cartListingId = parseInt(item.id.toString(), 10)
           if (!isNaN(cartListingId)) {
