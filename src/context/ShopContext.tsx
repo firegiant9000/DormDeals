@@ -35,24 +35,164 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [showWishlist, setShowWishlist] = useState(false)
   const [showLoginPopup, setShowLoginPopup] = useState(false)
   const [loginPopupAction, setLoginPopupAction] = useState<'cart' | 'wishlist' | null>(null)
+  const [dbUserId, setDbUserId] = useState<string | null>(null)
   const { isAuthenticated, user } = useAuth()
+
+  const transformCartData = useCallback((cartData: any[]): Item[] => {
+    return cartData.map((cartItem: any) => ({
+      id: cartItem.id?.toString() || cartItem.listing_id?.toString() || '',
+      title: cartItem.title || '',
+      price: parseFloat(cartItem.price) || 0,
+      description: cartItem.description || '',
+      category: (cartItem.category as any) || 'other',
+      images: cartItem.images || [],
+      location: cartItem.location || '',
+      condition: (cartItem.condition as any) || 'good',
+      seller: {
+        id: '',
+        email: '',
+        name: '',
+        school: 'University of Louisiana',
+        joinDate: new Date(),
+        joinedDate: new Date().toISOString(),
+        rating: 0,
+        reviewCount: 0,
+        totalSales: 0,
+        isVerified: false
+      },
+      pickupAvailable: true,
+      deliveryAvailable: false,
+      createdAt: new Date(cartItem.createdAt || cartItem.created_at || Date.now()),
+      updatedAt: new Date(cartItem.updatedAt || cartItem.updated_at || Date.now()),
+      posted: new Date(cartItem.createdAt || cartItem.created_at || Date.now()).toISOString(),
+      status: (cartItem.status as any) || 'active',
+      views: cartItem.views || 0,
+      likes: 0,
+      isLiked: false,
+      isInCart: true,
+      isInWishlist: false,
+      tags: []
+    }))
+  }, [])
+
+  const transformWishlistData = useCallback((wishlistData: any[]): Item[] => {
+    return wishlistData.map((item: any) => ({
+      id: item.id?.toString() || '',
+      title: item.title || '',
+      price: parseFloat(item.price) || 0,
+      description: item.description || '',
+      category: (item.category as any) || 'other',
+      images: item.images || [],
+      location: item.location || '',
+      condition: (item.condition as any) || 'good',
+      seller: {
+        id: '',
+        email: '',
+        name: '',
+        school: 'University of Louisiana',
+        joinDate: new Date(),
+        joinedDate: new Date().toISOString(),
+        rating: 0,
+        reviewCount: 0,
+        totalSales: 0,
+        isVerified: false
+      },
+      pickupAvailable: true,
+      deliveryAvailable: false,
+      createdAt: new Date(item.createdAt || item.created_at || item.favoritedAt || Date.now()),
+      updatedAt: new Date(item.updatedAt || item.updated_at || Date.now()),
+      posted: new Date(item.createdAt || item.created_at || item.favoritedAt || Date.now()).toISOString(),
+      status: (item.status as any) || 'active',
+      views: item.views || 0,
+      likes: 0,
+      isLiked: false,
+      isInCart: false,
+      isInWishlist: true,
+      tags: []
+    }))
+  }, [])
+
+  const resolveDbUserId = useCallback(async (): Promise<string | null> => {
+    if (!isAuthenticated || !user?.email) {
+      return null
+    }
+
+    if (dbUserId) {
+      return dbUserId
+    }
+
+    if (user?.dbId) {
+      const idStr = user.dbId.toString()
+      setDbUserId(idStr)
+      return idStr
+    }
+
+    try {
+      const dbUser = await userApi.getByEmail(user.email) as { id: number; email: string } | null
+      if (dbUser?.id) {
+        const derivedId = dbUser.id.toString()
+        setDbUserId(derivedId)
+        return derivedId
+      }
+    } catch (error) {
+      console.error('Error resolving user by email:', error)
+    }
+
+    return null
+  }, [dbUserId, isAuthenticated, user?.email, user?.dbId])
+
+  const ensureDbUserId = useCallback(async (): Promise<string | null> => {
+    const id = await resolveDbUserId()
+    if (!id) {
+      toast.error('User not found in database')
+    }
+    return id
+  }, [resolveDbUserId])
+
+  const reloadCartFromDb = useCallback(async (id: string) => {
+    try {
+      const updatedCartData = await userApi.getCart(id) as any[]
+      if (Array.isArray(updatedCartData)) {
+        setCartItems(transformCartData(updatedCartData))
+      }
+    } catch (reloadError) {
+      console.error('Error reloading cart:', reloadError)
+    }
+  }, [transformCartData])
+
+  const reloadWishlistFromDb = useCallback(async (id: string) => {
+    try {
+      const updatedWishlistData = await userApi.getFavorites(id) as any[]
+      if (Array.isArray(updatedWishlistData)) {
+        setWishlistItems(transformWishlistData(updatedWishlistData))
+      }
+    } catch (reloadError) {
+      console.error('Error reloading wishlist:', reloadError)
+    }
+  }, [transformWishlistData])
 
   // Load cart and wishlist from database when user logs in
   useEffect(() => {
     const loadUserData = async () => {
       if (!isAuthenticated || !user?.email) {
-        // Clear cart and wishlist when user logs out
+        setCartItems([])
+        setWishlistItems([])
+        setDbUserId(null)
+        return
+      }
+
+      const resolvedId = await resolveDbUserId()
+      if (!resolvedId) {
         setCartItems([])
         setWishlistItems([])
         return
       }
 
       try {
-        // Get user from database by email
-        const dbUser = await userApi.getByEmail(user.email) as { id: number; email: string } | null
-        if (!dbUser?.id) {
-          return
-        }
+        const [cartData, wishlistData] = await Promise.all([
+          userApi.getCart(resolvedId) as Promise<any[]>,
+          userApi.getFavorites(resolvedId) as Promise<any[]>
+        ])
 
         // Load cart items from database
         try {
@@ -151,7 +291,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     loadUserData()
-  }, [isAuthenticated, user?.email])
+  }, [isAuthenticated, user?.email, user?.dbId, resolveDbUserId, transformCartData, transformWishlistData])
 
   const isInCart = useCallback((id: string) => cartItems.some(i => i.id === id), [cartItems])
   const isInWishlist = useCallback((id: string) => wishlistItems.some(i => i.id === id), [wishlistItems])
@@ -166,10 +306,8 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     
     try {
-      // Get user from database
-      const dbUser = await userApi.getByEmail(user.email) as { id: number; email: string } | null
-      if (!dbUser?.id) {
-        toast.error('User not found in database')
+      const id = await ensureDbUserId()
+      if (!id) {
         return
       }
 
@@ -270,7 +408,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const errorMessage = error?.response?.data?.error || error?.response?.data?.message || error?.message || 'Failed to add item to cart'
       toast.error(errorMessage)
     }
-  }, [isAuthenticated, user?.email, wishlistItems])
+  }, [isAuthenticated, user?.email, wishlistItems, ensureDbUserId, reloadCartFromDb, reloadWishlistFromDb])
 
   const addToWishlist = useCallback(async (item: Item) => {
     console.log('addToWishlist called, isAuthenticated:', isAuthenticated)
@@ -282,10 +420,8 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     
     try {
-      // Get user from database
-      const dbUser = await userApi.getByEmail(user.email) as { id: number; email: string } | null
-      if (!dbUser?.id) {
-        toast.error('User not found in database')
+      const id = await ensureDbUserId()
+      if (!id) {
         return
       }
 
@@ -386,12 +522,11 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const errorMessage = error?.response?.data?.error || error?.response?.data?.message || error?.message || 'Failed to add item to wishlist'
       toast.error(errorMessage)
     }
-  }, [isAuthenticated, user?.email, cartItems])
+  }, [isAuthenticated, user?.email, cartItems, ensureDbUserId, reloadWishlistFromDb, reloadCartFromDb])
 
   const removeFromCart = useCallback(async (id: string) => {
     setCartItems(prev => prev.filter(i => i.id !== id))
     
-    // Remove from database if user is authenticated
     if (isAuthenticated && user?.email) {
       try {
         const dbUser = await userApi.getByEmail(user.email) as { id: number; email: string } | null
@@ -410,12 +545,11 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
         })
       }
     }
-  }, [isAuthenticated, user?.email])
+  }, [isAuthenticated, user?.email, resolveDbUserId])
 
   const removeFromWishlist = useCallback(async (id: string) => {
     setWishlistItems(prev => prev.filter(i => i.id !== id))
     
-    // Remove from database if user is authenticated
     if (isAuthenticated && user?.email) {
       try {
         const dbUser = await userApi.getByEmail(user.email) as { id: number; email: string } | null
@@ -434,7 +568,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
         })
       }
     }
-  }, [isAuthenticated, user?.email])
+  }, [isAuthenticated, user?.email, resolveDbUserId])
 
   const openCart = () => setShowCart(true)
   const openWishlist = () => setShowWishlist(true)

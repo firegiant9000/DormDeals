@@ -1,3 +1,4 @@
+import { Suspense, lazy } from 'react'
 import { Routes, Route, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import Layout from '@/components/Layout'
@@ -5,23 +6,29 @@ import { ShopDrawers } from '@/context/ShopContext'
 import LoginPopupWrapper from '@/components/LoginPopupWrapper'
 import PageTransition from '@/components/PageTransition'
 import ProtectedRoute from '@/components/ProtectedRoute'
-import Home from '@/pages/Home'
-import Marketplace from '@/pages/Marketplace'
-import ItemDetail from '@/pages/ItemDetail'
-import CreateListing from '@/pages/CreateListing'
-import Profile from '@/pages/Profile'
-import ResultsPage from '@/pages/ResultsPage'
-import AboutPage from '@/pages/AboutPage'
-import MainFeaturePage from '@/pages/MainFeaturePage'
-import ListingDetailPage from '@/pages/ListingDetailPage'
-import MessagePage from '@/pages/MessagePage'
-import Checkout from '@/pages/Checkout'
-import LoginPage from '@/pages/LoginPage'
-import RegisterPage from '@/pages/RegisterPage'
-import NotFoundPage from '@/pages/NotFoundPage'
+
+const MainFeaturePage = lazy(() => import('@/pages/MainFeaturePage'))
+const Marketplace = lazy(() => import('@/pages/Marketplace'))
+const ResultsPage = lazy(() => import('@/pages/ResultsPage'))
+const AboutPage = lazy(() => import('@/pages/AboutPage'))
+const Profile = lazy(() => import('@/pages/Profile'))
+const ItemDetail = lazy(() => import('@/pages/ItemDetail'))
+const ListingDetailPage = lazy(() => import('@/pages/ListingDetailPage'))
+const CreateListing = lazy(() => import('@/pages/CreateListing'))
+const Checkout = lazy(() => import('@/pages/Checkout'))
+const MessagePage = lazy(() => import('@/pages/MessagePage'))
+const LoginPage = lazy(() => import('@/pages/LoginPage'))
+const RegisterPage = lazy(() => import('@/pages/RegisterPage'))
+const Home = lazy(() => import('@/pages/Home'))
+const NotFoundPage = lazy(() => import('@/pages/NotFoundPage'))
 
 function App() {
   const location = useLocation();
+  const RouteFallback = (
+    <div className="min-h-[50vh] flex items-center justify-center text-muted">
+      Loading...
+    </div>
+  )
 
   return (
     <motion.div
@@ -31,8 +38,9 @@ function App() {
       className="min-h-[100svh] bg-transparent text-body"
     >
       <Layout>
-        <AnimatePresence mode="wait">
-          <Routes location={location} key={location.pathname}>
+        <Suspense fallback={RouteFallback}>
+          <AnimatePresence mode="wait">
+            <Routes location={location} key={location.pathname}>
             <Route path="/" element={
               <PageTransition>
                 <MainFeaturePage />
@@ -85,9 +93,11 @@ function App() {
               </ProtectedRoute>
             } />
             <Route path="/chat" element={
-              <PageTransition>
-                <MessagePage />
-              </PageTransition>
+              <ProtectedRoute>
+                <PageTransition>
+                  <MessagePage />
+                </PageTransition>
+              </ProtectedRoute>
             } />
             <Route path="/login" element={
               <PageTransition>
@@ -109,13 +119,14 @@ function App() {
                 <MainFeaturePage />
               </PageTransition>
             } />
-            <Route path="*" element={
-              <PageTransition>
-                <NotFoundPage />
-              </PageTransition>
-            } />
-          </Routes>
-        </AnimatePresence>
+              <Route path="*" element={
+                <PageTransition>
+                  <NotFoundPage />
+                </PageTransition>
+              } />
+            </Routes>
+          </AnimatePresence>
+        </Suspense>
       </Layout>
       <ShopDrawers />
       <LoginPopupWrapper />
