@@ -59,8 +59,9 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const cartData = await userApi.getCart(dbUser.id.toString()) as any[]
           if (Array.isArray(cartData)) {
             // Transform database cart items to Item format
+            // Backend returns listing_id as the primary identifier for cart items
             const transformedCart: Item[] = cartData.map((item: any) => ({
-              id: item.id?.toString() || item.listing_id?.toString() || '',
+              id: item.listing_id?.toString() || item.id?.toString() || '',
               title: item.title || '',
               price: parseFloat(item.price) || 0,
               description: item.description || '',
@@ -104,8 +105,9 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const wishlistData = await userApi.getFavorites(dbUser.id.toString()) as any[]
           if (Array.isArray(wishlistData)) {
             // Transform database favorites to Item format
+            // Backend returns listing_id for favorites
             const transformedWishlist: Item[] = wishlistData.map((item: any) => ({
-              id: item.id?.toString() || '',
+              id: item.listing_id?.toString() || item.id?.toString() || '',
               title: item.title || '',
               price: parseFloat(item.price) || 0,
               description: item.description || '',
@@ -171,15 +173,24 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return
       }
 
+      // Convert item ID to integer for backend (backend expects integer)
+      const listingId = parseInt(item.id.toString(), 10)
+      if (isNaN(listingId)) {
+        toast.error('Invalid item ID')
+        console.error('Invalid item ID:', item.id)
+        return
+      }
+
       // Save to database
-      await userApi.addToCart(dbUser.id.toString(), item.id.toString(), 1)
+      await userApi.addToCart(dbUser.id.toString(), listingId.toString(), 1)
       
       // Reload cart from database to get the latest state
       try {
         const updatedCartData = await userApi.getCart(dbUser.id.toString()) as any[]
         if (Array.isArray(updatedCartData)) {
           const transformedCart: Item[] = updatedCartData.map((cartItem: any) => ({
-            id: cartItem.id?.toString() || cartItem.listing_id?.toString() || '',
+            // Backend returns listing_id as the primary identifier for cart items
+            id: cartItem.listing_id?.toString() || cartItem.id?.toString() || '',
             title: cartItem.title || '',
             price: parseFloat(cartItem.price) || 0,
             description: cartItem.description || '',
@@ -214,8 +225,13 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }))
           setCartItems(transformedCart)
         }
-      } catch (reloadError) {
+      } catch (reloadError: any) {
         console.error('Error reloading cart:', reloadError)
+        console.error('Reload error details:', {
+          message: reloadError?.message,
+          response: reloadError?.response?.data,
+          status: reloadError?.response?.status
+        })
         // Fallback to local update if reload fails
         setCartItems(prev => (prev.some(i => i.id === item.id) ? prev : [...prev, item]))
       }
@@ -227,17 +243,32 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Remove from wishlist in database if it was there
       if (wishlistItems.some(i => i.id === item.id)) {
         try {
-          await userApi.removeFromFavorites(dbUser.id.toString(), item.id.toString())
-        } catch (error) {
+          const wishlistListingId = parseInt(item.id.toString(), 10)
+          if (!isNaN(wishlistListingId)) {
+            await userApi.removeFromFavorites(dbUser.id.toString(), wishlistListingId.toString())
+          }
+        } catch (error: any) {
           console.error('Error removing from favorites:', error)
+          console.error('Remove favorites error details:', {
+            message: error?.message,
+            response: error?.response?.data,
+            status: error?.response?.status
+          })
         }
       }
       
       toast.success('Item added to cart')
       setShowCart(true)
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error adding to cart:', error)
-      toast.error('Failed to add item to cart')
+      console.error('Add to cart error details:', {
+        message: error?.message,
+        response: error?.response?.data,
+        status: error?.response?.status,
+        data: error?.response?.data?.error || error?.response?.data?.message
+      })
+      const errorMessage = error?.response?.data?.error || error?.response?.data?.message || error?.message || 'Failed to add item to cart'
+      toast.error(errorMessage)
     }
   }, [isAuthenticated, user?.email, wishlistItems])
 
@@ -258,15 +289,24 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return
       }
 
+      // Convert item ID to integer for backend (backend expects integer)
+      const listingId = parseInt(item.id.toString(), 10)
+      if (isNaN(listingId)) {
+        toast.error('Invalid item ID')
+        console.error('Invalid item ID:', item.id)
+        return
+      }
+
       // Save to database
-      await userApi.addToFavorites(dbUser.id.toString(), item.id.toString())
+      await userApi.addToFavorites(dbUser.id.toString(), listingId.toString())
       
       // Reload wishlist from database to get the latest state
       try {
         const updatedWishlistData = await userApi.getFavorites(dbUser.id.toString()) as any[]
         if (Array.isArray(updatedWishlistData)) {
           const transformedWishlist: Item[] = updatedWishlistData.map((wishlistItem: any) => ({
-            id: wishlistItem.id?.toString() || '',
+            // Backend returns listing_id for favorites
+            id: wishlistItem.listing_id?.toString() || wishlistItem.id?.toString() || '',
             title: wishlistItem.title || '',
             price: parseFloat(wishlistItem.price) || 0,
             description: wishlistItem.description || '',
@@ -301,8 +341,13 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }))
           setWishlistItems(transformedWishlist)
         }
-      } catch (reloadError) {
+      } catch (reloadError: any) {
         console.error('Error reloading wishlist:', reloadError)
+        console.error('Reload error details:', {
+          message: reloadError?.message,
+          response: reloadError?.response?.data,
+          status: reloadError?.response?.status
+        })
         // Fallback to local update if reload fails
         setWishlistItems(prev => (prev.some(i => i.id === item.id) ? prev : [...prev, item]))
       }
@@ -314,17 +359,32 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Remove from cart in database if it was there
       if (cartItems.some(i => i.id === item.id)) {
         try {
-          await userApi.removeFromCart(dbUser.id.toString(), item.id.toString())
-        } catch (error) {
+          const cartListingId = parseInt(item.id.toString(), 10)
+          if (!isNaN(cartListingId)) {
+            await userApi.removeFromCart(dbUser.id.toString(), cartListingId.toString())
+          }
+        } catch (error: any) {
           console.error('Error removing from cart:', error)
+          console.error('Remove cart error details:', {
+            message: error?.message,
+            response: error?.response?.data,
+            status: error?.response?.status
+          })
         }
       }
       
       toast.success('Item added to wishlist')
       setShowWishlist(true)
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error adding to wishlist:', error)
-      toast.error('Failed to add item to wishlist')
+      console.error('Add to wishlist error details:', {
+        message: error?.message,
+        response: error?.response?.data,
+        status: error?.response?.status,
+        data: error?.response?.data?.error || error?.response?.data?.message
+      })
+      const errorMessage = error?.response?.data?.error || error?.response?.data?.message || error?.message || 'Failed to add item to wishlist'
+      toast.error(errorMessage)
     }
   }, [isAuthenticated, user?.email, cartItems])
 
@@ -336,10 +396,18 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         const dbUser = await userApi.getByEmail(user.email) as { id: number; email: string } | null
         if (dbUser?.id) {
-          await userApi.removeFromCart(dbUser.id.toString(), id)
+          const listingId = parseInt(id, 10)
+          if (!isNaN(listingId)) {
+            await userApi.removeFromCart(dbUser.id.toString(), listingId.toString())
+          }
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error removing from cart in database:', error)
+        console.error('Remove cart error details:', {
+          message: error?.message,
+          response: error?.response?.data,
+          status: error?.response?.status
+        })
       }
     }
   }, [isAuthenticated, user?.email])
@@ -352,10 +420,18 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         const dbUser = await userApi.getByEmail(user.email) as { id: number; email: string } | null
         if (dbUser?.id) {
-          await userApi.removeFromFavorites(dbUser.id.toString(), id)
+          const listingId = parseInt(id, 10)
+          if (!isNaN(listingId)) {
+            await userApi.removeFromFavorites(dbUser.id.toString(), listingId.toString())
+          }
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error removing from wishlist in database:', error)
+        console.error('Remove wishlist error details:', {
+          message: error?.message,
+          response: error?.response?.data,
+          status: error?.response?.status
+        })
       }
     }
   }, [isAuthenticated, user?.email])

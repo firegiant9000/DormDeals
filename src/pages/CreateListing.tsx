@@ -49,6 +49,23 @@ const CreateListing = () => {
     setFormData(prev => ({ ...prev, images: prev.images.filter((_, i) => i !== index) }))
   }
 
+  // Convert File to Base64 string
+  const convertFileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => {
+        const result = reader.result as string
+        // Remove the data URL prefix (e.g., "data:image/jpeg;base64,")
+        const base64String = result.split(',')[1] || result
+        resolve(base64String)
+      }
+      reader.onerror = (error) => {
+        reject(error)
+      }
+      reader.readAsDataURL(file)
+    })
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -113,12 +130,21 @@ const CreateListing = () => {
         'Poor': 'poor'
       }
 
-      // Convert images to URLs (for now, use placeholder - in production, upload to storage first)
-      const imageUrls = formData.images.map((file) => {
-        // In production, upload to cloud storage and get URLs
-        // For now, create a data URL or placeholder
-        return URL.createObjectURL(file)
-      })
+      // Convert images to Base64 strings
+      const imageBase64Strings = await Promise.all(
+        formData.images.map(async (file) => {
+          try {
+            const base64String = await convertFileToBase64(file)
+            // Return full data URL format for backend compatibility
+            // Format: "data:image/jpeg;base64,{base64String}"
+            const mimeType = file.type || 'image/jpeg'
+            return `data:${mimeType};base64,${base64String}`
+          } catch (error) {
+            console.error('Error converting image to Base64:', error)
+            throw new Error(`Failed to convert image ${file.name} to Base64`)
+          }
+        })
+      )
 
       // Prepare listing data for database
       const listingData = {
@@ -128,7 +154,7 @@ const CreateListing = () => {
         category: formData.category, // Backend will map to category_id
         condition: conditionMap[formData.condition] || 'good',
         seller_id: dbUser.id,
-        images: imageUrls,
+        images: imageBase64Strings, // Array of Base64-encoded image strings
         location: formData.location.trim() || 'UL Campus'
       }
 
