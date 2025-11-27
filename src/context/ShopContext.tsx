@@ -149,28 +149,6 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return id
   }, [resolveDbUserId])
 
-  const reloadCartFromDb = useCallback(async (id: string) => {
-    try {
-      const updatedCartData = await userApi.getCart(id) as any[]
-      if (Array.isArray(updatedCartData)) {
-        setCartItems(transformCartData(updatedCartData))
-      }
-    } catch (reloadError) {
-      console.error('Error reloading cart:', reloadError)
-    }
-  }, [transformCartData])
-
-  const reloadWishlistFromDb = useCallback(async (id: string) => {
-    try {
-      const updatedWishlistData = await userApi.getFavorites(id) as any[]
-      if (Array.isArray(updatedWishlistData)) {
-        setWishlistItems(transformWishlistData(updatedWishlistData))
-      }
-    } catch (reloadError) {
-      console.error('Error reloading wishlist:', reloadError)
-    }
-  }, [transformWishlistData])
-
   // Load cart and wishlist from database when user logs in
   useEffect(() => {
     const loadUserData = async () => {
@@ -189,14 +167,9 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       try {
-        const [cartData, wishlistData] = await Promise.all([
-          userApi.getCart(resolvedId) as Promise<any[]>,
-          userApi.getFavorites(resolvedId) as Promise<any[]>
-        ])
-
         // Load cart items from database
         try {
-          const cartData = await userApi.getCart(dbUser.id.toString()) as any[]
+          const cartData = await userApi.getCart(resolvedId) as any[]
           if (Array.isArray(cartData)) {
             // Transform database cart items to Item format
             // Backend returns listing_id as the primary identifier for cart items
@@ -242,7 +215,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         // Load wishlist items from database
         try {
-          const wishlistData = await userApi.getFavorites(dbUser.id.toString()) as any[]
+          const wishlistData = await userApi.getFavorites(resolvedId) as any[]
           if (Array.isArray(wishlistData)) {
             // Transform database favorites to Item format
             // Backend returns listing_id for favorites
@@ -320,11 +293,11 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       // Save to database
-      await userApi.addToCart(dbUser.id.toString(), listingId.toString(), 1)
+      await userApi.addToCart(id, listingId.toString(), 1)
       
       // Reload cart from database to get the latest state
       try {
-        const updatedCartData = await userApi.getCart(dbUser.id.toString()) as any[]
+        const updatedCartData = await userApi.getCart(id) as any[]
         if (Array.isArray(updatedCartData)) {
           const transformedCart: Item[] = updatedCartData.map((cartItem: any) => ({
             // Backend returns listing_id as the primary identifier for cart items
@@ -379,11 +352,11 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setWishlistItems(updatedWishlist)
       
       // Remove from wishlist in database if it was there
-      if (wishlistItems.some(i => i.id === item.id) && dbUser?.id) {
+      if (wishlistItems.some(i => i.id === item.id) && id) {
         try {
           const wishlistListingId = parseInt(item.id.toString(), 10)
           if (!isNaN(wishlistListingId)) {
-            await userApi.removeFromFavorites(dbUser.id.toString(), wishlistListingId.toString())
+            await userApi.removeFromFavorites(id, wishlistListingId.toString())
           }
         } catch (error: any) {
           console.error('Error removing from favorites:', error)
@@ -408,7 +381,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const errorMessage = error?.response?.data?.error || error?.response?.data?.message || error?.message || 'Failed to add item to cart'
       toast.error(errorMessage)
     }
-  }, [isAuthenticated, user?.email, wishlistItems, ensureDbUserId, reloadCartFromDb, reloadWishlistFromDb])
+  }, [isAuthenticated, user?.email, wishlistItems, ensureDbUserId])
 
   const addToWishlist = useCallback(async (item: Item) => {
     console.log('addToWishlist called, isAuthenticated:', isAuthenticated)
@@ -434,11 +407,11 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       // Save to database
-      await userApi.addToFavorites(dbUser.id.toString(), listingId.toString())
+      await userApi.addToFavorites(id, listingId.toString())
       
       // Reload wishlist from database to get the latest state
       try {
-        const updatedWishlistData = await userApi.getFavorites(dbUser.id.toString()) as any[]
+        const updatedWishlistData = await userApi.getFavorites(id) as any[]
         if (Array.isArray(updatedWishlistData)) {
           const transformedWishlist: Item[] = updatedWishlistData.map((wishlistItem: any) => ({
             // Backend returns listing_id for favorites
@@ -493,11 +466,11 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setCartItems(updatedCart)
       
       // Remove from cart in database if it was there
-      if (cartItems.some(i => i.id === item.id) && dbUser?.id) {
+      if (cartItems.some(i => i.id === item.id) && id) {
         try {
           const cartListingId = parseInt(item.id.toString(), 10)
           if (!isNaN(cartListingId)) {
-            await userApi.removeFromCart(dbUser.id.toString(), cartListingId.toString())
+            await userApi.removeFromCart(id, cartListingId.toString())
           }
         } catch (error: any) {
           console.error('Error removing from cart:', error)
@@ -522,7 +495,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const errorMessage = error?.response?.data?.error || error?.response?.data?.message || error?.message || 'Failed to add item to wishlist'
       toast.error(errorMessage)
     }
-  }, [isAuthenticated, user?.email, cartItems, ensureDbUserId, reloadWishlistFromDb, reloadCartFromDb])
+  }, [isAuthenticated, user?.email, cartItems, ensureDbUserId])
 
   const removeFromCart = useCallback(async (id: string) => {
     setCartItems(prev => prev.filter(i => i.id !== id))
@@ -545,7 +518,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
         })
       }
     }
-  }, [isAuthenticated, user?.email, resolveDbUserId])
+  }, [isAuthenticated, user?.email])
 
   const removeFromWishlist = useCallback(async (id: string) => {
     setWishlistItems(prev => prev.filter(i => i.id !== id))
@@ -568,7 +541,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
         })
       }
     }
-  }, [isAuthenticated, user?.email, resolveDbUserId])
+  }, [isAuthenticated, user?.email])
 
   const openCart = () => setShowCart(true)
   const openWishlist = () => setShowWishlist(true)

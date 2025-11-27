@@ -512,37 +512,91 @@ app.post('/api/users/sync', async (req, res) => {
     const defaultFirst = firstName || displayName?.split(' ')?.[0] || '';
     const defaultLast = lastName || displayName?.split(' ')?.slice(1).join(' ') || '';
 
-    const existingUser = await pool.query(
-      `SELECT id, username, email FROM users WHERE email = $1`,
-      [normalizedEmail]
-    );
+    // First try to find user by firebase_uid if column exists, then fall back to email
+    // This ensures proper Firebase account linking and prevents email collisions
+    let existingUser;
+    try {
+      // Try to find by firebase_uid first (if column exists)
+      existingUser = await pool.query(
+        `SELECT id, username, email, firebase_uid FROM users WHERE firebase_uid = $1`,
+        [firebaseUid]
+      );
+      
+      // If not found by firebase_uid, try email (for backward compatibility)
+      if (existingUser.rows.length === 0) {
+        existingUser = await pool.query(
+          `SELECT id, username, email, firebase_uid FROM users WHERE email = $1`,
+          [normalizedEmail]
+        );
+      }
+    } catch (error) {
+      // If firebase_uid column doesn't exist yet, fall back to email-only lookup
+      // TODO: Add migration to add firebase_uid column to users table
+      if (error.message && error.message.includes('column') && error.message.includes('firebase_uid')) {
+        existingUser = await pool.query(
+          `SELECT id, username, email FROM users WHERE email = $1`,
+          [normalizedEmail]
+        );
+      } else {
+        throw error;
+      }
+    }
 
     if (existingUser.rows.length > 0) {
       const currentUsername = existingUser.rows[0].username;
       const usernameToUse = currentUsername || await generateUniqueUsername(displayName || normalizedEmail.split('@')[0]);
+      const userId = existingUser.rows[0].id;
+      const hasFirebaseUidColumn = 'firebase_uid' in existingUser.rows[0];
 
-      const { rows } = await pool.query(
-        `UPDATE users
-         SET username = $2,
-             first_name = COALESCE($3, first_name),
-             last_name = COALESCE($4, last_name),
-             phone = COALESCE($5, phone),
-             university = COALESCE($6, university),
-             profile_image_url = COALESCE($7, profile_image_url),
-             updated_at = NOW()
-         WHERE email = $1
-         RETURNING id, uuid, username, email, first_name, last_name, phone, university,
-                   graduation_year, profile_image_url, is_verified, is_active, created_at, updated_at`,
-        [
-          normalizedEmail,
-          usernameToUse,
-          defaultFirst || null,
-          defaultLast || null,
-          phone || null,
-          university || 'University of Louisiana',
-          profileImageUrl || null
-        ]
-      );
+      // For UPDATE queries, pass null instead of default values to preserve existing values
+      // COALESCE will use the existing value when the parameter is null
+      const updateQuery = hasFirebaseUidColumn
+        ? `UPDATE users
+           SET username = $2,
+               first_name = COALESCE($3, first_name),
+               last_name = COALESCE($4, last_name),
+               phone = COALESCE($5, phone),
+               university = COALESCE($6, university),
+               profile_image_url = COALESCE($7, profile_image_url),
+               firebase_uid = $8,
+               updated_at = NOW()
+           WHERE id = $1
+           RETURNING id, uuid, username, email, first_name, last_name, phone, university,
+                     graduation_year, profile_image_url, is_verified, is_active, created_at, updated_at`
+        : `UPDATE users
+           SET username = $2,
+               first_name = COALESCE($3, first_name),
+               last_name = COALESCE($4, last_name),
+               phone = COALESCE($5, phone),
+               university = COALESCE($6, university),
+               profile_image_url = COALESCE($7, profile_image_url),
+               updated_at = NOW()
+           WHERE id = $1
+           RETURNING id, uuid, username, email, first_name, last_name, phone, university,
+                     graduation_year, profile_image_url, is_verified, is_active, created_at, updated_at`;
+
+      const updateParams = hasFirebaseUidColumn
+        ? [
+            userId,
+            usernameToUse,
+            defaultFirst || null,
+            defaultLast || null,
+            phone || null,
+            university || null, // Pass null instead of default to preserve existing value
+            profileImageUrl || null,
+            firebaseUid
+          ]
+        : [
+            userId,
+            usernameToUse,
+            defaultFirst || null,
+            defaultLast || null,
+            phone || null,
+            university || null, // Pass null instead of default to preserve existing value
+            profileImageUrl || null
+          ];
+
+      const { rows } = await pool.query(updateQuery, updateParams);
 
       return res.json(rows[0]);
     }
@@ -550,24 +604,58 @@ app.post('/api/users/sync', async (req, res) => {
     const username = await generateUniqueUsername(displayName || normalizedEmail.split('@')[0]);
     const passwordHash = crypto.randomBytes(32).toString('hex');
 
-    const { rows } = await pool.query(
-      `INSERT INTO users
-        (username, email, password_hash, first_name, last_name, phone, university, is_verified, is_active, profile_image_url)
-       VALUES
-        ($1, $2, $3, $4, $5, $6, $7, false, true, $8)
-       RETURNING id, uuid, username, email, first_name, last_name, phone, university,
-                 graduation_year, profile_image_url, is_verified, is_active, created_at, updated_at`,
-      [
-        username,
-        normalizedEmail,
-        passwordHash,
-        defaultFirst || null,
-        defaultLast || null,
-        phone || null,
-        university || 'University of Louisiana',
-        profileImageUrl || null
-      ]
-    );
+    // For INSERT queries, use default value for new users
+    // Try to insert with firebase_uid if column exists, fallback if it doesn't
+    let rows;
+    try {
+      // Try inserting with firebase_uid column
+      const result = await pool.query(
+        `INSERT INTO users
+          (username, email, password_hash, first_name, last_name, phone, university, is_verified, is_active, profile_image_url, firebase_uid)
+         VALUES
+          ($1, $2, $3, $4, $5, $6, $7, false, true, $8, $9)
+         RETURNING id, uuid, username, email, first_name, last_name, phone, university,
+                   graduation_year, profile_image_url, is_verified, is_active, created_at, updated_at`,
+        [
+          username,
+          normalizedEmail,
+          passwordHash,
+          defaultFirst || null,
+          defaultLast || null,
+          phone || null,
+          university || 'University of Louisiana', // Default only for new users
+          profileImageUrl || null,
+          firebaseUid
+        ]
+      );
+      rows = result.rows;
+    } catch (error) {
+      // If firebase_uid column doesn't exist, fall back to insert without it
+      // TODO: Add migration to add firebase_uid column to users table
+      if (error.message && error.message.includes('column') && error.message.includes('firebase_uid')) {
+        const result = await pool.query(
+          `INSERT INTO users
+            (username, email, password_hash, first_name, last_name, phone, university, is_verified, is_active, profile_image_url)
+           VALUES
+            ($1, $2, $3, $4, $5, $6, $7, false, true, $8)
+           RETURNING id, uuid, username, email, first_name, last_name, phone, university,
+                     graduation_year, profile_image_url, is_verified, is_active, created_at, updated_at`,
+          [
+            username,
+            normalizedEmail,
+            passwordHash,
+            defaultFirst || null,
+            defaultLast || null,
+            phone || null,
+            university || 'University of Louisiana', // Default only for new users
+            profileImageUrl || null
+          ]
+        );
+        rows = result.rows;
+      } else {
+        throw error;
+      }
+    }
 
     return res.status(201).json(rows[0]);
   } catch (error) {
