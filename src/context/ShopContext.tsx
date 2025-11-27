@@ -96,7 +96,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }))
             setCartItems(transformedCart)
           }
-        } catch (error) {
+        } catch (error: any) {
           console.error('Error loading cart from database:', error)
         }
 
@@ -142,10 +142,10 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }))
             setWishlistItems(transformedWishlist)
           }
-        } catch (error) {
+        } catch (error: any) {
           console.error('Error loading wishlist from database:', error)
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error loading user data:', error)
       }
     }

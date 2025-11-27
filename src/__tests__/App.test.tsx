@@ -1,4 +1,6 @@
-// Basic test to ensure Jest is working
+import { describe, it, expect } from 'vitest';
+
+// Basic test to ensure Vitest is working
 describe('Basic Test', () => {
   it('should pass', () => {
     expect(1 + 1).toBe(2);
