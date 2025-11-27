@@ -1,21 +1,15 @@
+import { ReactNode } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
 interface ProtectedRouteProps {
-  children: React.ReactNode
+  children: ReactNode
 }
 
-/**
- * ProtectedRoute component
- * 
- * Redirects unauthenticated users to the login page
- * Stores the intended destination for redirect after login
- */
-export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const { isAuthenticated, isLoading } = useAuth()
   const location = useLocation()
 
-  // Show loading state while checking authentication
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -27,12 +21,10 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     )
   }
 
-  // If not authenticated, redirect to login with return path
   if (!isAuthenticated) {
     return <Navigate to="/login" state={{ from: location }} replace />
   }
 
-  // User is authenticated, render the protected content
   return <>{children}</>
 }
 

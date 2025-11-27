@@ -128,6 +128,16 @@ export const userApi = {
   // Wishlist/Favorites operations
   addToFavorites: (id: string, listingId: string) => apiPost(`/users/${id}/favorites`, { listing_id: listingId }),
   removeFromFavorites: (id: string, listingId: string) => apiDelete(`/users/${id}/favorites/${listingId}`),
+  syncUser: (data: {
+    firebaseUid: string
+    email: string
+    displayName?: string
+    firstName?: string
+    lastName?: string
+    phone?: string
+    university?: string
+    profileImageUrl?: string
+  }) => apiPost('/users/sync', data),
 }
 
 // Specific API functions for categories
