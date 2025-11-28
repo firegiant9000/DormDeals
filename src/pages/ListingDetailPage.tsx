@@ -14,6 +14,8 @@ import {
 import { Item, User as UserType } from '../types';
 import { useShop } from '@/context/ShopContext';
 import { formatCurrency, formatRelativeTime } from '../utils/helpers';
+import { itemApi } from '../services/api';
+import toast from 'react-hot-toast';
 
 const ListingDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -33,53 +35,62 @@ const ListingDetailPage: React.FC = () => {
 
   // Load listing data if not provided in state
   useEffect(() => {
-    if (!listing && id) {
-      // In a real app, you would fetch from API here
-      // For now, we'll use mock data
-      const mockListing: Item = {
-        id: id,
-        title: "MacBook Pro 13-inch M2",
-        description: "Excellent condition MacBook Pro with M2 chip. Perfect for students. Includes original charger and box. No scratches or dents. Used for one semester only.",
-        price: 1200,
-        originalPrice: 1599,
-        condition: "LIKE_NEW" as any,
-        category: "ELECTRONICS" as any,
-        images: [
-          "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=500",
-          "https://images.unsplash.com/photo-1541807084-5c52b6b3adef?w=500",
-          "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=500"
-        ],
-        seller: {
-          id: "1",
-          name: "John Doe",
-          email: "john@example.com",
-          rating: 4.8,
-          totalSales: 15,
-          isVerified: true,
-          school: "University of Louisiana",
-          joinDate: "2023-01-15",
-          joinedDate: "2023-01-15",
-          reviewCount: 12
-        } as UserType,
-        location: "Lafayette, LA",
-        pickupAvailable: true,
-        deliveryAvailable: true,
-        deliveryFee: 5,
-        createdAt: new Date('2024-01-15'),
-        updatedAt: new Date('2024-01-15'),
-        posted: "2024-01-15",
-        status: "ACTIVE" as any,
-        views: 45,
-        likes: 8,
-        isLiked: false,
-        isInCart: false,
-        isInWishlist: false,
-        tags: ["laptop", "macbook", "m2", "student", "electronics"],
-        pickupMethod: "BOTH" as any
-      };
-      setListing(mockListing);
-      setLoading(false);
-    }
+    const fetchListing = async () => {
+      if (!listing && id) {
+        try {
+          setLoading(true);
+          const fetchedListing = await itemApi.getById(id) as any;
+          
+          // Transform API response to Item format
+          const transformedListing: Item = {
+            id: fetchedListing.id?.toString() || id,
+            title: fetchedListing.title,
+            description: fetchedListing.description || '',
+            price: fetchedListing.price,
+            condition: fetchedListing.condition as any,
+            category: fetchedListing.category as any,
+            images: fetchedListing.images || [],
+            seller: fetchedListing.seller || {
+              id: fetchedListing.seller_id?.toString() || '',
+              name: 'Unknown Seller',
+              email: '',
+              rating: 0,
+              totalSales: 0,
+              isVerified: false,
+              school: 'University of Louisiana',
+              joinDate: new Date().toISOString(),
+              joinedDate: new Date().toISOString(),
+              reviewCount: 0
+            } as UserType,
+            location: fetchedListing.location || 'UL Campus',
+            pickupAvailable: fetchedListing.pickupAvailable ?? true,
+            deliveryAvailable: fetchedListing.deliveryAvailable ?? false,
+            deliveryFee: fetchedListing.deliveryFee,
+            createdAt: fetchedListing.createdAt ? new Date(fetchedListing.createdAt) : new Date(),
+            updatedAt: fetchedListing.updatedAt ? new Date(fetchedListing.updatedAt) : new Date(),
+            posted: fetchedListing.createdAt || new Date().toISOString(),
+            status: fetchedListing.status as any,
+            views: fetchedListing.views || 0,
+            likes: fetchedListing.likes || 0,
+            isLiked: false,
+            isInCart: false,
+            isInWishlist: false,
+            tags: fetchedListing.tags || [],
+            pickupMethod: fetchedListing.pickupMethod as any,
+            isFeatured: fetchedListing.isFeatured || false
+          } as Item;
+          
+          setListing(transformedListing);
+        } catch (error) {
+          console.error('Error fetching listing:', error);
+          toast.error('Failed to load listing');
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchListing();
   }, [id, listing]);
 
   const handleAddToCart = () => {
@@ -310,26 +321,28 @@ const ListingDetailPage: React.FC = () => {
             </div>
 
             {/* Action Buttons */}
-            <div className="flex space-x-4">
-              <button
-                onClick={() => { if (!isInCart(listing.id)) handleAddToCart(); else removeFromCart(listing.id); }}
-                className={`flex-1 py-3 rounded-lg flex items-center justify-center space-x-2 ${isInCart(listing.id) ? 'border border-red-300 text-red-700 hover:bg-red-50' : 'bg-primary-600 text-white hover:bg-primary-700 transition-colors'}`}
-              >
-                <ShoppingCart className="w-5 h-5" />
-                <span>{isInCart(listing.id) ? 'Remove from Cart' : 'Add to Cart'}</span>
-              </button>
-              
-              <button
-                onClick={() => { if (!isInWishlist(listing.id)) handleAddToWishlist(); else removeFromWishlist(listing.id); }}
-                className={`flex-1 py-3 rounded-lg flex items-center justify-center space-x-2 ${isInWishlist(listing.id) ? 'border border-red-300 text-red-600 hover:bg-red-50' : 'border border-surface text-body hover:bg-surface-2 transition-colors'}`}
-              >
-                <Heart className="w-5 h-5" />
-                <span>{isInWishlist(listing.id) ? 'Remove from Wishlist' : 'Add to Wishlist'}</span>
-              </button>
-              
-              <button className="p-3 border border-surface text-body rounded-lg hover:bg-surface-2 transition-colors">
-                <Share2 className="w-5 h-5" />
-              </button>
+            <div className="space-y-4">
+              <div className="flex space-x-4">
+                <button
+                  onClick={() => { if (!isInCart(listing.id)) handleAddToCart(); else removeFromCart(listing.id); }}
+                  className={`flex-1 py-3 rounded-lg flex items-center justify-center space-x-2 ${isInCart(listing.id) ? 'border border-red-300 text-red-700 hover:bg-red-50' : 'bg-primary-600 text-white hover:bg-primary-700 transition-colors'}`}
+                >
+                  <ShoppingCart className="w-5 h-5" />
+                  <span>{isInCart(listing.id) ? 'Remove from Cart' : 'Add to Cart'}</span>
+                </button>
+                
+                <button
+                  onClick={() => { if (!isInWishlist(listing.id)) handleAddToWishlist(); else removeFromWishlist(listing.id); }}
+                  className={`flex-1 py-3 rounded-lg flex items-center justify-center space-x-2 ${isInWishlist(listing.id) ? 'border border-red-300 text-red-600 hover:bg-red-50' : 'border border-surface text-body hover:bg-surface-2 transition-colors'}`}
+                >
+                  <Heart className="w-5 h-5" />
+                  <span>{isInWishlist(listing.id) ? 'Remove from Wishlist' : 'Add to Wishlist'}</span>
+                </button>
+                
+                <button className="p-3 border border-surface text-body rounded-lg hover:bg-surface-2 transition-colors">
+                  <Share2 className="w-5 h-5" />
+                </button>
+              </div>
             </div>
           </div>
         </div>

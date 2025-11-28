@@ -1,15 +1,17 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { X, Camera } from 'lucide-react'
+import { X, Camera, Crown } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import ProtectedFeature from '../components/ProtectedFeature'
 import { useAuth } from '../context/AuthContext'
+import { useAccessControl } from '../hooks/useAccessControl'
 import { userApi, itemApi } from '../services/api'
 
 const CreateListing = () => {
   const navigate = useNavigate()
-  const { user } = useAuth()
+  const { user, isAuthenticated } = useAuth()
+  const { isPremium } = useAccessControl()
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -17,7 +19,8 @@ const CreateListing = () => {
     category: '',
     condition: '',
     location: '',
-    images: [] as File[]
+    images: [] as File[],
+    isFeatured: false
   })
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
 
@@ -162,7 +165,18 @@ const CreateListing = () => {
       const createdListing = await itemApi.create(listingData) as any
 
       if (createdListing && createdListing.id) {
-        toast.success('Listing created successfully!')
+        // If user wants to feature the listing and is premium, feature it
+        if (formData.isFeatured && isPremium()) {
+          try {
+            await itemApi.feature(createdListing.id.toString())
+            toast.success('Listing created and featured successfully!')
+          } catch (error: any) {
+            console.error('Error featuring listing:', error)
+            toast.success('Listing created successfully, but failed to feature it')
+          }
+        } else {
+          toast.success('Listing created successfully!')
+        }
         // Navigate to the new listing page
         navigate(`/listing/${createdListing.id}`, { state: { listing: createdListing } })
       } else {
@@ -263,22 +277,17 @@ const CreateListing = () => {
                   <label className="block text-sm font-medium text-body mb-2">
                     Price <span className="text-red-500">*</span>
                   </label>
-                  <div className="relative">
-                    <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-gray-400">
-                      $
-                    </span>
-                    <input
-                      type="number"
-                      inputMode="decimal"
-                      step="0.01"
-                      name="price"
-                      value={formData.price}
-                      onChange={handleInputChange}
-                      placeholder="0.00"
-                      className="dd-input pl-8"
-                      required
-                    />
-                  </div>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    step="0.01"
+                    name="price"
+                    value={formData.price}
+                    onChange={handleInputChange}
+                    placeholder="0.00"
+                    className="dd-input"
+                    required
+                  />
                   {validationErrors.price && (
                     <p className="mt-1 text-sm text-red-500">{validationErrors.price}</p>
                   )}
@@ -367,6 +376,42 @@ const CreateListing = () => {
                   className="dd-input"
                 />
               </div>
+
+              {/* Feature Item Option - Show for all authenticated users */}
+              {isAuthenticated && (
+                <div className="pt-4 border-t border-surface">
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.isFeatured}
+                      onChange={(e) => {
+                        if (!isPremium() && e.target.checked) {
+                          // If not premium and trying to check, navigate to premium page
+                          e.preventDefault()
+                          navigate('/premium')
+                          return
+                        }
+                        setFormData(prev => ({ ...prev, isFeatured: e.target.checked }))
+                      }}
+                      className="w-5 h-5 text-primary-600 rounded focus:ring-primary-500"
+                    />
+                    <div className="flex items-center gap-2">
+                      <Crown className={`w-5 h-5 ${isPremium() ? 'text-primary-600' : 'text-gray-400'}`} />
+                      <span className={`font-medium ${isPremium() ? 'text-body' : 'text-gray-500'}`}>
+                        Feature this item
+                      </span>
+                      {!isPremium() && (
+                        <span className="text-sm text-gray-500">(Premium required)</span>
+                      )}
+                    </div>
+                  </label>
+                  {!isPremium() && (
+                    <p className="text-sm text-gray-500 mt-2 ml-8">
+                      Upgrade to Premium to feature your listings and get more visibility
+                    </p>
+                  )}
+                </div>
+              )}
 
               {/* Submit Buttons */}
               <div className="flex gap-4 pt-6 border-t border-surface">

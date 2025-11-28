@@ -160,7 +160,7 @@ export const ProtectedFeature: React.FC<ProtectedFeatureProps> = ({
           ) : requiredType === UserType.PREMIUM && showUpgradeLink ? (
             <>
               <Link
-                to="/profile"
+                to="/premium"
                 className="inline-flex items-center gap-2 px-6 py-3 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 transition-colors"
               >
                 <ArrowUp className="w-4 h-4" />

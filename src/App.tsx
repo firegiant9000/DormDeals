@@ -20,6 +20,7 @@ const MessagePage = lazy(() => import('@/pages/MessagePage'))
 const LoginPage = lazy(() => import('@/pages/LoginPage'))
 const RegisterPage = lazy(() => import('@/pages/RegisterPage'))
 const Home = lazy(() => import('@/pages/Home'))
+const PremiumPage = lazy(() => import('@/pages/PremiumPage'))
 const NotFoundPage = lazy(() => import('@/pages/NotFoundPage'))
 
 function App() {
@@ -112,6 +113,11 @@ function App() {
             <Route path="/home" element={
               <PageTransition>
                 <Home />
+              </PageTransition>
+            } />
+            <Route path="/premium" element={
+              <PageTransition>
+                <PremiumPage />
               </PageTransition>
             } />
             <Route path="/:feature" element={
