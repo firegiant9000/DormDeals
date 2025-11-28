@@ -285,9 +285,20 @@ const Profile = () => {
     { id: 'favorites', label: 'Favorites', icon: Heart },
     { id: 'messages', label: 'Messages', icon: MessageSquare },
     ...(canAccess('advanced_analytics') ? [{ id: 'analytics', label: 'Analytics', icon: BarChart3 }] : []),
+    ...(isPremium() ? [{ id: 'premium', label: 'Premium', icon: Crown }] : []),
     ...(isAdmin() ? [{ id: 'admin', label: 'Admin Panel', icon: Users }] : []),
     { id: 'settings', label: 'Settings', icon: Settings }
   ]
+
+  // Handle premium button click - navigate to premium page for non-premium users
+  const handlePremiumClick = (e: React.MouseEvent) => {
+    e.preventDefault()
+    if (!isPremium()) {
+      navigate('/premium')
+    } else {
+      setActiveTab('premium')
+    }
+  }
 
   return (
     <div className="min-h-screen bg-transparent py-8">
@@ -412,6 +423,16 @@ const Profile = () => {
                   </button>
                 )
               })}
+              {/* Premium button for non-premium users */}
+              {!isPremium() && (
+                <button
+                  onClick={handlePremiumClick}
+                  className="py-4 px-1 border-b-2 border-transparent font-medium text-sm flex items-center gap-2 transition-colors text-gray-500 hover:text-primary-600 hover:border-primary-300"
+                >
+                  <Crown className="w-4 h-4" />
+                  Upgrade to Premium
+                </button>
+              )}
             </nav>
           </div>
 
@@ -658,6 +679,57 @@ const Profile = () => {
                   </div>
                 </div>
               </ProtectedFeature>
+            )}
+
+            {activeTab === 'premium' && (
+              <div className="space-y-6">
+                <div>
+                  <div className="flex items-center gap-3 mb-4">
+                    <Crown className="w-8 h-8 text-primary-600" />
+                    <h3 className="text-lg font-semibold text-gray-900">Premium Dashboard</h3>
+                  </div>
+                  <p className="text-gray-600 mb-6">Manage your premium features and featured listings.</p>
+                  
+                  <div className="dd-card bg-surface border-surface p-6 mb-6">
+                    <h4 className="font-semibold text-gray-900 mb-4">Your Premium Benefits</h4>
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center">
+                          <Crown className="w-4 h-4 text-primary-600" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900">Featured Listings</p>
+                          <p className="text-sm text-gray-600">Feature your listings to get more visibility</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center">
+                          <BarChart3 className="w-4 h-4 text-primary-600" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900">Advanced Analytics</p>
+                          <p className="text-sm text-gray-600">Track your listing performance</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center">
+                          <ShoppingBag className="w-4 h-4 text-primary-600" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900">Unlimited Listings</p>
+                          <p className="text-sm text-gray-600">Post as many items as you want</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="dd-card bg-surface border-surface p-6">
+                    <h4 className="font-semibold text-gray-900 mb-4">Featured Listings</h4>
+                    <p className="text-gray-600 mb-4">Your featured listings appear at the top of search results and on the homepage.</p>
+                    <p className="text-sm text-gray-500">Go to any of your listings and click &quot;Feature this item&quot; to feature it.</p>
+                  </div>
+                </div>
+              </div>
             )}
 
             {activeTab === 'admin' && (

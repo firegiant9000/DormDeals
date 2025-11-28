@@ -90,7 +90,17 @@ app.get('/health', (req, res) => {
 // API Routes
 app.get('/api/listings', async (req, res) => {
   try {
-    const { rows } = await pool.query('SELECT * FROM listings ORDER BY created_at DESC');
+    const { featured } = req.query;
+    let query = 'SELECT * FROM listings';
+    const params = [];
+    
+    if (featured === 'true') {
+      query += ' WHERE is_featured = true AND is_active = true AND is_sold = false';
+    }
+    
+    query += ' ORDER BY created_at DESC';
+    
+    const { rows } = await pool.query(query, params);
     res.json(rows);
   } catch (error) {
     console.error('Error fetching listings:', error);
@@ -101,13 +111,39 @@ app.get('/api/listings', async (req, res) => {
 app.get('/api/listings/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { rows } = await pool.query('SELECT * FROM listings WHERE id = $1', [id]);
+    const { rows } = await pool.query(
+      `SELECT l.*, c.name as category_name
+       FROM listings l
+       LEFT JOIN categories c ON l.category_id = c.id
+       WHERE l.id = $1`,
+      [id]
+    );
     
     if (rows.length === 0) {
       return res.status(404).json({ error: 'Listing not found' });
     }
     
-    res.json(rows[0]);
+    const listing = rows[0];
+    // Transform to match frontend format
+    const transformedListing = {
+      id: listing.id?.toString() || '',
+      title: listing.title,
+      description: listing.description,
+      price: parseFloat(listing.price),
+      category: listing.category_name || 'Other',
+      condition: listing.condition,
+      images: listing.images || [],
+      location: listing.location,
+      status: listing.is_sold ? 'Sold' : (listing.is_active ? 'Active' : 'Inactive'),
+      views: listing.views_count || 0,
+      createdAt: listing.created_at,
+      isSold: listing.is_sold,
+      isActive: listing.is_active,
+      isFeatured: listing.is_featured || false,
+      seller_id: listing.seller_id
+    };
+    
+    res.json(transformedListing);
   } catch (error) {
     console.error('Error fetching listing:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -187,11 +223,11 @@ app.post('/api/listings', async (req, res) => {
 app.put('/api/listings/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, description, price, category, condition, images } = req.body;
+    const { title, description, price, category, condition, images, is_featured } = req.body;
     
     const { rows } = await pool.query(
-      'UPDATE listings SET title = $1, description = $2, price = $3, category = $4, condition = $5, images = $6, updated_at = NOW() WHERE id = $7 RETURNING *',
-      [title, description, price, category, condition, images, id]
+      'UPDATE listings SET title = $1, description = $2, price = $3, category = $4, condition = $5, images = $6, is_featured = COALESCE($7, is_featured), updated_at = NOW() WHERE id = $8 RETURNING *',
+      [title, description, price, category, condition, images, is_featured, id]
     );
     
     if (rows.length === 0) {
@@ -201,6 +237,31 @@ app.put('/api/listings/:id', async (req, res) => {
     res.json(rows[0]);
   } catch (error) {
     console.error('Error updating listing:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Feature a listing (premium users only)
+app.patch('/api/listings/:id/feature', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // First, get the listing to check seller
+    const listingQuery = await pool.query('SELECT seller_id FROM listings WHERE id = $1', [id]);
+    
+    if (listingQuery.rows.length === 0) {
+      return res.status(404).json({ error: 'Listing not found' });
+    }
+    
+    // Update listing to be featured
+    const { rows } = await pool.query(
+      'UPDATE listings SET is_featured = true, updated_at = NOW() WHERE id = $1 RETURNING *',
+      [id]
+    );
+    
+    res.json(rows[0]);
+  } catch (error) {
+    console.error('Error featuring listing:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -365,7 +426,8 @@ app.get('/api/users/:id/listings', async (req, res) => {
       views: listing.views_count || 0,
       createdAt: listing.created_at,
       isSold: listing.is_sold,
-      isActive: listing.is_active
+      isActive: listing.is_active,
+      isFeatured: listing.is_featured || false
     }));
     
     res.json(listings);

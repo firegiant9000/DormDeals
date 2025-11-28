@@ -24,6 +24,7 @@ import { mockItems } from '../data/mockData';
 import { formatCurrency, formatRelativeTime } from '../utils/helpers';
 import { useShop } from '@/context/ShopContext';
 import { useAuth } from '@/context/AuthContext';
+import { itemApi } from '../services/api';
 import SearchFiltersBar from '../components/SearchFiltersBar';
 
 const MainFeaturePage: React.FC = () => {
@@ -215,8 +216,23 @@ const MainFeaturePage: React.FC = () => {
 
   // Load featured items on component mount
   useEffect(() => {
-    // For now, use mock data. In production, this would be an API call
-    setFeaturedItems(mockItems.slice(0, 6));
+    const fetchFeaturedItems = async () => {
+      try {
+        const featured = await itemApi.getFeatured() as Item[];
+        if (Array.isArray(featured) && featured.length > 0) {
+          setFeaturedItems(featured);
+        } else {
+          // Fallback to mock data if no featured items
+          setFeaturedItems(mockItems.slice(0, 6));
+        }
+      } catch (error) {
+        console.error('Error fetching featured items:', error);
+        // Fallback to mock data on error
+        setFeaturedItems(mockItems.slice(0, 6));
+      }
+    };
+
+    fetchFeaturedItems();
   }, []);
 
   return (

@@ -46,6 +46,7 @@ CREATE TABLE listings (
     location VARCHAR(100),
     is_active BOOLEAN DEFAULT true,
     is_sold BOOLEAN DEFAULT false,
+    is_featured BOOLEAN DEFAULT false,
     views_count INTEGER DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -129,6 +130,7 @@ CREATE INDEX idx_listings_price ON listings(price);
 CREATE INDEX idx_listings_created_at ON listings(created_at);
 CREATE INDEX idx_listings_is_active ON listings(is_active);
 CREATE INDEX idx_listings_is_sold ON listings(is_sold);
+CREATE INDEX idx_listings_is_featured ON listings(is_featured);
 CREATE INDEX idx_listings_location ON listings(location);
 
 CREATE INDEX idx_messages_sender_id ON messages(sender_id);

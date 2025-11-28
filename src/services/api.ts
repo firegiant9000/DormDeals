@@ -104,10 +104,12 @@ export const itemApi = {
   getAll: () => apiGet(endpoints.items),
   getById: (id: string) => apiGet(endpoints.itemById(id)),
   getUserItems: () => apiGet(endpoints.userItems),
+  getFeatured: () => apiGet(`${endpoints.items}?featured=true`),
   create: (data: any) => apiPost(endpoints.items, data),
   update: (id: string, data: any) => apiPut(endpoints.itemById(id), data),
   delete: (id: string) => apiDelete(endpoints.itemById(id)),
   search: (query: string) => apiGet(`${endpoints.search}?q=${encodeURIComponent(query)}`),
+  feature: (id: string) => apiPatch(`${endpoints.itemById(id)}/feature`, {}),
 }
 
 // Specific API functions for users
