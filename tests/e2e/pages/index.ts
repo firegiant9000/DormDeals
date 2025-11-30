@@ -14,4 +14,10 @@ export { LoginPage } from './login.page';
 export { RegisterPage } from './register.page';
 export { HomePage } from './home.page';
 export { FeaturePage } from './feature.page';
+export { AboutPage } from './about.page';
+export { ProfilePage } from './profile.page';
+export { PremiumPage } from './premium.page';
+export { NotFoundPage } from './not-found.page';
+export { PricingPage } from './pricing.page';
+export { NavbarComponent } from './navbar.component';
 

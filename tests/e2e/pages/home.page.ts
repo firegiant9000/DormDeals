@@ -109,5 +109,56 @@ export class HomePage {
     await products.nth(index).click();
     await this.page.waitForLoadState('networkidle');
   }
+
+  /**
+   * Click Get Started button
+   */
+  async clickGetStarted(): Promise<void> {
+    const getStartedButton = this.page.getByRole('button', { name: /get started/i }).or(
+      this.page.locator('a:has-text("Get Started")')
+    );
+    await getStartedButton.first().click();
+    await this.page.waitForLoadState('networkidle');
+  }
+
+  /**
+   * Click on a feature card by index
+   */
+  async clickFeatureCard(index: number): Promise<void> {
+    const featureCard = this.page.getByTestId(`feature-card-${index}`).or(
+      this.page.locator(`[class*="feature"]:nth-child(${index + 1})`)
+    );
+    await featureCard.click();
+    await this.page.waitForLoadState('networkidle');
+  }
+
+  /**
+   * Expect hero section to be visible
+   */
+  async expectHeroVisible(): Promise<void> {
+    await expect(this.page.getByRole('heading', { level: 1 })).toBeVisible();
+    await expect(this.heroSection).toBeVisible();
+  }
+
+  /**
+   * Expect features section to be visible
+   */
+  async expectFeaturesVisible(): Promise<void> {
+    const featuresSection = this.page.getByTestId('features-section').or(
+      this.page.locator('section:has-text("Why Choose"), section:has-text("Features")')
+    );
+    await expect(featuresSection).toBeVisible();
+  }
+
+  /**
+   * Get Learn More button
+   */
+  async clickLearnMore(): Promise<void> {
+    const learnMoreButton = this.page.getByRole('link', { name: /learn more/i }).or(
+      this.page.locator('a:has-text("Learn More")')
+    );
+    await learnMoreButton.first().click();
+    await this.page.waitForLoadState('networkidle');
+  }
 }
 
