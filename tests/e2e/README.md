@@ -1,196 +1,219 @@
-# DormDeals E2E Tests
+# E2E Test Suite Documentation
 
-Comprehensive End-to-End tests for DormDeals marketplace using Playwright.
+## Overview
 
-## 📁 Structure
+This directory contains comprehensive End-to-End (E2E) tests for the DormDeals application using Playwright. All tests follow the **Page Object Model (POM)** pattern for maintainability and reliability.
 
-```
-tests/e2e/
-├── fixtures/          # Test data and mock responses
-│   └── test-data.ts
-├── helpers/          # Reusable helper functions
-│   └── auth-helper.ts
-├── pages/            # Page Object Models (POM)
-│   ├── main-feature.page.ts
-│   ├── results.page.ts
-│   ├── create-listing.page.ts
-│   ├── item-detail.page.ts
-│   ├── marketplace.page.ts
-│   ├── message.page.ts
-│   ├── checkout.page.ts
-│   ├── login.page.ts
-│   ├── register.page.ts
-│   └── index.ts
-└── specs/            # Test specifications
-    ├── feature-workflow.spec.ts
-    ├── form-validation.spec.ts
-    └── error-handling.spec.ts
-```
+## Test Structure
 
-## 🚀 Running Tests
+### Page Object Models (`pages/`)
 
-### Run all E2E tests
+All page objects are located in `tests/e2e/pages/` and follow a consistent pattern:
+
+- **`home.page.ts`** - Homepage page object
+- **`marketplace.page.ts`** - Marketplace page object
+- **`about.page.ts`** - About page object
+- **`profile.page.ts`** - Profile page object
+- **`premium.page.ts`** - Premium page object
+- **`pricing.page.ts`** - Pricing page object
+- **`login.page.ts`** - Login page object
+- **`register.page.ts`** - Register page object
+- **`not-found.page.ts`** - 404 page object
+- **`navbar.component.ts`** - Navbar component (used across all pages)
+- And more...
+
+All page objects are exported from `pages/index.ts` for easy importing.
+
+### Test Specs (`specs/`)
+
+#### Core Test Suites
+
+1. **`all-pages.spec.ts`**
+   - Tests all pages load correctly
+   - Verifies navbar on all pages
+   - Tests mobile menu on all pages
+   - Responsive design across all pages
+   - Accessibility checks for all pages
+
+2. **`navigation.spec.ts`**
+   - Main navigation flows
+   - Authentication navigation
+   - User profile navigation
+   - Marketplace navigation
+   - About page navigation
+   - Premium page navigation
+   - 404 error page navigation
+   - Mobile navigation
+   - Breadcrumb and back navigation
+   - Deep linking
+
+3. **`homepage.spec.ts`**
+   - Page loading and structure
+   - Hero section
+   - Features section
+   - How It Works section
+   - Featured items section
+   - Stats section
+   - CTA buttons and navigation
+   - Search functionality
+   - Smooth scrolling
+   - Interactive elements
+   - Responsive design
+   - Performance and accessibility
+   - Content verification
+
+4. **`about-page.spec.ts`**
+   - Page loading and structure
+   - Hero section
+   - Mission section
+   - Stats section
+   - Values section
+   - Team section
+   - CTA section
+   - Interactive elements
+   - Content verification
+   - Visual elements
+   - Responsive design
+   - Accessibility
+   - Page navigation
+
+5. **`404-page.spec.ts`**
+   - 404 page display
+   - Navigation elements
+   - Multiple invalid routes
+   - Navigation from 404 page
+   - 404 page content
+   - Error handling
+   - Accessibility
+   - Responsive design
+   - User experience
+
+6. **`responsive.spec.ts`**
+   - Mobile viewport (375x667)
+   - Tablet viewport (768x1024)
+   - Desktop viewport (1920x1080)
+   - Viewport transitions
+   - Cross-page responsive testing
+   - Touch target sizes
+   - Content overflow
+   - Specific breakpoint testing
+
+7. **`accessibility.spec.ts`**
+   - Keyboard navigation (Tab, Shift+Tab, Enter, Space, Arrow keys, Escape)
+   - Focus management
+   - Skip links
+   - Modal focus trap
+   - Mobile menu keyboard navigation
+   - Form keyboard navigation
+   - Dropdown menu keyboard navigation
+   - ARIA attributes
+   - Page-specific keyboard navigation
+
+8. **`pages.spec.ts`**
+   - Individual page functionality tests
+   - Page-specific features
+   - UI element verification
+
+## Test Requirements Coverage
+
+✅ **Page Object Model Pattern** - All tests use POM
+✅ **All Pages Tested** - Comprehensive coverage via `all-pages.spec.ts`
+✅ **Navigation Flows** - Covered in `navigation.spec.ts`
+✅ **Responsive Design** - Covered in `responsive.spec.ts` and per-page specs
+✅ **Mobile Menu Interactions** - Covered in responsive and navigation specs
+✅ **Accessibility (Keyboard Navigation)** - Covered in `accessibility.spec.ts`
+✅ **Clear Test Descriptions** - All tests have descriptive names and organized in `test.describe` blocks
+✅ **UI and Navigation Focus** - All tests focus on UI elements and navigation
+✅ **Maintainable and Reliable** - Uses POM, clear structure, and conditional checks
+
+## Running Tests
+
+### Run All Tests
 ```bash
-npm run test:e2e
+npx playwright test
 ```
 
-### Run with UI mode (interactive)
+### Run Specific Test File
 ```bash
-npm run test:e2e:ui
+npx playwright test tests/e2e/specs/homepage.spec.ts
 ```
 
-### Run on specific browser
+### Run Tests in UI Mode
 ```bash
-npm run test:e2e -- --project=chromium
-npm run test:e2e -- --project=firefox
-npm run test:e2e -- --project=webkit
+npx playwright test --ui
 ```
 
-### Run in headed mode (see browser)
+### Run Tests in Specific Browser
 ```bash
-npm run test:e2e:headed
+npx playwright test --project=chromium
+npx playwright test --project=firefox
+npx playwright test --project=webkit
 ```
 
-### Debug tests
+### Run Tests on Mobile Viewport
 ```bash
-npm run test:e2e:debug
+npx playwright test --project="Mobile Chrome"
 ```
 
-### View test report
+### Run Tests with Debug
 ```bash
-npm run test:e2e:report
+npx playwright test --debug
 ```
 
-### Run specific test file
+## Viewport Sizes Tested
+
+- **Mobile**: 375x667 (iPhone SE)
+- **Mobile Large**: 414x896 (iPhone 12 Pro)
+- **Tablet**: 768x1024 (iPad)
+- **Tablet Landscape**: 1024x768
+- **Desktop Small**: 1366x768
+- **Desktop**: 1920x1080
+
+## Accessibility Testing
+
+All tests include accessibility checks:
+- Keyboard navigation (Tab, Enter, Space, Arrow keys, Escape)
+- Focus visibility
+- ARIA attributes
+- Image alt text
+- Form labels
+- Heading hierarchy
+- Link accessibility
+
+## Best Practices
+
+1. **Page Object Model**: All page interactions go through page objects
+2. **Clear Test Names**: Descriptive test names explain what is being tested
+3. **Organized Structure**: Tests organized in `test.describe` blocks by feature/functionality
+4. **Conditional Checks**: Tests check for element existence before assertions
+5. **Wait Strategies**: Proper use of `waitForLoadState` and `waitForTimeout`
+6. **Error Handling**: Tests gracefully handle optional elements and authentication requirements
+7. **Maintainability**: Changes to UI only require updates to page objects, not test specs
+
+## Test Maintenance
+
+When adding new pages or features:
+
+1. Create a page object in `tests/e2e/pages/`
+2. Export it from `pages/index.ts`
+3. Add tests to relevant spec files or create new ones
+4. Ensure tests follow the established patterns
+5. Add accessibility and responsive tests
+6. Update this README if needed
+
+## CI/CD Integration
+
+Tests are configured to:
+- Run in parallel on CI
+- Retry failed tests (2 retries on CI)
+- Generate HTML reports
+- Take screenshots on failure
+- Record video on failure
+- Collect traces on retry
+
+## Reporting
+
+Test reports are generated in `playwright-report/` directory:
 ```bash
-npm run test:e2e -- tests/e2e/specs/feature-workflow.spec.ts
+npx playwright show-report
 ```
-
-### Run specific test
-```bash
-npm run test:e2e -- -g "user can complete search workflow"
-```
-
-## 📝 Test Coverage
-
-### Feature Workflow Tests
-- ✅ Search and filter workflows
-- ✅ Results page interactions
-- ✅ Item detail navigation
-- ✅ Cart and wishlist operations
-- ✅ Combined filter scenarios
-
-### Form Validation Tests
-- ✅ Search form validation
-- ✅ Create listing form validation
-- ✅ Checkout form validation
-- ✅ Login/Register form validation
-- ✅ Edge cases and special characters
-
-### Error Handling Tests
-- ✅ API error scenarios (500, 404, network failures)
-- ✅ Empty results handling
-- ✅ Timeout scenarios
-- ✅ Invalid data handling
-- ✅ Authentication errors
-
-## 🏗️ Page Object Model Pattern
-
-All tests use the Page Object Model (POM) pattern for maintainability:
-
-```typescript
-import { MainFeaturePage } from '../pages/main-feature.page';
-import { ResultsPage } from '../pages/results.page';
-
-test('example test', async ({ page }) => {
-  const mainFeaturePage = new MainFeaturePage(page);
-  const resultsPage = new ResultsPage(page);
-  
-  await mainFeaturePage.goto();
-  await mainFeaturePage.search('laptop');
-  await resultsPage.expectResultsVisible();
-});
-```
-
-## 📊 Test Data
-
-Test data is centralized in `fixtures/test-data.ts`:
-- User credentials
-- Product/item data
-- Form input data
-- Edge case scenarios
-
-## 🔧 Configuration
-
-Playwright configuration is in `playwright.config.ts`:
-- Base URL: `https://dormdeals-9cb29.web.app/`
-- Timeout: 30 seconds
-- Retries: 2 (on CI)
-- Browsers: Chromium, Firefox, WebKit
-- Mobile viewports: Pixel 5, iPhone 12
-- Tablet viewport: iPad Pro
-
-## 🎯 Best Practices
-
-1. **Use Page Objects**: Always use POM for page interactions
-2. **Centralize Test Data**: Use fixtures for test data
-3. **Clear Test Names**: Descriptive test names explain what's being tested
-4. **Wait for States**: Always wait for network idle or specific elements
-5. **Error Handling**: Test both happy paths and error scenarios
-6. **Isolation**: Each test should be independent
-
-## 🐛 Debugging
-
-### View test traces
-```bash
-npx playwright show-trace trace.zip
-```
-
-### Take screenshots on failure
-Screenshots are automatically saved on test failure in `test-results/`
-
-### View videos
-Videos are saved for failed tests in `test-results/`
-
-## 📈 CI/CD Integration
-
-Tests are configured to run in CI with:
-- Retries: 2
-- Workers: 1 (sequential execution)
-- HTML report generation
-- Trace on first retry
-
-## 🔍 Test Selectors
-
-Tests use multiple selector strategies for reliability:
-- Data attributes: `[data-testid="..."]`
-- Role-based: `getByRole('button', { name: '...' })`
-- Text content: `getByText('...')`
-- CSS selectors: Fallback when needed
-
-## 📝 Writing New Tests
-
-1. Create or use existing Page Object Model
-2. Add test data to `fixtures/test-data.ts` if needed
-3. Write test in appropriate spec file
-4. Use descriptive test names
-5. Test both success and failure scenarios
-6. Add comments for complex business logic
-
-## 🚨 Common Issues
-
-### Tests timing out
-- Increase timeout in `playwright.config.ts`
-- Check if selectors are correct
-- Verify network requests complete
-
-### Selectors not found
-- Check if element exists in DOM
-- Verify page has loaded
-- Use more specific selectors
-
-### Flaky tests
-- Add proper waits
-- Use `waitForLoadState('networkidle')`
-- Avoid hard-coded timeouts when possible
-
