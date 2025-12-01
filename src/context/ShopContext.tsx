@@ -75,11 +75,17 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     loadUserData()
   }, [isAuthenticated, user?.id])
 
-  const isInCart = useCallback((id: string) => cartItems.some(i => i.id === id), [cartItems])
-  const isInWishlist = useCallback((id: string) => wishlistItems.some(i => i.id === id), [wishlistItems])
+  const isInCart = useCallback((id: string | number) => {
+    const idStr = String(id)
+    return cartItems.some(i => String(i.id) === idStr)
+  }, [cartItems])
+  const isInWishlist = useCallback((id: string | number) => {
+    const idStr = String(id)
+    return wishlistItems.some(i => String(i.id) === idStr)
+  }, [wishlistItems])
 
   const addToCart = useCallback(async (item: Item) => {
-    console.log('addToCart called, isAuthenticated:', isAuthenticated)
+    console.log('addToCart called, isAuthenticated:', isAuthenticated, 'user:', user?.id, 'item:', item.id)
     if (!isAuthenticated || !user?.id) {
       console.log('User not authenticated, showing login popup')
       setLoginPopupAction('cart')
@@ -87,16 +93,26 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return
     }
     
+    if (!item || !item.id) {
+      console.error('Invalid item provided to addToCart:', item)
+      toast.error('Invalid item. Please try again.')
+      return
+    }
+    
     try {
       const userId = user.id
       const listingId = item.id.toString()
+      
+      console.log('Adding to cart - userId:', userId, 'listingId:', listingId)
 
       // Save to Firestore
       await addToCartService(userId, listingId, 1)
+      console.log('Successfully added to cart in Firestore')
       
       // Reload cart from Firestore to get the latest state
       try {
         const updatedCartItems = await getCartItems(userId)
+        console.log('Reloaded cart items:', updatedCartItems.length)
         setCartItems(updatedCartItems.map(cartItem => ({ ...cartItem, isInCart: true, isInWishlist: false })))
       } catch (reloadError: any) {
         console.error('Error reloading cart:', reloadError)
@@ -121,13 +137,18 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setShowCart(true)
     } catch (error: any) {
       console.error('Error adding to cart:', error)
+      console.error('Error details:', {
+        code: error?.code,
+        message: error?.message,
+        stack: error?.stack
+      })
       const errorMessage = error?.message || 'Failed to add item to cart'
       toast.error(errorMessage)
     }
   }, [isAuthenticated, user?.id, wishlistItems])
 
   const addToWishlist = useCallback(async (item: Item) => {
-    console.log('addToWishlist called, isAuthenticated:', isAuthenticated)
+    console.log('addToWishlist called, isAuthenticated:', isAuthenticated, 'user:', user?.id, 'item:', item.id)
     if (!isAuthenticated || !user?.id) {
       console.log('User not authenticated, showing login popup')
       setLoginPopupAction('wishlist')
@@ -135,16 +156,26 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return
     }
     
+    if (!item || !item.id) {
+      console.error('Invalid item provided to addToWishlist:', item)
+      toast.error('Invalid item. Please try again.')
+      return
+    }
+    
     try {
       const userId = user.id
       const listingId = item.id.toString()
+      
+      console.log('Adding to wishlist - userId:', userId, 'listingId:', listingId)
 
       // Save to Firestore
       await addToFavoritesService(userId, listingId)
+      console.log('Successfully added to wishlist in Firestore')
       
       // Reload wishlist from Firestore to get the latest state
       try {
         const updatedWishlistItems = await getFavorites(userId)
+        console.log('Reloaded wishlist items:', updatedWishlistItems.length)
         setWishlistItems(updatedWishlistItems.map(wishlistItem => ({ ...wishlistItem, isInCart: false, isInWishlist: true })))
       } catch (reloadError: any) {
         console.error('Error reloading wishlist:', reloadError)
@@ -169,6 +200,11 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setShowWishlist(true)
     } catch (error: any) {
       console.error('Error adding to wishlist:', error)
+      console.error('Error details:', {
+        code: error?.code,
+        message: error?.message,
+        stack: error?.stack
+      })
       const errorMessage = error?.message || 'Failed to add item to wishlist'
       toast.error(errorMessage)
     }

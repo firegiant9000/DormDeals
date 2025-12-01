@@ -34,6 +34,7 @@ export interface CreateListingData {
   deliveryAvailable?: boolean;
   deliveryFee?: number;
   tags?: string[];
+  isFeatured?: boolean;
 }
 
 export interface UpdateListingData {
@@ -263,7 +264,7 @@ export async function createListing(listingData: CreateListingData, sellerInfo: 
       tags: listingData.tags || [],
       isActive: true,
       isSold: false,
-      isFeatured: false,
+      isFeatured: listingData.isFeatured || false,
       views: 0,
       likes: 0,
       createdAt: serverTimestamp(),
