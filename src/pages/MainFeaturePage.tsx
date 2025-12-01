@@ -24,7 +24,6 @@ import { mockItems } from '../data/mockData';
 import { formatCurrency, formatRelativeTime } from '../utils/helpers';
 import { useShop } from '@/context/ShopContext';
 import { useAuth } from '@/context/AuthContext';
-import { itemApi } from '../services/api';
 import SearchFiltersBar from '../components/SearchFiltersBar';
 
 const MainFeaturePage: React.FC = () => {
@@ -218,7 +217,8 @@ const MainFeaturePage: React.FC = () => {
   useEffect(() => {
     const fetchFeaturedItems = async () => {
       try {
-        const featured = await itemApi.getFeatured() as Item[];
+        const { getListings } = await import('../services/listingsService');
+        const featured = await getListings({ featured: true, active: true, limitCount: 6 });
         if (Array.isArray(featured) && featured.length > 0) {
           setFeaturedItems(featured);
         } else {

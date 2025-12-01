@@ -62,8 +62,28 @@ if (typeof window !== 'undefined') {
     console.error('Error setting auth persistence:', error);
   });
 }
+
 export const db = getFirestore(app);
 export const storage = getStorage(app);
+
+// Validate Firebase initialization
+if (typeof window !== 'undefined') {
+  // Check if Firebase is properly initialized (not using dummy config)
+  const isDummyConfig = firebaseConfig.apiKey === 'dummy-key' || 
+                        firebaseConfig.projectId === 'dummy-project';
+  
+  if (isDummyConfig) {
+    console.warn('⚠️ Firebase is using dummy configuration. Please set environment variables:');
+    console.warn('   VITE_FIREBASE_API_KEY');
+    console.warn('   VITE_FIREBASE_AUTH_DOMAIN');
+    console.warn('   VITE_FIREBASE_PROJECT_ID');
+    console.warn('   VITE_FIREBASE_STORAGE_BUCKET');
+    console.warn('   VITE_FIREBASE_MESSAGING_SENDER_ID');
+    console.warn('   VITE_FIREBASE_APP_ID');
+  } else {
+    console.log('✅ Firebase initialized successfully');
+  }
+}
 
 export default app;
 

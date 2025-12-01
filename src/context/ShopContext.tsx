@@ -3,8 +3,9 @@ import { useNavigate } from 'react-router-dom'
 import { Item } from '../types'
 import { formatCurrency } from '../utils/helpers'
 import { useAuth } from './AuthContext'
-import { userApi } from '../services/api'
 import toast from 'react-hot-toast'
+import { getCartItems, addToCart as addToCartService, removeFromCart as removeFromCartService } from '../services/cartService'
+import { getFavorites, addToFavorites as addToFavoritesService, removeFromFavorites as removeFromFavoritesService } from '../services/favoritesService'
 
 type ShopContextValue = {
   cartItems: Item[]
@@ -35,228 +36,36 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [showWishlist, setShowWishlist] = useState(false)
   const [showLoginPopup, setShowLoginPopup] = useState(false)
   const [loginPopupAction, setLoginPopupAction] = useState<'cart' | 'wishlist' | null>(null)
-  const [dbUserId, setDbUserId] = useState<string | null>(null)
   const { isAuthenticated, user } = useAuth()
 
-  const transformCartData = useCallback((cartData: any[]): Item[] => {
-    return cartData.map((cartItem: any) => ({
-      id: cartItem.id?.toString() || cartItem.listing_id?.toString() || '',
-      title: cartItem.title || '',
-      price: parseFloat(cartItem.price) || 0,
-      description: cartItem.description || '',
-      category: (cartItem.category as any) || 'other',
-      images: cartItem.images || [],
-      location: cartItem.location || '',
-      condition: (cartItem.condition as any) || 'good',
-      seller: {
-        id: '',
-        email: '',
-        name: '',
-        school: 'University of Louisiana',
-        joinDate: new Date(),
-        joinedDate: new Date().toISOString(),
-        rating: 0,
-        reviewCount: 0,
-        totalSales: 0,
-        isVerified: false
-      },
-      pickupAvailable: true,
-      deliveryAvailable: false,
-      createdAt: new Date(cartItem.createdAt || cartItem.created_at || Date.now()),
-      updatedAt: new Date(cartItem.updatedAt || cartItem.updated_at || Date.now()),
-      posted: new Date(cartItem.createdAt || cartItem.created_at || Date.now()).toISOString(),
-      status: (cartItem.status as any) || 'active',
-      views: cartItem.views || 0,
-      likes: 0,
-      isLiked: false,
-      isInCart: true,
-      isInWishlist: false,
-      tags: []
-    }))
-  }, [])
 
-  const transformWishlistData = useCallback((wishlistData: any[]): Item[] => {
-    return wishlistData.map((item: any) => ({
-      id: item.id?.toString() || '',
-      title: item.title || '',
-      price: parseFloat(item.price) || 0,
-      description: item.description || '',
-      category: (item.category as any) || 'other',
-      images: item.images || [],
-      location: item.location || '',
-      condition: (item.condition as any) || 'good',
-      seller: {
-        id: '',
-        email: '',
-        name: '',
-        school: 'University of Louisiana',
-        joinDate: new Date(),
-        joinedDate: new Date().toISOString(),
-        rating: 0,
-        reviewCount: 0,
-        totalSales: 0,
-        isVerified: false
-      },
-      pickupAvailable: true,
-      deliveryAvailable: false,
-      createdAt: new Date(item.createdAt || item.created_at || item.favoritedAt || Date.now()),
-      updatedAt: new Date(item.updatedAt || item.updated_at || Date.now()),
-      posted: new Date(item.createdAt || item.created_at || item.favoritedAt || Date.now()).toISOString(),
-      status: (item.status as any) || 'active',
-      views: item.views || 0,
-      likes: 0,
-      isLiked: false,
-      isInCart: false,
-      isInWishlist: true,
-      tags: []
-    }))
-  }, [])
 
-  const resolveDbUserId = useCallback(async (): Promise<string | null> => {
-    if (!isAuthenticated || !user?.email) {
-      return null
-    }
-
-    if (dbUserId) {
-      return dbUserId
-    }
-
-    if (user?.dbId) {
-      const idStr = user.dbId.toString()
-      setDbUserId(idStr)
-      return idStr
-    }
-
-    try {
-      const dbUser = await userApi.getByEmail(user.email) as { id: number; email: string } | null
-      if (dbUser?.id) {
-        const derivedId = dbUser.id.toString()
-        setDbUserId(derivedId)
-        return derivedId
-      }
-    } catch (error) {
-      console.error('Error resolving user by email:', error)
-    }
-
-    return null
-  }, [dbUserId, isAuthenticated, user?.email, user?.dbId])
-
-  const ensureDbUserId = useCallback(async (): Promise<string | null> => {
-    const id = await resolveDbUserId()
-    if (!id) {
-      toast.error('User not found in database')
-    }
-    return id
-  }, [resolveDbUserId])
-
-  // Load cart and wishlist from database when user logs in
+  // Load cart and wishlist from Firestore when user logs in
   useEffect(() => {
     const loadUserData = async () => {
-      if (!isAuthenticated || !user?.email) {
+      if (!isAuthenticated || !user?.id) {
         setCartItems([])
         setWishlistItems([])
-        setDbUserId(null)
         return
       }
 
-      const resolvedId = await resolveDbUserId()
-      if (!resolvedId) {
-        setCartItems([])
-        setWishlistItems([])
-        return
-      }
+      const userId = user.id
 
       try {
-        // Load cart items from database
+        // Load cart items from Firestore
         try {
-          const cartData = await userApi.getCart(resolvedId) as any[]
-          if (Array.isArray(cartData)) {
-            // Transform database cart items to Item format
-            // Backend returns listing_id as the primary identifier for cart items
-            const transformedCart: Item[] = cartData.map((item: any) => ({
-              id: item.listing_id?.toString() || item.id?.toString() || '',
-              title: item.title || '',
-              price: parseFloat(item.price) || 0,
-              description: item.description || '',
-              category: (item.category as any) || 'other',
-              images: item.images || [],
-              location: item.location || '',
-              condition: (item.condition as any) || 'good',
-              seller: {
-                id: '',
-                email: '',
-                name: '',
-                school: 'University of Louisiana',
-                joinDate: new Date(),
-                joinedDate: new Date().toISOString(),
-                rating: 0,
-                reviewCount: 0,
-                totalSales: 0,
-                isVerified: false
-              },
-              pickupAvailable: true,
-              deliveryAvailable: false,
-              createdAt: new Date(item.createdAt || item.created_at || Date.now()),
-              updatedAt: new Date(item.updatedAt || item.updated_at || Date.now()),
-              posted: new Date(item.createdAt || item.created_at || Date.now()).toISOString(),
-              status: (item.status as any) || 'active',
-              views: item.views || 0,
-              likes: 0,
-              isLiked: false,
-              isInCart: true,
-              isInWishlist: false,
-              tags: []
-            }))
-            setCartItems(transformedCart)
-          }
+          const cartItems = await getCartItems(userId)
+          setCartItems(cartItems.map(item => ({ ...item, isInCart: true, isInWishlist: false })))
         } catch (error: any) {
-          console.error('Error loading cart from database:', error)
+          console.error('Error loading cart from Firestore:', error)
         }
 
-        // Load wishlist items from database
+        // Load wishlist items from Firestore
         try {
-          const wishlistData = await userApi.getFavorites(resolvedId) as any[]
-          if (Array.isArray(wishlistData)) {
-            // Transform database favorites to Item format
-            // Backend returns listing_id for favorites
-            const transformedWishlist: Item[] = wishlistData.map((item: any) => ({
-              id: item.listing_id?.toString() || item.id?.toString() || '',
-              title: item.title || '',
-              price: parseFloat(item.price) || 0,
-              description: item.description || '',
-              category: (item.category as any) || 'other',
-              images: item.images || [],
-              location: item.location || '',
-              condition: (item.condition as any) || 'good',
-              seller: {
-                id: '',
-                email: '',
-                name: '',
-                school: 'University of Louisiana',
-                joinDate: new Date(),
-                joinedDate: new Date().toISOString(),
-                rating: 0,
-                reviewCount: 0,
-                totalSales: 0,
-                isVerified: false
-              },
-              pickupAvailable: true,
-              deliveryAvailable: false,
-              createdAt: new Date(item.createdAt || item.created_at || item.favoritedAt || Date.now()),
-              updatedAt: new Date(item.updatedAt || item.updated_at || Date.now()),
-              posted: new Date(item.createdAt || item.created_at || item.favoritedAt || Date.now()).toISOString(),
-              status: (item.status as any) || 'active',
-              views: item.views || 0,
-              likes: 0,
-              isLiked: false,
-              isInCart: false,
-              isInWishlist: true,
-              tags: []
-            }))
-            setWishlistItems(transformedWishlist)
-          }
+          const wishlistItems = await getFavorites(userId)
+          setWishlistItems(wishlistItems.map(item => ({ ...item, isInCart: false, isInWishlist: true })))
         } catch (error: any) {
-          console.error('Error loading wishlist from database:', error)
+          console.error('Error loading wishlist from Firestore:', error)
         }
       } catch (error: any) {
         console.error('Error loading user data:', error)
@@ -264,14 +73,14 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     loadUserData()
-  }, [isAuthenticated, user?.email, user?.dbId, resolveDbUserId, transformCartData, transformWishlistData])
+  }, [isAuthenticated, user?.id])
 
   const isInCart = useCallback((id: string) => cartItems.some(i => i.id === id), [cartItems])
   const isInWishlist = useCallback((id: string) => wishlistItems.some(i => i.id === id), [wishlistItems])
 
   const addToCart = useCallback(async (item: Item) => {
     console.log('addToCart called, isAuthenticated:', isAuthenticated)
-    if (!isAuthenticated || !user?.email) {
+    if (!isAuthenticated || !user?.id) {
       console.log('User not authenticated, showing login popup')
       setLoginPopupAction('cart')
       setShowLoginPopup(true)
@@ -279,92 +88,32 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     
     try {
-      const id = await ensureDbUserId()
-      if (!id) {
-        return
-      }
+      const userId = user.id
+      const listingId = item.id.toString()
 
-      // Convert item ID to integer for backend (backend expects integer)
-      const listingId = parseInt(item.id.toString(), 10)
-      if (isNaN(listingId)) {
-        toast.error('Invalid item ID')
-        console.error('Invalid item ID:', item.id)
-        return
-      }
-
-      // Save to database
-      await userApi.addToCart(id, listingId.toString(), 1)
+      // Save to Firestore
+      await addToCartService(userId, listingId, 1)
       
-      // Reload cart from database to get the latest state
+      // Reload cart from Firestore to get the latest state
       try {
-        const updatedCartData = await userApi.getCart(id) as any[]
-        if (Array.isArray(updatedCartData)) {
-          const transformedCart: Item[] = updatedCartData.map((cartItem: any) => ({
-            // Backend returns listing_id as the primary identifier for cart items
-            id: cartItem.listing_id?.toString() || cartItem.id?.toString() || '',
-            title: cartItem.title || '',
-            price: parseFloat(cartItem.price) || 0,
-            description: cartItem.description || '',
-            category: (cartItem.category as any) || 'other',
-            images: cartItem.images || [],
-            location: cartItem.location || '',
-            condition: (cartItem.condition as any) || 'good',
-            seller: {
-              id: '',
-              email: '',
-              name: '',
-              school: 'University of Louisiana',
-              joinDate: new Date(),
-              joinedDate: new Date().toISOString(),
-              rating: 0,
-              reviewCount: 0,
-              totalSales: 0,
-              isVerified: false
-            },
-            pickupAvailable: true,
-            deliveryAvailable: false,
-            createdAt: new Date(cartItem.createdAt || cartItem.created_at || Date.now()),
-            updatedAt: new Date(cartItem.updatedAt || cartItem.updated_at || Date.now()),
-            posted: new Date(cartItem.createdAt || cartItem.created_at || Date.now()).toISOString(),
-            status: (cartItem.status as any) || 'active',
-            views: cartItem.views || 0,
-            likes: 0,
-            isLiked: false,
-            isInCart: true,
-            isInWishlist: false,
-            tags: []
-          }))
-          setCartItems(transformedCart)
-        }
+        const updatedCartItems = await getCartItems(userId)
+        setCartItems(updatedCartItems.map(cartItem => ({ ...cartItem, isInCart: true, isInWishlist: false })))
       } catch (reloadError: any) {
         console.error('Error reloading cart:', reloadError)
-        console.error('Reload error details:', {
-          message: reloadError?.message,
-          response: reloadError?.response?.data,
-          status: reloadError?.response?.status
-        })
         // Fallback to local update if reload fails
-        setCartItems(prev => (prev.some(i => i.id === item.id) ? prev : [...prev, item]))
+        setCartItems(prev => (prev.some(i => i.id === item.id) ? prev : [...prev, { ...item, isInCart: true, isInWishlist: false }]))
       }
       
       // Ensure exclusivity: remove from wishlist if present
-      const updatedWishlist = wishlistItems.filter(i => i.id !== item.id)
-      setWishlistItems(updatedWishlist)
-      
-      // Remove from wishlist in database if it was there
-      if (wishlistItems.some(i => i.id === item.id) && id) {
+      if (wishlistItems.some(i => i.id === item.id)) {
+        const updatedWishlist = wishlistItems.filter(i => i.id !== item.id)
+        setWishlistItems(updatedWishlist)
+        
+        // Remove from wishlist in Firestore
         try {
-          const wishlistListingId = parseInt(item.id.toString(), 10)
-          if (!isNaN(wishlistListingId)) {
-            await userApi.removeFromFavorites(id, wishlistListingId.toString())
-          }
+          await removeFromFavoritesService(userId, listingId)
         } catch (error: any) {
           console.error('Error removing from favorites:', error)
-          console.error('Remove favorites error details:', {
-            message: error?.message,
-            response: error?.response?.data,
-            status: error?.response?.status
-          })
         }
       }
       
@@ -372,20 +121,14 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setShowCart(true)
     } catch (error: any) {
       console.error('Error adding to cart:', error)
-      console.error('Add to cart error details:', {
-        message: error?.message,
-        response: error?.response?.data,
-        status: error?.response?.status,
-        data: error?.response?.data?.error || error?.response?.data?.message
-      })
-      const errorMessage = error?.response?.data?.error || error?.response?.data?.message || error?.message || 'Failed to add item to cart'
+      const errorMessage = error?.message || 'Failed to add item to cart'
       toast.error(errorMessage)
     }
-  }, [isAuthenticated, user?.email, wishlistItems, ensureDbUserId])
+  }, [isAuthenticated, user?.id, wishlistItems])
 
   const addToWishlist = useCallback(async (item: Item) => {
     console.log('addToWishlist called, isAuthenticated:', isAuthenticated)
-    if (!isAuthenticated || !user?.email) {
+    if (!isAuthenticated || !user?.id) {
       console.log('User not authenticated, showing login popup')
       setLoginPopupAction('wishlist')
       setShowLoginPopup(true)
@@ -393,92 +136,32 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     
     try {
-      const id = await ensureDbUserId()
-      if (!id) {
-        return
-      }
+      const userId = user.id
+      const listingId = item.id.toString()
 
-      // Convert item ID to integer for backend (backend expects integer)
-      const listingId = parseInt(item.id.toString(), 10)
-      if (isNaN(listingId)) {
-        toast.error('Invalid item ID')
-        console.error('Invalid item ID:', item.id)
-        return
-      }
-
-      // Save to database
-      await userApi.addToFavorites(id, listingId.toString())
+      // Save to Firestore
+      await addToFavoritesService(userId, listingId)
       
-      // Reload wishlist from database to get the latest state
+      // Reload wishlist from Firestore to get the latest state
       try {
-        const updatedWishlistData = await userApi.getFavorites(id) as any[]
-        if (Array.isArray(updatedWishlistData)) {
-          const transformedWishlist: Item[] = updatedWishlistData.map((wishlistItem: any) => ({
-            // Backend returns listing_id for favorites
-            id: wishlistItem.listing_id?.toString() || wishlistItem.id?.toString() || '',
-            title: wishlistItem.title || '',
-            price: parseFloat(wishlistItem.price) || 0,
-            description: wishlistItem.description || '',
-            category: (wishlistItem.category as any) || 'other',
-            images: wishlistItem.images || [],
-            location: wishlistItem.location || '',
-            condition: (wishlistItem.condition as any) || 'good',
-            seller: {
-              id: '',
-              email: '',
-              name: '',
-              school: 'University of Louisiana',
-              joinDate: new Date(),
-              joinedDate: new Date().toISOString(),
-              rating: 0,
-              reviewCount: 0,
-              totalSales: 0,
-              isVerified: false
-            },
-            pickupAvailable: true,
-            deliveryAvailable: false,
-            createdAt: new Date(wishlistItem.createdAt || wishlistItem.created_at || wishlistItem.favoritedAt || Date.now()),
-            updatedAt: new Date(wishlistItem.updatedAt || wishlistItem.updated_at || Date.now()),
-            posted: new Date(wishlistItem.createdAt || wishlistItem.created_at || wishlistItem.favoritedAt || Date.now()).toISOString(),
-            status: (wishlistItem.status as any) || 'active',
-            views: wishlistItem.views || 0,
-            likes: 0,
-            isLiked: false,
-            isInCart: false,
-            isInWishlist: true,
-            tags: []
-          }))
-          setWishlistItems(transformedWishlist)
-        }
+        const updatedWishlistItems = await getFavorites(userId)
+        setWishlistItems(updatedWishlistItems.map(wishlistItem => ({ ...wishlistItem, isInCart: false, isInWishlist: true })))
       } catch (reloadError: any) {
         console.error('Error reloading wishlist:', reloadError)
-        console.error('Reload error details:', {
-          message: reloadError?.message,
-          response: reloadError?.response?.data,
-          status: reloadError?.response?.status
-        })
         // Fallback to local update if reload fails
-        setWishlistItems(prev => (prev.some(i => i.id === item.id) ? prev : [...prev, item]))
+        setWishlistItems(prev => (prev.some(i => i.id === item.id) ? prev : [...prev, { ...item, isInCart: false, isInWishlist: true }]))
       }
       
       // Ensure exclusivity: remove from cart if present
-      const updatedCart = cartItems.filter(i => i.id !== item.id)
-      setCartItems(updatedCart)
-      
-      // Remove from cart in database if it was there
-      if (cartItems.some(i => i.id === item.id) && id) {
+      if (cartItems.some(i => i.id === item.id)) {
+        const updatedCart = cartItems.filter(i => i.id !== item.id)
+        setCartItems(updatedCart)
+        
+        // Remove from cart in Firestore
         try {
-          const cartListingId = parseInt(item.id.toString(), 10)
-          if (!isNaN(cartListingId)) {
-            await userApi.removeFromCart(id, cartListingId.toString())
-          }
+          await removeFromCartService(userId, listingId)
         } catch (error: any) {
           console.error('Error removing from cart:', error)
-          console.error('Remove cart error details:', {
-            message: error?.message,
-            response: error?.response?.data,
-            status: error?.response?.status
-          })
         }
       }
       
@@ -486,62 +169,40 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setShowWishlist(true)
     } catch (error: any) {
       console.error('Error adding to wishlist:', error)
-      console.error('Add to wishlist error details:', {
-        message: error?.message,
-        response: error?.response?.data,
-        status: error?.response?.status,
-        data: error?.response?.data?.error || error?.response?.data?.message
-      })
-      const errorMessage = error?.response?.data?.error || error?.response?.data?.message || error?.message || 'Failed to add item to wishlist'
+      const errorMessage = error?.message || 'Failed to add item to wishlist'
       toast.error(errorMessage)
     }
-  }, [isAuthenticated, user?.email, cartItems, ensureDbUserId])
+  }, [isAuthenticated, user?.id, cartItems])
 
   const removeFromCart = useCallback(async (id: string) => {
     setCartItems(prev => prev.filter(i => i.id !== id))
     
-    if (isAuthenticated && user?.email) {
+    if (isAuthenticated && user?.id) {
       try {
-        const dbUser = await userApi.getByEmail(user.email) as { id: number; email: string } | null
-        if (dbUser?.id) {
-          const listingId = parseInt(id, 10)
-          if (!isNaN(listingId)) {
-            await userApi.removeFromCart(dbUser.id.toString(), listingId.toString())
-          }
-        }
+        await removeFromCartService(user.id, id)
       } catch (error: any) {
-        console.error('Error removing from cart in database:', error)
-        console.error('Remove cart error details:', {
-          message: error?.message,
-          response: error?.response?.data,
-          status: error?.response?.status
-        })
+        console.error('Error removing from cart in Firestore:', error)
+        // Revert local state on error
+        const updatedCartItems = await getCartItems(user.id)
+        setCartItems(updatedCartItems.map(item => ({ ...item, isInCart: true, isInWishlist: false })))
       }
     }
-  }, [isAuthenticated, user?.email])
+  }, [isAuthenticated, user?.id])
 
   const removeFromWishlist = useCallback(async (id: string) => {
     setWishlistItems(prev => prev.filter(i => i.id !== id))
     
-    if (isAuthenticated && user?.email) {
+    if (isAuthenticated && user?.id) {
       try {
-        const dbUser = await userApi.getByEmail(user.email) as { id: number; email: string } | null
-        if (dbUser?.id) {
-          const listingId = parseInt(id, 10)
-          if (!isNaN(listingId)) {
-            await userApi.removeFromFavorites(dbUser.id.toString(), listingId.toString())
-          }
-        }
+        await removeFromFavoritesService(user.id, id)
       } catch (error: any) {
-        console.error('Error removing from wishlist in database:', error)
-        console.error('Remove wishlist error details:', {
-          message: error?.message,
-          response: error?.response?.data,
-          status: error?.response?.status
-        })
+        console.error('Error removing from wishlist in Firestore:', error)
+        // Revert local state on error
+        const updatedWishlistItems = await getFavorites(user.id)
+        setWishlistItems(updatedWishlistItems.map(item => ({ ...item, isInCart: false, isInWishlist: true })))
       }
     }
-  }, [isAuthenticated, user?.email])
+  }, [isAuthenticated, user?.id])
 
   const openCart = () => setShowCart(true)
   const openWishlist = () => setShowWishlist(true)

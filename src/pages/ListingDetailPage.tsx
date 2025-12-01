@@ -11,10 +11,9 @@ import {
   MessageCircle,
   Share2
 } from 'lucide-react';
-import { Item, User as UserType } from '../types';
+import { Item } from '../types';
 import { useShop } from '@/context/ShopContext';
 import { formatCurrency, formatRelativeTime } from '../utils/helpers';
-import { itemApi } from '../services/api';
 import toast from 'react-hot-toast';
 
 const ListingDetailPage: React.FC = () => {
@@ -39,48 +38,17 @@ const ListingDetailPage: React.FC = () => {
       if (!listing && id) {
         try {
           setLoading(true);
-          const fetchedListing = await itemApi.getById(id) as any;
+          const { getListingById } = await import('../services/listingsService');
+          const fetchedListing = await getListingById(id);
           
-          // Transform API response to Item format
-          const transformedListing: Item = {
-            id: fetchedListing.id?.toString() || id,
-            title: fetchedListing.title,
-            description: fetchedListing.description || '',
-            price: fetchedListing.price,
-            condition: fetchedListing.condition as any,
-            category: fetchedListing.category as any,
-            images: fetchedListing.images || [],
-            seller: fetchedListing.seller || {
-              id: fetchedListing.seller_id?.toString() || '',
-              name: 'Unknown Seller',
-              email: '',
-              rating: 0,
-              totalSales: 0,
-              isVerified: false,
-              school: 'University of Louisiana',
-              joinDate: new Date().toISOString(),
-              joinedDate: new Date().toISOString(),
-              reviewCount: 0
-            } as UserType,
-            location: fetchedListing.location || 'UL Campus',
-            pickupAvailable: fetchedListing.pickupAvailable ?? true,
-            deliveryAvailable: fetchedListing.deliveryAvailable ?? false,
-            deliveryFee: fetchedListing.deliveryFee,
-            createdAt: fetchedListing.createdAt ? new Date(fetchedListing.createdAt) : new Date(),
-            updatedAt: fetchedListing.updatedAt ? new Date(fetchedListing.updatedAt) : new Date(),
-            posted: fetchedListing.createdAt || new Date().toISOString(),
-            status: fetchedListing.status as any,
-            views: fetchedListing.views || 0,
-            likes: fetchedListing.likes || 0,
-            isLiked: false,
-            isInCart: false,
-            isInWishlist: false,
-            tags: fetchedListing.tags || [],
-            pickupMethod: fetchedListing.pickupMethod as any,
-            isFeatured: fetchedListing.isFeatured || false
-          } as Item;
-          
-          setListing(transformedListing);
+          if (fetchedListing) {
+            setListing(fetchedListing);
+            // Increment view count
+            const { incrementListingViews } = await import('../services/listingsService');
+            incrementListingViews(id).catch(console.error);
+          } else {
+            throw new Error('Listing not found');
+          }
         } catch (error) {
           console.error('Error fetching listing:', error);
           toast.error('Failed to load listing');
