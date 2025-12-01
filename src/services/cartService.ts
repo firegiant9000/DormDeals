@@ -43,7 +43,7 @@ export async function getCartItems(userId: string): Promise<Item[]> {
       const cartData = cartDoc.data();
       const listingId = cartData.listingId;
 
-      if (listingId) {
+      if (listingId && typeof listingId === 'string') {
         try {
           const listing = await getListingById(listingId);
           if (listing) {
@@ -59,6 +59,8 @@ export async function getCartItems(userId: string): Promise<Item[]> {
           console.error(`Error fetching listing ${listingId} for cart:`, error);
           // Continue with other items
         }
+      } else {
+        console.warn(`Invalid listingId found in cart document ${cartDoc.id}:`, listingId);
       }
     }
 
@@ -84,6 +86,12 @@ export async function getCartItems(userId: string): Promise<Item[]> {
  * Add item to cart
  */
 export async function addToCart(userId: string, listingId: string, quantity: number = 1): Promise<void> {
+  // Validate Firestore is initialized
+  if (!db) {
+    console.error('Firestore not initialized. Check Firebase configuration.');
+    throw new Error('Database not available. Please check your connection.');
+  }
+  
   // Validate inputs
   if (!userId || typeof userId !== 'string') {
     throw new Error('Invalid user ID');
@@ -94,6 +102,8 @@ export async function addToCart(userId: string, listingId: string, quantity: num
   if (quantity <= 0) {
     throw new Error('Quantity must be greater than 0');
   }
+
+  console.log('addToCart service called with:', { userId, listingId, quantity });
 
   try {
     const cartRef = collection(db, CART_COLLECTION);
@@ -115,15 +125,17 @@ export async function addToCart(userId: string, listingId: string, quantity: num
         quantity: currentQuantity + quantity,
         updatedAt: serverTimestamp()
       });
+      console.log('Updated existing cart item quantity');
     } else {
       // Add new item to cart
-      await addDoc(cartRef, {
+      const docRef = await addDoc(cartRef, {
         userId,
         listingId,
         quantity,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
       });
+      console.log('Added new item to cart, doc ID:', docRef.id);
     }
   } catch (error: any) {
     console.error('Error adding to cart:', error);

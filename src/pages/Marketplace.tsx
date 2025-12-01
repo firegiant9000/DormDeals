@@ -177,15 +177,35 @@ const Marketplace = () => {
                   </div>
                   <div className="flex space-x-3 mt-auto pt-2 border-t border-gray-100">
                     <button
-                      onClick={(e) => { e.stopPropagation(); if (!isInCart(item.id)) addToCart(item); else removeFromCart(item.id) }}
+                      onClick={(e) => { 
+                        e.stopPropagation(); 
+                        e.preventDefault();
+                        console.log('Cart button clicked for item:', item.id, 'isInCart:', isInCart(item.id));
+                        if (!isInCart(item.id)) {
+                          addToCart(item);
+                        } else {
+                          removeFromCart(item.id);
+                        }
+                      }}
                       className={`flex-1 py-3 px-4 rounded-lg text-sm font-medium transition-all duration-200 ${isAuthenticated && isInCart(item.id) ? 'border-2 border-red-300 text-red-700 hover:bg-red-50' : 'bg-primary-600 text-white hover:bg-primary-700 shadow-sm'}`}
+                      type="button"
                     >
                       {isAuthenticated && isInCart(item.id) ? 'Remove from Cart' : 'Add to Cart'}
                     </button>
                     <button
-                      onClick={(e) => { e.stopPropagation(); if (!isInWishlist(item.id)) addToWishlist(item); else removeFromWishlist(item.id) }}
+                      onClick={(e) => { 
+                        e.stopPropagation(); 
+                        e.preventDefault();
+                        console.log('Wishlist button clicked for item:', item.id, 'isInWishlist:', isInWishlist(item.id));
+                        if (!isInWishlist(item.id)) {
+                          addToWishlist(item);
+                        } else {
+                          removeFromWishlist(item.id);
+                        }
+                      }}
                       className={`p-3 border-2 rounded-lg transition-all duration-200 ${isAuthenticated && isInWishlist(item.id) ? 'border-red-300 text-red-600 hover:bg-red-50' : 'border-gray-300 hover:bg-gray-50 hover:border-gray-400'}`}
                       aria-label="Toggle wishlist"
+                      type="button"
                     >
                       <svg className={`w-5 h-5 ${isAuthenticated && isInWishlist(item.id) ? 'text-red-600' : 'text-gray-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />

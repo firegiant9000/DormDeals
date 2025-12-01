@@ -184,27 +184,15 @@ const CreateListing = () => {
         location: formData.location.trim() || 'UL Campus',
         pickupAvailable: true,
         deliveryAvailable: false,
-        tags: []
+        tags: [],
+        isFeatured: formData.isFeatured && isPremium() ? true : false
       }
 
       // Create listing in Firestore
       const createdListing = await createListing(listingData, sellerInfo)
 
       if (createdListing && createdListing.id) {
-        // If user wants to feature the listing and is premium, feature it
-        if (formData.isFeatured && isPremium()) {
-          try {
-            // Import updateListing for featuring
-            const { updateListing } = await import('../services/listingsService')
-            await updateListing(createdListing.id, { isFeatured: true })
-            toast.success('Listing created and featured successfully!')
-          } catch (error: any) {
-            console.error('Error featuring listing:', error)
-            toast.success('Listing created successfully, but failed to feature it')
-          }
-        } else {
-          toast.success('Listing created successfully!')
-        }
+        toast.success('Listing created successfully!')
         // Navigate to the new listing page
         navigate(`/listing/${createdListing.id}`, { state: { listing: createdListing } })
       } else {

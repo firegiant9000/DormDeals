@@ -42,7 +42,7 @@ export async function getFavorites(userId: string): Promise<Item[]> {
       const favoriteData = favoriteDoc.data();
       const listingId = favoriteData.listingId;
 
-      if (listingId) {
+      if (listingId && typeof listingId === 'string') {
         try {
           const listing = await getListingById(listingId);
           if (listing) {
@@ -52,6 +52,8 @@ export async function getFavorites(userId: string): Promise<Item[]> {
           console.error(`Error fetching listing ${listingId} for favorites:`, error);
           // Continue with other items
         }
+      } else {
+        console.warn(`Invalid listingId found in favorite document ${favoriteDoc.id}:`, listingId);
       }
     }
 
@@ -77,6 +79,12 @@ export async function getFavorites(userId: string): Promise<Item[]> {
  * Add item to favorites
  */
 export async function addToFavorites(userId: string, listingId: string): Promise<void> {
+  // Validate Firestore is initialized
+  if (!db) {
+    console.error('Firestore not initialized. Check Firebase configuration.');
+    throw new Error('Database not available. Please check your connection.');
+  }
+  
   // Validate inputs
   if (!userId || typeof userId !== 'string') {
     throw new Error('Invalid user ID');
@@ -84,6 +92,8 @@ export async function addToFavorites(userId: string, listingId: string): Promise
   if (!listingId || typeof listingId !== 'string') {
     throw new Error('Invalid listing ID');
   }
+
+  console.log('addToFavorites service called with:', { userId, listingId });
 
   try {
     const favoritesRef = collection(db, FAVORITES_COLLECTION);
@@ -99,15 +109,17 @@ export async function addToFavorites(userId: string, listingId: string): Promise
     
     if (!existingDocs.empty) {
       // Already in favorites, no need to add again
+      console.log('Item already in favorites');
       return;
     }
 
     // Add new favorite
-    await addDoc(favoritesRef, {
+    const docRef = await addDoc(favoritesRef, {
       userId,
       listingId,
       createdAt: serverTimestamp()
     });
+    console.log('Added new item to favorites, doc ID:', docRef.id);
   } catch (error: any) {
     console.error('Error adding to favorites:', error);
     
