@@ -6,7 +6,8 @@ import toast from 'react-hot-toast'
 import ProtectedFeature from '../components/ProtectedFeature'
 import { useAuth } from '../context/AuthContext'
 import { useAccessControl } from '../hooks/useAccessControl'
-import { userApi, itemApi } from '../services/api'
+import { createListing } from '../services/listingsService'
+import { getUserProfile } from '../services/userService'
 
 const CreateListing = () => {
   const navigate = useNavigate()
@@ -112,19 +113,41 @@ const CreateListing = () => {
     }
 
     try {
-      // Get user's database ID
-      if (!user?.email) {
+      // Get user info
+      if (!user?.id || !user?.email) {
         toast.error('Please sign in to create a listing')
         return
       }
 
-      const dbUser = await userApi.getByEmail(user.email) as { id: number; email: string } | null
-      if (!dbUser?.id) {
-        toast.error('User not found in database. Please contact support.')
-        return
+      // Get user profile for seller info
+      let sellerInfo
+      try {
+        const profile = await getUserProfile(user.id)
+        sellerInfo = {
+          email: user.email,
+          name: profile?.displayName || user.name || user.email.split('@')[0],
+          school: profile?.school || user.school || 'University of Louisiana',
+          rating: profile?.rating || 0,
+          reviewCount: profile?.reviewCount || 0,
+          totalSales: profile?.totalSales || 0,
+          isVerified: profile?.isVerified || false,
+          joinDate: profile?.createdAt ? new Date(profile.createdAt) : new Date()
+        }
+      } catch {
+        // Use minimal seller info if profile fetch fails
+        sellerInfo = {
+          email: user.email,
+          name: user.name || user.email.split('@')[0],
+          school: user.school || 'University of Louisiana',
+          rating: 0,
+          reviewCount: 0,
+          totalSales: 0,
+          isVerified: false,
+          joinDate: new Date()
+        }
       }
 
-      // Map condition to database format (lowercase with underscores)
+      // Map condition to Firestore format (lowercase)
       const conditionMap: Record<string, string> = {
         'New': 'new',
         'Like New': 'like_new',
@@ -138,37 +161,42 @@ const CreateListing = () => {
         formData.images.map(async (file) => {
           try {
             const base64String = await convertFileToBase64(file)
-            // Return full data URL format for backend compatibility
+            // Return full data URL format
             // Format: "data:image/jpeg;base64,{base64String}"
             const mimeType = file.type || 'image/jpeg'
             return `data:${mimeType};base64,${base64String}`
-          } catch (error) {
-            console.error('Error converting image to Base64:', error)
+          } catch (err) {
+            console.error('Error converting image to Base64:', err)
             throw new Error(`Failed to convert image ${file.name} to Base64`)
           }
         })
       )
 
-      // Prepare listing data for database
+      // Prepare listing data for Firestore
       const listingData = {
         title: formData.title.trim(),
         description: formData.description.trim(),
         price: parseFloat(formData.price),
-        category: formData.category, // Backend will map to category_id
+        category: formData.category,
         condition: conditionMap[formData.condition] || 'good',
-        seller_id: dbUser.id,
-        images: imageBase64Strings, // Array of Base64-encoded image strings
-        location: formData.location.trim() || 'UL Campus'
+        sellerId: user.id,
+        images: imageBase64Strings,
+        location: formData.location.trim() || 'UL Campus',
+        pickupAvailable: true,
+        deliveryAvailable: false,
+        tags: []
       }
 
-      // Create listing using real API
-      const createdListing = await itemApi.create(listingData) as any
+      // Create listing in Firestore
+      const createdListing = await createListing(listingData, sellerInfo)
 
       if (createdListing && createdListing.id) {
         // If user wants to feature the listing and is premium, feature it
         if (formData.isFeatured && isPremium()) {
           try {
-            await itemApi.feature(createdListing.id.toString())
+            // Import updateListing for featuring
+            const { updateListing } = await import('../services/listingsService')
+            await updateListing(createdListing.id, { isFeatured: true })
             toast.success('Listing created and featured successfully!')
           } catch (error: any) {
             console.error('Error featuring listing:', error)
@@ -184,7 +212,7 @@ const CreateListing = () => {
       }
     } catch (error: any) {
       console.error('Error creating listing:', error)
-      toast.error(error?.response?.data?.error || 'An error occurred while creating the listing. Please try again.')
+      toast.error(error?.message || 'An error occurred while creating the listing. Please try again.')
     }
   }
 

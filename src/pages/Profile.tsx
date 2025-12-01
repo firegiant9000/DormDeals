@@ -153,9 +153,9 @@ const Profile = () => {
   // Fetch listings when listings tab is active or when userData changes
   useEffect(() => {
     const fetchListings = async () => {
-      // Only fetch if we have a valid database user ID and listings tab is active
-      if (activeTab !== 'listings' || !userData?.id || userData.id === 0) {
-        // Clear listings if user is not in database or wrong tab
+      // Only fetch if we have a valid Firebase user ID and listings tab is active
+      if (activeTab !== 'listings' || !user?.id) {
+        // Clear listings if user is not authenticated or wrong tab
         if (activeTab !== 'listings') {
           return // Don't clear if just switching tabs
         }
@@ -165,16 +165,30 @@ const Profile = () => {
 
       try {
         setIsLoadingListings(true)
-        // Fetch only real listings from database for this user
-        const userListings = await userApi.getListings(userData.id.toString()) as Listing[]
+        // Fetch only real listings from Firestore for this user
+        const { getListings } = await import('../services/listingsService');
+        const userListings = await getListings({ sellerId: user.id, active: true })
+        // Convert Item[] to Listing[] format expected by component
+        const convertedListings: Listing[] = userListings.map(item => ({
+          id: parseInt(item.id) || 0,
+          title: item.title,
+          price: item.price,
+          status: item.status.toString(),
+          views: item.views,
+          images: item.images,
+          description: item.description,
+          category: item.category
+        }))
         // Only set listings if we got valid data from the API
-        if (Array.isArray(userListings)) {
-          setListings(userListings)
+        if (Array.isArray(convertedListings)) {
+          setListings(convertedListings)
         } else {
           setListings([])
         }
         // Update ref to track current userData.id
-        prevUserDataIdRef.current = userData.id
+        if (userData) {
+          prevUserDataIdRef.current = userData.id
+        }
         // Clear refresh flag if it was set
         if ((location.state as any)?.refreshListings) {
           navigate(location.pathname, { replace: true, state: {} })
@@ -190,25 +204,38 @@ const Profile = () => {
     }
 
     fetchListings()
-  }, [activeTab, userData?.id, location.state, navigate, location.pathname])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, user?.id, location.state, navigate, location.pathname])
 
   // Fetch favorites when favorites tab is active
   useEffect(() => {
     const fetchFavorites = async () => {
-      // Only fetch if we have a valid database user ID
-      if (activeTab !== 'favorites' || !userData?.id || userData.id === 0) {
-        // Clear favorites if user is not in database
+      // Only fetch if we have a valid Firebase user ID
+      if (activeTab !== 'favorites' || !user?.id) {
+        // Clear favorites if user is not authenticated
         setFavorites([])
         return
       }
 
       try {
         setIsLoadingFavorites(true)
-        // Fetch only real favorites from database for this user
-        const userFavorites = await userApi.getFavorites(userData.id.toString()) as Listing[]
+        // Fetch only real favorites from Firestore for this user
+        const { getFavorites } = await import('../services/favoritesService');
+        const userFavorites = await getFavorites(user.id)
+        // Convert Item[] to Listing[] format expected by component
+        const convertedFavorites: Listing[] = userFavorites.map(item => ({
+          id: parseInt(item.id) || 0,
+          title: item.title,
+          price: item.price,
+          status: item.status.toString(),
+          views: item.views,
+          images: item.images,
+          description: item.description,
+          category: item.category
+        }))
         // Only set favorites if we got valid data from the API
-        if (Array.isArray(userFavorites)) {
-          setFavorites(userFavorites)
+        if (Array.isArray(convertedFavorites)) {
+          setFavorites(convertedFavorites)
         } else {
           setFavorites([])
         }
@@ -223,25 +250,37 @@ const Profile = () => {
     }
 
     fetchFavorites()
-  }, [activeTab, userData?.id])
+  }, [activeTab, user?.id])
 
   // Fetch cart items when cart tab is active
   useEffect(() => {
     const fetchCart = async () => {
-      // Only fetch if we have a valid database user ID
-      if (activeTab !== 'cart' || !userData?.id || userData.id === 0) {
-        // Clear cart if user is not in database
+      // Only fetch if we have a valid Firebase user ID
+      if (activeTab !== 'cart' || !user?.id) {
+        // Clear cart if user is not authenticated
         setCartItems([])
         return
       }
 
       try {
         setIsLoadingCart(true)
-        // Fetch only real cart items from database for this user
-        const userCart = await userApi.getCart(userData.id.toString()) as Listing[]
+        // Fetch only real cart items from Firestore for this user
+        const { getCartItems } = await import('../services/cartService');
+        const userCart = await getCartItems(user.id)
+        // Convert Item[] to Listing[] format expected by component
+        const convertedCart: Listing[] = userCart.map(item => ({
+          id: parseInt(item.id) || 0,
+          title: item.title,
+          price: item.price,
+          status: item.status.toString(),
+          views: item.views,
+          images: item.images,
+          description: item.description,
+          category: item.category
+        }))
         // Only set cart items if we got valid data from the API
-        if (Array.isArray(userCart)) {
-          setCartItems(userCart)
+        if (Array.isArray(convertedCart)) {
+          setCartItems(convertedCart)
         } else {
           setCartItems([])
         }
@@ -256,7 +295,7 @@ const Profile = () => {
     }
 
     fetchCart()
-  }, [activeTab, userData?.id])
+  }, [activeTab, user?.id])
 
   // Fallback user data
   const displayUserData = userData || {
