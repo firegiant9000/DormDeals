@@ -363,7 +363,7 @@ const Marketplace = () => {
               initial="hidden"
               animate="visible"
             >
-              {filteredItems.map((item, index) => (
+              {filteredItems.map((item) => (
                 <motion.div
                   key={item.id}
                   variants={getAnimationVariants(staggerItem)}
