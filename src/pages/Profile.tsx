@@ -37,7 +37,7 @@ interface UserProfile {
 }
 
 interface Listing {
-  id: number
+  id: string
   title: string
   price: number
   status: string
@@ -170,7 +170,7 @@ const Profile = () => {
         const userListings = await getListings({ sellerId: user.id, active: true })
         // Convert Item[] to Listing[] format expected by component
         const convertedListings: Listing[] = userListings.map(item => ({
-          id: parseInt(item.id) || 0,
+          id: item.id,
           title: item.title,
           price: item.price,
           status: item.status.toString(),
@@ -224,7 +224,7 @@ const Profile = () => {
         const userFavorites = await getFavorites(user.id)
         // Convert Item[] to Listing[] format expected by component
         const convertedFavorites: Listing[] = userFavorites.map(item => ({
-          id: parseInt(item.id) || 0,
+          id: item.id,
           title: item.title,
           price: item.price,
           status: item.status.toString(),
@@ -269,7 +269,7 @@ const Profile = () => {
         const userCart = await getCartItems(user.id)
         // Convert Item[] to Listing[] format expected by component
         const convertedCart: Listing[] = userCart.map(item => ({
-          id: parseInt(item.id) || 0,
+          id: item.id,
           title: item.title,
           price: item.price,
           status: item.status.toString(),

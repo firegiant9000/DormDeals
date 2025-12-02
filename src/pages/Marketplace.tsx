@@ -1,8 +1,7 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
 import { Grid, List, Search } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import { mockItems } from '../data/mockData'
 import { formatCurrency } from '../utils/helpers'
 import { useShop } from '@/context/ShopContext'
 import { useAuth } from '@/context/AuthContext'
@@ -21,9 +20,42 @@ const Marketplace = () => {
   const { addToCart, addToWishlist, removeFromCart, removeFromWishlist, isInCart, isInWishlist } = useShop()
   const { isAuthenticated } = useAuth()
   const navigate = useNavigate()
+  const [baseItems, setBaseItems] = useState<Item[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
 
-  // Use app-wide mock items for richer data and images
-  const baseItems: Item[] = mockItems
+  // Load real listings from Firestore
+  useEffect(() => {
+    let isMounted = true
+
+    const loadListings = async () => {
+      try {
+        setIsLoading(true)
+        setLoadError(null)
+        const { getListings } = await import('../services/listingsService')
+        const listings = await getListings({ active: true })
+        if (isMounted) {
+          setBaseItems(listings)
+        }
+      } catch (error: any) {
+        console.error('Error loading listings for marketplace:', error)
+        if (isMounted) {
+          setBaseItems([])
+          setLoadError(error?.message || 'Failed to load listings')
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false)
+        }
+      }
+    }
+
+    loadListings()
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
 
   const filteredItems = useMemo(() => {
     let items = [...baseItems]
@@ -142,82 +174,93 @@ const Marketplace = () => {
           </div>
           
           {/* Items Grid/List */}
-          <div className={`grid gap-8 ${viewMode === 'grid' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'}`}>
-            {filteredItems.map((item, index) => (
-              <motion.div
-                key={item.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: index * 0.1 }}
-                className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer flex flex-col shadow-sm hover:border-primary-200"
-                onClick={() => navigate(`/listing/${item.id}`, { state: { listing: item } })}
-                whileHover={{ 
-                  scale: 1.02, 
-                  y: -6,
-                  transition: { duration: 0.2 }
-                }}
-                whileTap={{ scale: 0.98 }}
-              >
-                <div className="aspect-w-16 aspect-h-9 bg-gray-200">
-                  <img
-                    src={item.images[0] || '/api/placeholder/400/300'}
-                    alt={item.title}
-                    className="w-full h-48 object-cover"
-                  />
-                </div>
-                <div className="p-6 flex flex-col h-full">
-                  <div className="flex justify-between items-start mb-3">
-                    <h4 className="font-semibold text-gray-900 line-clamp-2 text-lg">{item.title}</h4>
-                    <span className="text-xl font-bold text-primary-600 ml-2">{formatCurrency(item.price)}</span>
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <span className="text-gray-600">Loading listings...</span>
+            </div>
+          ) : loadError ? (
+            <div className="text-center py-12">
+              <p className="text-gray-700 mb-2">Failed to load listings.</p>
+              <p className="text-sm text-gray-500">{loadError}</p>
+            </div>
+          ) : (
+            <div className={`grid gap-8 ${viewMode === 'grid' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'}`}>
+              {filteredItems.map((item, index) => (
+                <motion.div
+                  key={item.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: index * 0.1 }}
+                  className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer flex flex-col shadow-sm hover:border-primary-200"
+                  onClick={() => navigate(`/listing/${item.id}`, { state: { listing: item } })}
+                  whileHover={{ 
+                    scale: 1.02, 
+                    y: -6,
+                    transition: { duration: 0.2 }
+                  }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <div className="aspect-w-16 aspect-h-9 bg-gray-200">
+                    <img
+                      src={item.images[0] || '/api/placeholder/400/300'}
+                      alt={item.title}
+                      className="w-full h-48 object-cover"
+                    />
                   </div>
-                  <p className="text-sm text-gray-600 mb-4 line-clamp-3 flex-grow">{item.description}</p>
-                  <div className="flex items-center justify-between text-sm text-gray-500 mb-5">
-                    <span className="bg-gray-100 px-3 py-1 rounded-full text-xs font-medium">{item.category}</span>
-                    <span className="text-xs text-gray-400">{item.condition}</span>
+                  <div className="p-6 flex flex-col h-full">
+                    <div className="flex justify-between items-start mb-3">
+                      <h4 className="font-semibold text-gray-900 line-clamp-2 text-lg">{item.title}</h4>
+                      <span className="text-xl font-bold text-primary-600 ml-2">{formatCurrency(item.price)}</span>
+                    </div>
+                    <p className="text-sm text-gray-600 mb-4 line-clamp-3 flex-grow">{item.description}</p>
+                    <div className="flex items-center justify-between text-sm text-gray-500 mb-5">
+                      <span className="bg-gray-100 px-3 py-1 rounded-full text-xs font-medium">{item.category}</span>
+                      <span className="text-xs text-gray-400">{item.condition}</span>
+                    </div>
+                    <div className="flex space-x-3 mt-auto pt-2 border-t border-gray-100">
+                      <button
+                        onClick={(e) => { 
+                          e.stopPropagation(); 
+                          e.preventDefault();
+                          console.log('Cart button clicked for item:', item.id, 'isInCart:', isInCart(item.id));
+                          if (!isInCart(item.id)) {
+                            addToCart(item);
+                          } else {
+                            removeFromCart(item.id);
+                          }
+                        }}
+                        className={`flex-1 py-3 px-4 rounded-lg text-sm font-medium transition-all duration-200 ${isAuthenticated && isInCart(item.id) ? 'border-2 border-red-300 text-red-700 hover:bg-red-50' : 'bg-primary-600 text-white hover:bg-primary-700 shadow-sm'}`}
+                        type="button"
+                      >
+                        {isAuthenticated && isInCart(item.id) ? 'Remove from Cart' : 'Add to Cart'}
+                      </button>
+                      <button
+                        onClick={(e) => { 
+                          e.stopPropagation(); 
+                          e.preventDefault();
+                          console.log('Wishlist button clicked for item:', item.id, 'isInWishlist:', isInWishlist(item.id));
+                          if (!isInWishlist(item.id)) {
+                            addToWishlist(item);
+                          } else {
+                            removeFromWishlist(item.id);
+                          }
+                        }}
+                        className={`p-3 border-2 rounded-lg transition-all duration-200 ${isAuthenticated && isInWishlist(item.id) ? 'border-red-300 text-red-600 hover:bg-red-50' : 'border-gray-300 hover:bg-gray-50 hover:border-gray-400'}`}
+                        aria-label="Toggle wishlist"
+                        type="button"
+                      >
+                        <svg className={`w-5 h-5 ${isAuthenticated && isInWishlist(item.id) ? 'text-red-600' : 'text-gray-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                        </svg>
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex space-x-3 mt-auto pt-2 border-t border-gray-100">
-                    <button
-                      onClick={(e) => { 
-                        e.stopPropagation(); 
-                        e.preventDefault();
-                        console.log('Cart button clicked for item:', item.id, 'isInCart:', isInCart(item.id));
-                        if (!isInCart(item.id)) {
-                          addToCart(item);
-                        } else {
-                          removeFromCart(item.id);
-                        }
-                      }}
-                      className={`flex-1 py-3 px-4 rounded-lg text-sm font-medium transition-all duration-200 ${isAuthenticated && isInCart(item.id) ? 'border-2 border-red-300 text-red-700 hover:bg-red-50' : 'bg-primary-600 text-white hover:bg-primary-700 shadow-sm'}`}
-                      type="button"
-                    >
-                      {isAuthenticated && isInCart(item.id) ? 'Remove from Cart' : 'Add to Cart'}
-                    </button>
-                    <button
-                      onClick={(e) => { 
-                        e.stopPropagation(); 
-                        e.preventDefault();
-                        console.log('Wishlist button clicked for item:', item.id, 'isInWishlist:', isInWishlist(item.id));
-                        if (!isInWishlist(item.id)) {
-                          addToWishlist(item);
-                        } else {
-                          removeFromWishlist(item.id);
-                        }
-                      }}
-                      className={`p-3 border-2 rounded-lg transition-all duration-200 ${isAuthenticated && isInWishlist(item.id) ? 'border-red-300 text-red-600 hover:bg-red-50' : 'border-gray-300 hover:bg-gray-50 hover:border-gray-400'}`}
-                      aria-label="Toggle wishlist"
-                      type="button"
-                    >
-                      <svg className={`w-5 h-5 ${isAuthenticated && isInWishlist(item.id) ? 'text-red-600' : 'text-gray-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
+                </motion.div>
+              ))}
+            </div>
+          )}
           {/* Empty State */}
-          {filteredItems.length === 0 && (
+          {!isLoading && !loadError && filteredItems.length === 0 && (
             <div className="text-center py-12">
               <div className="text-gray-400 mb-4">
                 <Search className="w-16 h-16 mx-auto" />
