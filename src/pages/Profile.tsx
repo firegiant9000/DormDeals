@@ -5,14 +5,14 @@ import { useAuth } from '../context/AuthContext'
 import { useAccessControl } from '../hooks/useAccessControl'
 import ProtectedFeature from '../components/ProtectedFeature'
 import { UserType } from '../types/user'
-import { userApi } from '../services/api'
+import { getUserProfileWithStats, updateUserProfile } from '../services/userService'
 import { useNavigate, useLocation } from 'react-router-dom'
 import toast from 'react-hot-toast'
 
 interface UserProfile {
-  id: number
+  id: string
   email: string
-  username: string
+  username?: string
   first_name?: string
   last_name?: string
   displayName?: string
@@ -30,7 +30,8 @@ interface UserProfile {
   totalSales: number
   totalListings: number
   totalFavorites: number
-  created_at: string | Date
+  created_at?: string | Date
+  createdAt?: Date
   joinedDate?: string | Date
   joinDate?: string | Date
   graduation_year?: number
@@ -54,7 +55,7 @@ const Profile = () => {
   const { isAdmin, isPremium, canAccess } = useAccessControl()
   const navigate = useNavigate()
   const location = useLocation()
-  const prevUserDataIdRef = useRef<number | null>(null)
+  const prevUserDataIdRef = useRef<string | null>(null)
   
   const [userData, setUserData] = useState<UserProfile | null>(null)
   const [listings, setListings] = useState<Listing[]>([])
@@ -65,10 +66,10 @@ const Profile = () => {
   const [isLoadingFavorites, setIsLoadingFavorites] = useState(false)
   const [isLoadingCart, setIsLoadingCart] = useState(false)
 
-  // Fetch user profile from database
+  // Fetch user profile from Firestore
   useEffect(() => {
     const fetchUserProfile = async () => {
-      if (!user?.email) {
+      if (!user?.id) {
         setIsLoading(false)
         return
       }
@@ -76,17 +77,38 @@ const Profile = () => {
       try {
         setIsLoading(true)
         
-        // First, try to get user by email
-        let dbUser
-        try {
-          dbUser = await userApi.getByEmail(user.email) as { id: number; email: string }
-        } catch {
-          // If user not found by email, they might not exist in PostgreSQL yet
-          console.warn('User not found in database by email:', user.email)
-          // Use Firebase user data as fallback
+        // Get user profile with stats from Firestore
+        const profileWithStats = await getUserProfileWithStats(user.id)
+        
+        if (profileWithStats) {
+          setUserData({
+            id: profileWithStats.id,
+            email: profileWithStats.email,
+            username: profileWithStats.displayName || 'User',
+            displayName: profileWithStats.displayName,
+            name: profileWithStats.displayName,
+            phone: profileWithStats.phone,
+            university: profileWithStats.school,
+            location: profileWithStats.school || 'UL Campus',
+            school: profileWithStats.school || 'University of Louisiana',
+            is_verified: profileWithStats.isVerified,
+            isVerified: profileWithStats.isVerified,
+            rating: profileWithStats.rating || 0,
+            reviewCount: profileWithStats.reviewCount || 0,
+            totalSales: profileWithStats.totalSales || 0,
+            totalListings: profileWithStats.totalListings || 0,
+            totalFavorites: profileWithStats.totalFavorites || 0,
+            createdAt: profileWithStats.createdAt ? (profileWithStats.createdAt instanceof Date ? profileWithStats.createdAt : new Date(profileWithStats.createdAt)) : undefined,
+            created_at: profileWithStats.createdAt ? (profileWithStats.createdAt instanceof Date ? profileWithStats.createdAt.toISOString() : new Date(profileWithStats.createdAt).toISOString()) : new Date().toISOString(),
+            joinedDate: profileWithStats.createdAt ? (profileWithStats.createdAt instanceof Date ? profileWithStats.createdAt.toISOString() : new Date(profileWithStats.createdAt).toISOString()) : new Date().toISOString(),
+            joinDate: profileWithStats.createdAt ? (profileWithStats.createdAt instanceof Date ? profileWithStats.createdAt.toISOString() : new Date(profileWithStats.createdAt).toISOString()) : new Date().toISOString(),
+            profileImage: profileWithStats.profileImage
+          })
+        } else {
+          // Fallback to Firebase user data if profile doesn't exist
           const joinDateStr = user.joinDate || new Date().toISOString()
           setUserData({
-            id: 0,
+            id: user.id,
             email: user.email,
             username: user.displayName || user.name || 'User',
             displayName: user.displayName || user.name || 'User',
@@ -106,23 +128,13 @@ const Profile = () => {
             joinedDate: joinDateStr,
             joinDate: joinDateStr
           })
-          setIsLoading(false)
-          return
         }
-
-        // If user found, get full profile with stats
-        if (dbUser?.id) {
-          const profile = await userApi.getProfileById(dbUser.id.toString()) as UserProfile
-          setUserData(profile)
-        } else {
-          throw new Error('User profile not found')
-        }
-      } catch {
-        console.error('Error fetching user profile')
+      } catch (error) {
+        console.error('Error fetching user profile:', error)
         // Fallback to Firebase user data
         const joinDateStr = user.joinDate || new Date().toISOString()
         setUserData({
-          id: 0,
+          id: user.id,
           email: user.email,
           username: user.displayName || user.name || 'User',
           displayName: user.displayName || user.name || 'User',
@@ -299,7 +311,7 @@ const Profile = () => {
 
   // Fallback user data
   const displayUserData = userData || {
-    id: 0,
+    id: user?.id || '',
     email: user?.email || '',
     username: user?.displayName || user?.name || 'Guest User',
     displayName: user?.displayName || user?.name || 'Guest User',
@@ -430,7 +442,7 @@ const Profile = () => {
                       <span className="text-gray-500">Member since:</span>
                       <span className="ml-2 font-medium">
                         {displayUserData.joinedDate || (displayUserData as UserProfile).created_at
-                          ? new Date(displayUserData.joinedDate || (displayUserData as UserProfile).created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long' })
+                          ? new Date(displayUserData.joinedDate || (displayUserData as UserProfile).created_at || new Date()).toLocaleDateString('en-US', { year: 'numeric', month: 'long' })
                           : 'Recently'}
                       </span>
                     </div>
@@ -803,25 +815,54 @@ const Profile = () => {
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">Account Settings</h3>
                   <form onSubmit={async (e) => {
                     e.preventDefault()
-                    if (!userData?.id || userData.id === 0) {
-                      toast.error('Cannot update profile: User not found in database')
+                    if (!user?.id) {
+                      toast.error('Cannot update profile: User not authenticated')
                       return
                     }
 
                     const formData = new FormData(e.currentTarget)
                     try {
-                      await userApi.updateProfileById(userData.id.toString(), {
-                        first_name: formData.get('first_name')?.toString() || null,
-                        last_name: formData.get('last_name')?.toString() || null,
-                        phone: formData.get('phone')?.toString() || null,
-                        university: formData.get('university')?.toString() || null,
-                        graduation_year: formData.get('graduation_year')?.toString() ? parseInt(formData.get('graduation_year')!.toString()) : null,
-                        profile_image_url: formData.get('profile_image_url')?.toString() || null
+                      // Update profile in Firestore
+                      const firstName = formData.get('first_name')?.toString()
+                      const lastName = formData.get('last_name')?.toString()
+                      const phone = formData.get('phone')?.toString()
+                      const university = formData.get('university')?.toString()
+                      const profileImageUrl = formData.get('profile_image_url')?.toString()
+                      
+                      await updateUserProfile(user.id, {
+                        displayName: firstName && lastName ? `${firstName} ${lastName}` : firstName || lastName || undefined,
+                        phone: phone || undefined,
+                        school: university || undefined,
+                        profileImage: profileImageUrl || undefined
                       })
                       
-                      // Refresh profile data
-                      const updatedProfile = await userApi.getProfileById(userData.id.toString()) as UserProfile
-                      setUserData(updatedProfile)
+                      // Refresh profile data with stats
+                      const updatedProfileWithStats = await getUserProfileWithStats(user.id)
+                      if (updatedProfileWithStats) {
+                        setUserData({
+                          id: updatedProfileWithStats.id,
+                          email: updatedProfileWithStats.email,
+                          username: updatedProfileWithStats.displayName || 'User',
+                          displayName: updatedProfileWithStats.displayName,
+                          name: updatedProfileWithStats.displayName,
+                          phone: updatedProfileWithStats.phone,
+                          university: updatedProfileWithStats.school,
+                          location: updatedProfileWithStats.school || 'UL Campus',
+                          school: updatedProfileWithStats.school || 'University of Louisiana',
+                          is_verified: updatedProfileWithStats.isVerified,
+                          isVerified: updatedProfileWithStats.isVerified,
+                          rating: updatedProfileWithStats.rating || 0,
+                          reviewCount: updatedProfileWithStats.reviewCount || 0,
+                          totalSales: updatedProfileWithStats.totalSales || 0,
+                          totalListings: updatedProfileWithStats.totalListings || 0,
+                          totalFavorites: updatedProfileWithStats.totalFavorites || 0,
+                          createdAt: updatedProfileWithStats.createdAt ? (updatedProfileWithStats.createdAt instanceof Date ? updatedProfileWithStats.createdAt : new Date(updatedProfileWithStats.createdAt)) : undefined,
+                          created_at: updatedProfileWithStats.createdAt ? (updatedProfileWithStats.createdAt instanceof Date ? updatedProfileWithStats.createdAt.toISOString() : new Date(updatedProfileWithStats.createdAt).toISOString()) : new Date().toISOString(),
+                          joinedDate: updatedProfileWithStats.createdAt ? (updatedProfileWithStats.createdAt instanceof Date ? updatedProfileWithStats.createdAt.toISOString() : new Date(updatedProfileWithStats.createdAt).toISOString()) : new Date().toISOString(),
+                          joinDate: updatedProfileWithStats.createdAt ? (updatedProfileWithStats.createdAt instanceof Date ? updatedProfileWithStats.createdAt.toISOString() : new Date(updatedProfileWithStats.createdAt).toISOString()) : new Date().toISOString(),
+                          profileImage: updatedProfileWithStats.profileImage
+                        })
+                      }
                       toast.success('Profile updated successfully!')
                     } catch (err: any) {
                       console.error('Error updating profile:', err)
@@ -904,13 +945,13 @@ const Profile = () => {
                       <button 
                         type="submit"
                         className="btn-primary"
-                        disabled={!userData?.id || userData.id === 0}
+                        disabled={!user?.id}
                       >
                         Save Changes
                       </button>
-                      {(!userData?.id || userData.id === 0) && (
+                      {!user?.id && (
                         <p className="text-sm text-gray-500 mt-2">
-                          Profile not found in database. Please contact support.
+                          Please sign in to update your profile.
                         </p>
                       )}
                     </div>

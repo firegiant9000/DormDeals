@@ -5,29 +5,412 @@ This document outlines the technical architecture, design decisions, and system 
 ## 📋 Table of Contents
 
 - [System Overview](#system-overview)
+- [Architectural Components](#architectural-components)
+- [Component Responsibilities](#component-responsibilities)
+- [MVC Architecture Mapping](#mvc-architecture-mapping)
+- [Non-Functional Requirements](#non-functional-requirements)
+- [Tradeoffs](#tradeoffs)
 - [Project Structure](#project-structure)
-- [Component Hierarchy](#component-hierarchy)
 - [Data Flow](#data-flow)
 - [Technology Stack](#technology-stack)
 - [Design Decisions](#design-decisions)
 - [Database Design](#database-design)
-- [API Design](#api-design)
 - [Security Architecture](#security-architecture)
 - [Deployment Architecture](#deployment-architecture)
 
 ## 🏗️ System Overview
 
-DormDeals is a full-stack web application built with a modern architecture that separates concerns between the frontend and backend. The application follows a client-server model with a React-based frontend communicating with a Node.js/Express backend through RESTful APIs.
+DormDeals is a **single-page application (SPA)** built with React and TypeScript, using **Firebase** as the complete backend-as-a-service (BaaS) solution. The application follows a **client-side architecture** where all business logic, authentication, and data operations are handled directly from the browser using Firebase SDKs.
 
 ### High-Level Architecture
 
 ```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Frontend      │    │   Backend       │    │   Database      │
-│   (React)       │◄──►│   (Express.js)  │◄──►│   (PostgreSQL)  │
-│   Port: 5173    │    │   Port: 3001    │    │   Port: 5432    │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│                    Client Browser (SPA)                      │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐    │
+│  │   React UI   │  │   Context    │  │   Services   │    │
+│  │  Components  │◄─►│  Providers   │◄─►│  (Firebase) │    │
+│  └──────────────┘  └──────────────┘  └──────────────┘    │
+│         │                  │                  │            │
+│         └──────────────────┴──────────────────┘            │
+│                            │                                │
+└────────────────────────────┼────────────────────────────────┘
+                             │
+                             │ Firebase SDK
+                             │
+        ┌────────────────────┴────────────────────┐
+        │                                            │
+┌───────▼────────┐  ┌──────────────┐  ┌───────────▼──────┐
+│ Firebase Auth  │  │  Firestore   │  │ Firebase Storage │
+│ (Authentication)│  │  (Database)  │  │  (File Storage) │
+└────────────────┘  └──────────────┘  └──────────────────┘
 ```
+
+### Architecture Pattern: **Client-Side MVC with Firebase BaaS**
+
+The application uses a **hybrid MVC pattern** where:
+- **Model**: Firebase Firestore collections (users, listings, cart, favorites)
+- **View**: React components (pages, UI components)
+- **Controller**: React Context providers + Service layer (Firebase SDK wrappers)
+
+## 🧩 Architectural Components
+
+### 1. **Presentation Layer (View)**
+
+**Location**: `src/components/`, `src/pages/`
+
+**Components**:
+- **Pages**: `Home.tsx`, `Marketplace.tsx`, `Profile.tsx`, `CreateListing.tsx`, etc.
+- **UI Components**: `Button.tsx`, `Card.tsx`, `Modal.tsx`, `Input.tsx`, etc.
+- **Layout Components**: `Layout.tsx`, `Navbar.tsx`, `Footer.tsx`
+
+**Responsibility**:
+- Render user interface
+- Handle user interactions (clicks, form submissions)
+- Display data from context/state
+- Manage UI state (modals, drawers, loading states)
+
+### 2. **State Management Layer (Controller)**
+
+**Location**: `src/context/`
+
+**Components**:
+- **AuthContext**: Manages user authentication state
+- **ShopContext**: Manages cart, wishlist, and shopping state
+- **ThemeContext**: Manages UI theme (light/dark mode)
+
+**Responsibility**:
+- Maintain application-wide state
+- Coordinate between UI and services
+- Handle business logic (cart operations, authentication flow)
+- Provide state to components via React Context
+
+### 3. **Service Layer (Model Access)**
+
+**Location**: `src/services/`
+
+**Components**:
+- **userService.ts**: User profile CRUD operations
+- **listingsService.ts**: Listing CRUD operations
+- **cartService.ts**: Cart operations
+- **favoritesService.ts**: Wishlist operations
+- **api.ts**: Legacy API configuration (minimal, mostly unused)
+
+**Responsibility**:
+- Abstract Firebase SDK calls
+- Provide type-safe interfaces to Firebase operations
+- Handle data transformation (Firestore ↔ TypeScript types)
+- Error handling and retry logic
+- Business rule enforcement
+
+### 4. **Data Layer (Model)**
+
+**Location**: Firebase Firestore
+
+**Collections**:
+- **users**: User profiles and metadata
+- **listings**: Product listings
+- **cart**: Shopping cart items (user-specific subcollections)
+- **favorites**: Wishlist items (user-specific subcollections)
+
+**Responsibility**:
+- Persistent data storage
+- Data validation via Firestore security rules
+- Real-time data synchronization
+- Query optimization via Firestore indexes
+
+### 5. **Authentication Layer**
+
+**Location**: Firebase Authentication + `src/context/AuthContext.tsx`
+
+**Components**:
+- Firebase Auth SDK (email/password)
+- AuthContext wrapper
+
+**Responsibility**:
+- User authentication (login, signup, logout)
+- Session management
+- User identity verification
+- Integration with Firestore security rules
+
+### 6. **Static Server Layer**
+
+**Location**: `index.js` (Express.js)
+
+**Responsibility**:
+- Serve static files (React build output)
+- SPA routing fallback
+- Health check endpoint (`/health`)
+- **Note**: No API endpoints - all API operations are client-side via Firebase
+
+## 📦 Component Responsibilities
+
+### Frontend Components
+
+| Component | Responsibility | Dependencies |
+|-----------|---------------|--------------|
+| **Pages** | Route-level components, page-specific UI | Context, Services |
+| **UI Components** | Reusable UI elements (buttons, cards, inputs) | None (pure components) |
+| **Layout Components** | Page structure (navbar, footer, layout wrapper) | Context (auth, theme) |
+| **Context Providers** | Global state management, business logic | Services |
+| **Services** | Firebase SDK wrappers, data access | Firebase SDK, Types |
+
+### Backend Components (Firebase)
+
+| Component | Responsibility | Access Method |
+|-----------|---------------|---------------|
+| **Firebase Auth** | User authentication, session management | `firebase/auth` SDK |
+| **Firestore** | NoSQL document database | `firebase/firestore` SDK |
+| **Firebase Storage** | File storage (images, documents) | `firebase/storage` SDK |
+| **Security Rules** | Access control, data validation | Firestore Rules |
+
+## 🎯 MVC Architecture Mapping
+
+### Traditional MVC vs. DormDeals Architecture
+
+```
+Traditional MVC:
+┌──────────┐    ┌──────────┐    ┌──────────┐
+│   View   │◄──►│Controller│◄──►│  Model   │
+│  (HTML)  │    │  (Logic) │    │ (Database)│
+└──────────┘    └──────────┘    └──────────┘
+
+DormDeals MVC:
+┌──────────────────┐    ┌──────────────────┐    ┌──────────────────┐
+│      View        │    │    Controller     │    │      Model       │
+│  React Components│◄──►│ Context Providers │◄──►│  Firestore DB   │
+│  (UI Rendering)   │    │  + Services      │    │  (Collections)   │
+└──────────────────┘    └──────────────────┘    └──────────────────┘
+```
+
+### Detailed MVC Mapping
+
+#### **Model (Data Layer)**
+- **Location**: Firebase Firestore
+- **Representation**: 
+  - Collections: `users`, `listings`, `cart`, `favorites`
+  - Documents: Individual records (user profile, listing, cart item)
+- **Access**: Via service layer (`userService`, `listingsService`, etc.)
+- **Responsibilities**:
+  - Data persistence
+  - Data structure definition
+  - Data validation (via security rules)
+
+#### **View (Presentation Layer)**
+- **Location**: `src/pages/`, `src/components/`
+- **Representation**: React functional components
+- **Access**: Direct rendering, receives props/context
+- **Responsibilities**:
+  - UI rendering
+  - User interaction handling
+  - Display data from context/state
+  - No direct data access (goes through Controller)
+
+#### **Controller (Business Logic Layer)**
+- **Location**: `src/context/` (state management) + `src/services/` (data access)
+- **Representation**: 
+  - Context providers: `AuthContext`, `ShopContext`
+  - Service functions: `createListing`, `addToCart`, `getUserProfile`
+- **Responsibilities**:
+  - Business logic (cart operations, authentication flow)
+  - State management
+  - Data transformation
+  - Error handling
+  - Coordinates between View and Model
+
+### MVC Flow Example: Adding Item to Cart
+
+```
+1. VIEW (Marketplace.tsx)
+   User clicks "Add to Cart" button
+   ↓
+2. CONTROLLER (ShopContext.addToCart)
+   - Validates user authentication
+   - Calls cartService.addToCart()
+   - Updates local state
+   - Shows success/error toast
+   ↓
+3. MODEL (Firestore cart collection)
+   - Service writes to Firestore
+   - Security rules validate access
+   - Data persisted
+   ↓
+4. CONTROLLER (ShopContext)
+   - Reloads cart from Firestore
+   - Updates context state
+   ↓
+5. VIEW (Cart Drawer)
+   - React re-renders with new cart items
+   - User sees updated cart
+```
+
+## ⚡ Non-Functional Requirements/Properties
+
+### 1. **Performance**
+
+| Requirement | Target | Implementation |
+|-------------|--------|----------------|
+| **Page Load Time** | < 3 seconds | Code splitting, lazy loading routes |
+| **Time to Interactive** | < 5 seconds | Optimized bundle size, Firebase CDN |
+| **API Response Time** | < 500ms | Firestore queries with indexes |
+| **Image Loading** | Progressive loading | Base64 encoding, lazy loading |
+
+**Mechanisms**:
+- React lazy loading for routes (`React.lazy()`)
+- Code splitting via Vite
+- Firestore query optimization
+- Firebase CDN for static assets
+
+### 2. **Scalability**
+
+| Aspect | Approach | Limitation |
+|--------|----------|------------|
+| **Horizontal Scaling** | Firebase auto-scales | Firestore read/write limits |
+| **Data Growth** | Firestore collections | Document size limits (1MB) |
+| **User Growth** | Firebase Auth scales | Concurrent connections |
+| **Traffic Spikes** | Firebase CDN | Rate limiting per project |
+
+**Scaling Strategy**:
+- Client-side architecture reduces server load
+- Firebase handles infrastructure scaling
+- Firestore indexes for query performance
+- Pagination for large datasets
+
+### 3. **Reliability**
+
+| Requirement | Target | Implementation |
+|-------------|--------|----------------|
+| **Uptime** | 99.9% | Firebase SLA |
+| **Data Durability** | 99.999% | Firebase replication |
+| **Error Recovery** | Graceful degradation | Try-catch, fallback UI |
+| **Offline Support** | Basic caching | Browser localStorage |
+
+**Reliability Mechanisms**:
+- Firebase multi-region replication
+- Error boundaries in React
+- Retry logic in services
+- Offline data caching
+
+### 4. **Security**
+
+| Requirement | Implementation |
+|-------------|----------------|
+| **Authentication** | Firebase Auth (email/password) |
+| **Authorization** | Firestore Security Rules |
+| **Data Encryption** | Firebase TLS in transit, encryption at rest |
+| **Input Validation** | Client-side + Firestore rules |
+| **XSS Protection** | React auto-escaping |
+| **CSRF Protection** | Firebase token-based auth |
+
+**Security Layers**:
+1. **Client-side**: Input validation, sanitization
+2. **Firebase Auth**: Token-based authentication
+3. **Firestore Rules**: Server-side access control
+4. **HTTPS**: All communications encrypted
+
+### 5. **Maintainability**
+
+| Aspect | Approach |
+|--------|----------|
+| **Code Organization** | Feature-based structure |
+| **Type Safety** | TypeScript throughout |
+| **Documentation** | JSDoc comments, README |
+| **Testing** | Unit tests, E2E tests |
+| **Code Quality** | ESLint, Prettier |
+
+### 6. **Usability**
+
+| Requirement | Implementation |
+|-------------|----------------|
+| **Responsive Design** | Tailwind CSS breakpoints |
+| **Accessibility** | Semantic HTML, ARIA labels |
+| **Loading States** | Loading spinners, skeletons |
+| **Error Messages** | User-friendly error toasts |
+| **Dark Mode** | ThemeContext |
+
+## ⚖️ Tradeoffs
+
+### 1. **Firebase BaaS vs. Custom Backend**
+
+| Aspect | Firebase (Chosen) | Custom Backend (Alternative) |
+|--------|-------------------|------------------------------|
+| **Development Speed** | ✅ Fast (no backend code) | ❌ Slower (build everything) |
+| **Cost** | ⚠️ Pay per use | ✅ Fixed server costs |
+| **Control** | ❌ Limited customization | ✅ Full control |
+| **Scalability** | ✅ Auto-scales | ⚠️ Manual scaling |
+| **Vendor Lock-in** | ❌ High | ✅ None |
+| **Complex Queries** | ⚠️ Limited (Firestore) | ✅ Full SQL power |
+
+**Decision Rationale**: 
+- Faster time-to-market
+- Reduced infrastructure management
+- Built-in authentication and security
+- Acceptable cost for MVP/early stage
+
+### 2. **Client-Side vs. Server-Side Rendering**
+
+| Aspect | Client-Side (Chosen) | Server-Side (Alternative) |
+|--------|---------------------|---------------------------|
+| **Initial Load** | ❌ Slower | ✅ Faster |
+| **Interactivity** | ✅ Fast after load | ⚠️ Requires round-trips |
+| **SEO** | ⚠️ Requires SSR | ✅ Better |
+| **Server Load** | ✅ Minimal | ❌ High |
+| **Complexity** | ✅ Simpler | ❌ More complex |
+
+**Decision Rationale**:
+- Better user experience after initial load
+- Simpler architecture (no SSR setup)
+- Firebase works well with SPAs
+- SEO not critical for marketplace (users find via app)
+
+### 3. **Firestore vs. PostgreSQL**
+
+| Aspect | Firestore (Chosen) | PostgreSQL (Alternative) |
+|--------|-------------------|--------------------------|
+| **Query Flexibility** | ⚠️ Limited | ✅ Full SQL |
+| **Relationships** | ⚠️ Manual (references) | ✅ Foreign keys |
+| **Transactions** | ⚠️ Limited | ✅ Full ACID |
+| **Real-time Updates** | ✅ Built-in | ❌ Requires WebSockets |
+| **Scalability** | ✅ Auto-scales | ⚠️ Manual |
+| **Cost** | ⚠️ Pay per read/write | ✅ Fixed |
+
+**Decision Rationale**:
+- Real-time capabilities needed
+- Simpler data model (marketplace doesn't need complex joins)
+- Auto-scaling important for growth
+- Reduced operational overhead
+
+### 4. **Context API vs. Redux**
+
+| Aspect | Context API (Chosen) | Redux (Alternative) |
+|--------|---------------------|---------------------|
+| **Boilerplate** | ✅ Minimal | ❌ High |
+| **Learning Curve** | ✅ Easy | ⚠️ Steeper |
+| **DevTools** | ❌ Limited | ✅ Excellent |
+| **Performance** | ⚠️ Can cause re-renders | ✅ Optimized |
+| **Complexity** | ✅ Simple | ❌ More complex |
+
+**Decision Rationale**:
+- Application complexity doesn't require Redux
+- Faster development
+- Easier for team to understand
+- Can migrate to Redux if needed later
+
+### 5. **Static Server vs. Full Backend**
+
+| Aspect | Static Server (Chosen) | Full Backend (Alternative) |
+|--------|------------------------|---------------------------|
+| **Deployment** | ✅ Simple (static files) | ⚠️ More complex |
+| **Cost** | ✅ Lower | ❌ Higher |
+| **API Endpoints** | ❌ None (Firebase only) | ✅ Custom APIs |
+| **Business Logic** | ⚠️ Client-side | ✅ Server-side |
+| **Security** | ⚠️ Client-exposed | ✅ Server-protected |
+
+**Decision Rationale**:
+- Firebase handles all backend needs
+- Simpler deployment (just static files)
+- Lower operational costs
+- Security handled by Firebase rules
 
 ## 📁 Project Structure
 
@@ -35,245 +418,115 @@ DormDeals is a full-stack web application built with a modern architecture that 
 
 ```
 src/
-├── components/           # Reusable UI components
-│   ├── Button.tsx       # Custom button component
-│   ├── Card.tsx         # Card layout component
-│   ├── Layout.tsx       # Main layout wrapper
-│   ├── Navbar.tsx       # Navigation component
-│   ├── Footer.tsx       # Footer component
-│   ├── Modal.tsx        # Modal dialog component
-│   ├── Input.tsx        # Form input component
-│   ├── LoadingSpinner.tsx # Loading indicator
-│   ├── PageTransition.tsx # Page transition wrapper
-│   ├── SearchFiltersBar.tsx # Search and filter UI
-│   ├── CartSummary.tsx  # Shopping cart summary
-│   └── index.ts         # Component exports
-├── context/             # React Context providers
-│   ├── ShopContext.tsx  # Shopping cart and app state
-│   └── ThemeContext.tsx # Theme management
-├── pages/               # Page components (routes)
-│   ├── Home.tsx         # Landing page
-│   ├── Marketplace.tsx  # Main marketplace view
-│   ├── ItemDetail.tsx   # Individual item view
-│   ├── CreateListing.tsx # Create new listing
-│   ├── Profile.tsx      # User profile page
-│   ├── ResultsPage.tsx  # Search results page
-│   ├── AboutPage.tsx    # About page
-│   ├── MainFeaturePage.tsx # Feature showcase
-│   ├── ListingDetailPage.tsx # Detailed listing view
-│   ├── MessagePage.tsx  # Messaging interface
-│   ├── Checkout.tsx     # Checkout process
-│   └── NotFoundPage.tsx # 404 error page
-├── services/            # API and external services
-│   ├── api.ts          # API configuration
-│   └── apiService.ts   # API service functions
-├── types/               # TypeScript type definitions
-│   └── index.ts        # Shared type definitions
-├── utils/               # Utility functions
-│   ├── constants.ts    # Application constants
-│   ├── helpers.ts      # Helper functions
-│   └── animations.ts   # Animation utilities
-├── __tests__/          # Test files
-│   └── App.test.tsx    # Main app tests
-├── App.tsx             # Main application component
-└── index.tsx           # Application entry point
+├── components/           # Reusable UI components (View)
+│   ├── Button.tsx
+│   ├── Card.tsx
+│   ├── Layout.tsx
+│   ├── Navbar.tsx
+│   ├── Footer.tsx
+│   ├── Modal.tsx
+│   ├── ProtectedRoute.tsx
+│   └── ...
+├── context/             # State management (Controller)
+│   ├── AuthContext.tsx  # Authentication state
+│   ├── ShopContext.tsx # Cart/wishlist state
+│   └── ThemeContext.tsx # Theme state
+├── pages/               # Page components (View)
+│   ├── Home.tsx
+│   ├── Marketplace.tsx
+│   ├── Profile.tsx
+│   ├── CreateListing.tsx
+│   └── ...
+├── services/           # Firebase service layer (Controller)
+│   ├── userService.ts      # User CRUD
+│   ├── listingsService.ts  # Listing CRUD
+│   ├── cartService.ts      # Cart operations
+│   ├── favoritesService.ts # Wishlist operations
+│   └── api.ts              # Legacy API config (unused)
+├── config/             # Configuration
+│   └── firebase.ts     # Firebase initialization
+├── types/              # TypeScript definitions
+│   ├── index.ts
+│   └── user.ts
+├── utils/              # Utility functions
+│   ├── constants.ts
+│   ├── helpers.ts
+│   ├── accessControl.ts
+│   └── animations.ts
+├── hooks/              # Custom React hooks
+│   └── useAccessControl.ts
+├── App.tsx             # Main app component
+└── index.tsx           # Entry point
 ```
 
-### Backend Structure
+### Backend Structure (Minimal)
 
 ```
-├── index.js            # Main server entry point
-├── database/
-│   └── schema.sql      # Database schema definition
-├── package.json        # Dependencies and scripts
-└── [Backend modules will be added here]
-```
-
-## 🧩 Component Hierarchy
-
-### Main Application Structure
-
-```
-App
-├── Layout
-│   ├── Navbar
-│   │   ├── Logo
-│   │   ├── Navigation Links
-│   │   ├── Search Bar
-│   │   └── User Menu
-│   ├── Main Content Area
-│   │   └── [Page Components]
-│   └── Footer
-│       ├── Links
-│       ├── Social Media
-│       └── Copyright
-└── ShopDrawers (Context)
-    ├── Cart Drawer
-    ├── Wishlist Drawer
-    └── Notifications
-```
-
-### Page Component Hierarchy
-
-#### Marketplace Page
-```
-Marketplace
-├── SearchFiltersBar
-│   ├── Search Input
-│   ├── Category Filter
-│   ├── Price Range Filter
-│   └── Sort Options
-├── Item Grid
-│   └── ItemCard (multiple)
-│       ├── Item Image
-│       ├── Item Title
-│       ├── Price
-│       ├── Seller Info
-│       └── Action Buttons
-└── Pagination
-```
-
-#### Item Detail Page
-```
-ItemDetail
-├── Image Gallery
-├── Item Information
-│   ├── Title
-│   ├── Price
-│   ├── Description
-│   ├── Condition
-│   └── Category
-├── Seller Information
-│   ├── Seller Name
-│   ├── Rating
-│   └── Contact Button
-├── Action Buttons
-│   ├── Add to Cart
-│   ├── Add to Wishlist
-│   └── Message Seller
-└── Related Items
-```
-
-#### Create Listing Page
-```
-CreateListing
-├── Form Container
-│   ├── Image Upload
-│   ├── Basic Information
-│   │   ├── Title Input
-│   │   ├── Description Textarea
-│   │   ├── Category Select
-│   │   └── Condition Select
-│   ├── Pricing
-│   │   ├── Price Input
-│   │   └── Negotiable Checkbox
-│   └── Submit Button
-└── Preview Section
-```
-
-### Context Providers
-
-#### ShopContext
-```typescript
-interface ShopContextType {
-  // Cart Management
-  cart: CartItem[]
-  addToCart: (item: Item) => void
-  removeFromCart: (itemId: string) => void
-  updateCartQuantity: (itemId: string, quantity: number) => void
-  clearCart: () => void
-  
-  // Wishlist Management
-  wishlist: Item[]
-  addToWishlist: (item: Item) => void
-  removeFromWishlist: (itemId: string) => void
-  
-  // UI State
-  isCartOpen: boolean
-  isWishlistOpen: boolean
-  toggleCart: () => void
-  toggleWishlist: () => void
-}
-```
-
-#### ThemeContext
-```typescript
-interface ThemeContextType {
-  theme: 'light' | 'dark'
-  toggleTheme: () => void
-  setTheme: (theme: 'light' | 'dark') => void
-}
+├── index.js            # Express static server
+├── package.json        # Dependencies
+└── dist/               # Built React app (served statically)
 ```
 
 ## 🔄 Data Flow
 
-### Frontend Data Flow
+### Authentication Flow
 
 ```
-User Interaction
-       ↓
-Component Event Handler
-       ↓
-Context/Action Dispatch
-       ↓
-API Service Call
-       ↓
-HTTP Request (Axios)
-       ↓
-Backend API Endpoint
-       ↓
-Database Query
-       ↓
-Response Processing
-       ↓
-State Update
-       ↓
-Component Re-render
+1. User enters credentials
+   ↓
+2. AuthContext.login()
+   ↓
+3. Firebase Auth SDK (signInWithEmailAndPassword)
+   ↓
+4. Firebase Auth validates
+   ↓
+5. AuthContext receives Firebase User
+   ↓
+6. userService.getUserProfile() fetches Firestore profile
+   ↓
+7. AuthContext updates state
+   ↓
+8. Components re-render with user data
 ```
 
-### State Management Flow
+### Data Creation Flow (Creating Listing)
 
 ```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   User Action   │───►│   Context       │───►│   API Service   │
-│   (Click, Form) │    │   (State Mgmt)  │    │   (HTTP Calls)  │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-                                │                        │
-                                ▼                        ▼
-                       ┌─────────────────┐    ┌─────────────────┐
-                       │   Component     │◄───│   Backend API   │
-                       │   Re-render     │    │   (Express.js)  │
-                       └─────────────────┘    └─────────────────┘
-                                                        │
-                                                        ▼
-                                               ┌─────────────────┐
-                                               │   Database      │
-                                               │   (PostgreSQL)  │
-                                               └─────────────────┘
+1. User fills form (CreateListing.tsx)
+   ↓
+2. Form submission handler
+   ↓
+3. listingsService.createListing()
+   ↓
+4. Firebase Firestore SDK (addDoc)
+   ↓
+5. Firestore Security Rules validate
+   ↓
+6. Document created in Firestore
+   ↓
+7. Service returns created listing
+   ↓
+8. Component navigates to listing page
 ```
 
-### API Data Flow
+### Data Reading Flow (Loading Marketplace)
 
 ```
-Frontend Request
-       ↓
-Express.js Middleware
-├── CORS
-├── Helmet (Security)
-├── Morgan (Logging)
-└── Body Parser
-       ↓
-Route Handler
-       ↓
-Business Logic
-       ↓
-Database Query
-       ↓
-Response Formatting
-       ↓
-JSON Response
-       ↓
-Frontend Processing
+1. Marketplace component mounts
+   ↓
+2. useEffect triggers
+   ↓
+3. listingsService.getListings()
+   ↓
+4. Firebase Firestore SDK (getDocs with query)
+   ↓
+5. Firestore returns documents
+   ↓
+6. Service transforms to Item[] type
+   ↓
+7. Component state updates
+   ↓
+8. Component renders listings
 ```
 
 ## 🛠️ Technology Stack
@@ -283,411 +536,255 @@ Frontend Processing
 | Technology | Version | Purpose |
 |------------|---------|---------|
 | React | 18.2.0 | UI Library |
-| TypeScript | 5.2.2 | Type Safety |
+| TypeScript | 5.9.3 | Type Safety |
 | Vite | 6.4.1 | Build Tool |
 | Tailwind CSS | 3.3.6 | Styling |
 | Framer Motion | 10.16.16 | Animations |
 | React Router DOM | 6.30.1 | Routing |
-| Axios | 1.6.2 | HTTP Client |
+| Firebase SDK | 12.5.0 | Backend Services |
 | React Hot Toast | 2.4.1 | Notifications |
 
-### Backend Technologies
+### Backend Technologies (Firebase)
 
-| Technology | Version | Purpose |
-|------------|---------|---------|
-| Node.js | 16.0.0+ | Runtime |
-| Express.js | 4.18.2 | Web Framework |
-| PostgreSQL | 12+ | Database |
-| CORS | 2.8.5 | Cross-Origin |
-| Helmet | 7.1.0 | Security |
-| Morgan | 1.10.0 | Logging |
+| Service | Purpose |
+|---------|---------|
+| Firebase Authentication | User auth (email/password) |
+| Firestore | NoSQL database |
+| Firebase Storage | File storage (future) |
+| Firebase Hosting | Static hosting (optional) |
 
-### Development Tools
+### Server Technologies (Minimal)
 
-| Tool | Purpose |
-|------|---------|
-| ESLint | Code Linting |
-| Jest | Testing Framework |
-| Testing Library | Component Testing |
-| Nodemon | Development Server |
-| Concurrently | Multi-command Runner |
+| Technology | Purpose |
+|------------|---------|
+| Node.js | Runtime |
+| Express.js | Static file server |
+| Helmet | Security headers |
+| CORS | Cross-origin support |
 
 ## 🎯 Design Decisions
 
-### Frontend Architecture Decisions
+### 1. **Firebase-First Architecture**
 
-#### 1. React with TypeScript
-**Decision**: Use React with TypeScript for type safety and better developer experience.
-**Rationale**: 
-- Type safety catches errors at compile time
-- Better IDE support and autocomplete
-- Easier refactoring and maintenance
-- Improved code documentation
+**Decision**: Use Firebase as complete backend solution.
 
-#### 2. Context API for State Management
-**Decision**: Use React Context API instead of Redux for state management.
 **Rationale**:
-- Simpler setup and less boilerplate
-- Sufficient for current application complexity
-- Built-in React solution
-- Easier to understand for team members
+- Rapid development (no backend code)
+- Built-in authentication and security
+- Real-time capabilities
+- Auto-scaling infrastructure
+- Reduced operational overhead
 
-#### 3. Tailwind CSS for Styling
-**Decision**: Use Tailwind CSS for utility-first styling.
-**Rationale**:
-- Rapid development with utility classes
-- Consistent design system
-- Small bundle size with purging
-- Easy to maintain and customize
+**Tradeoffs**: Vendor lock-in, cost scaling, limited query flexibility
 
-#### 4. Vite as Build Tool
-**Decision**: Use Vite instead of Create React App.
+### 2. **Client-Side State Management**
+
+**Decision**: React Context API for global state.
+
 **Rationale**:
-- Faster development server
+- Simpler than Redux
+- Built into React
+- Sufficient for current complexity
+- Easy to understand
+
+**Tradeoffs**: Can cause unnecessary re-renders, no time-travel debugging
+
+### 3. **TypeScript Throughout**
+
+**Decision**: Full TypeScript adoption.
+
+**Rationale**:
+- Type safety catches errors early
+- Better IDE support
+- Self-documenting code
+- Easier refactoring
+
+**Tradeoffs**: Slightly slower development, learning curve
+
+### 4. **Component-Based Architecture**
+
+**Decision**: React functional components with hooks.
+
+**Rationale**:
+- Modern React patterns
+- Easier to test
 - Better performance
-- Modern build tooling
-- Better TypeScript support
+- Hooks for reusable logic
 
-### Backend Architecture Decisions
+**Tradeoffs**: Learning curve for hooks, potential over-abstraction
 
-#### 1. Express.js Framework
-**Decision**: Use Express.js for the backend API.
-**Rationale**:
-- Lightweight and flexible
-- Large ecosystem and community
-- Easy to learn and implement
-- Good performance
+## 🗄️ Database Design (Firestore)
 
-#### 2. PostgreSQL Database
-**Decision**: Use PostgreSQL as the primary database.
-**Rationale**:
-- ACID compliance for data integrity
-- Strong typing and constraints
-- JSON support for flexible data
-- Excellent performance and scalability
-
-#### 3. RESTful API Design
-**Decision**: Implement RESTful API endpoints.
-**Rationale**:
-- Standard and well-understood pattern
-- Easy to consume by frontend
-- Good caching support
-- Clear separation of concerns
-
-### Security Decisions
-
-#### 1. CORS Configuration
-**Decision**: Implement proper CORS settings.
-**Rationale**:
-- Prevents unauthorized cross-origin requests
-- Configurable for different environments
-- Essential for production security
-
-#### 2. Helmet Middleware
-**Decision**: Use Helmet for security headers.
-**Rationale**:
-- Sets various HTTP headers for security
-- Protects against common vulnerabilities
-- Easy to implement and configure
-
-## 🗄️ Database Design
-
-### Entity Relationship Diagram
+### Collections Structure
 
 ```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│     Users       │    │     Items       │    │   Categories    │
-├─────────────────┤    ├─────────────────┤    ├─────────────────┤
-│ id (PK)         │    │ id (PK)         │    │ id (PK)         │
-│ email           │◄───┤ seller_id (FK)  │    │ name            │
-│ password_hash   │    │ title           │    │ description     │
-│ first_name      │    │ description     │    │ created_at      │
-│ last_name       │    │ price           │    └─────────────────┘
-│ phone           │    │ category_id (FK)│              │
-│ created_at      │    │ condition       │              │
-│ updated_at      │    │ status          │              │
-└─────────────────┘    │ created_at      │              │
-                       │ updated_at      │              │
-                       └─────────────────┘              │
-                                │                       │
-                                │                       │
-                       ┌─────────────────┐              │
-                       │   Item_Images   │              │
-                       ├─────────────────┤              │
-                       │ id (PK)         │              │
-                       │ item_id (FK)    │              │
-                       │ image_url       │              │
-                       │ is_primary      │              │
-                       │ created_at      │              │
-                       └─────────────────┘              │
-                                                        │
-┌─────────────────┐    ┌─────────────────┐              │
-│     Orders      │    │   Order_Items   │              │
-├─────────────────┤    ├─────────────────┤              │
-│ id (PK)         │    │ id (PK)         │              │
-│ buyer_id (FK)   │◄───┤ order_id (FK)   │              │
-│ total_amount    │    │ item_id (FK)    │              │
-│ status          │    │ quantity        │              │
-│ created_at      │    │ price           │              │
-│ updated_at      │    └─────────────────┘              │
-└─────────────────┘                                     │
-                                                        │
-┌─────────────────┐    ┌─────────────────┐              │
-│    Messages     │    │   Conversations │              │
-├─────────────────┤    ├─────────────────┤              │
-│ id (PK)         │    │ id (PK)         │              │
-│ conversation_id │◄───┤ buyer_id (FK)   │              │
-│ sender_id (FK)  │    │ seller_id (FK)  │              │
-│ content         │    │ item_id (FK)    │              │
-│ created_at      │    │ created_at      │              │
-└─────────────────┘    └─────────────────┘              │
-                                                        │
-                       ┌─────────────────┐              │
-                       │   Cart_Items    │              │
-                       ├─────────────────┤              │
-                       │ id (PK)         │              │
-                       │ user_id (FK)    │              │
-                       │ item_id (FK)    │              │
-                       │ quantity        │              │
-                       │ created_at      │              │
-                       └─────────────────┘              │
-                                                        │
-                       ┌─────────────────┐              │
-                       │   Wishlist      │              │
-                       ├─────────────────┤              │
-                       │ id (PK)         │              │
-                       │ user_id (FK)    │              │
-                       │ item_id (FK)    │              │
-                       │ created_at      │              │
-                       └─────────────────┘              │
-                                                        │
-                                                       │
-                                                       ▼
-                                              ┌─────────────────┐
-                                              │   Categories    │
-                                              └─────────────────┘
+Firestore
+├── users/                    # User profiles
+│   └── {userId}/
+│       ├── email: string
+│       ├── displayName: string
+│       ├── userType: enum
+│       ├── school: string
+│       ├── rating: number
+│       └── ...
+├── listings/                 # Product listings
+│   └── {listingId}/
+│       ├── title: string
+│       ├── description: string
+│       ├── price: number
+│       ├── sellerId: string
+│       ├── category: string
+│       ├── isActive: boolean
+│       └── ...
+├── cart/                     # Shopping carts (user subcollections)
+│   └── {userId}/
+│       └── items/
+│           └── {itemId}/
+│               ├── listingId: string
+│               ├── quantity: number
+│               └── ...
+└── favorites/                # Wishlists (user subcollections)
+    └── {userId}/
+        └── items/
+            └── {itemId}/
+                └── listingId: string
 ```
 
-### Database Schema Details
+### Data Relationships
 
-#### Users Table
-```sql
-CREATE TABLE users (
-    id SERIAL PRIMARY KEY,
-    email VARCHAR(255) UNIQUE NOT NULL,
-    password_hash VARCHAR(255) NOT NULL,
-    first_name VARCHAR(100) NOT NULL,
-    last_name VARCHAR(100) NOT NULL,
-    phone VARCHAR(20),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-```
+- **Users ↔ Listings**: One-to-many (user.sellerId → listing.sellerId)
+- **Users ↔ Cart**: One-to-many (user subcollection)
+- **Users ↔ Favorites**: One-to-many (user subcollection)
+- **Listings ↔ Cart**: Many-to-many (via cart items)
 
-#### Items Table
-```sql
-CREATE TABLE items (
-    id SERIAL PRIMARY KEY,
-    seller_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-    title VARCHAR(255) NOT NULL,
-    description TEXT,
-    price DECIMAL(10,2) NOT NULL,
-    category_id INTEGER REFERENCES categories(id),
-    condition VARCHAR(50) NOT NULL,
-    status VARCHAR(20) DEFAULT 'active',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-```
+### Indexes
 
-## 🔌 API Design
-
-### RESTful Endpoints
-
-#### Authentication Endpoints
-```
-POST   /api/auth/register     # User registration
-POST   /api/auth/login        # User login
-POST   /api/auth/logout       # User logout
-POST   /api/auth/refresh      # Refresh token
-```
-
-#### User Endpoints
-```
-GET    /api/users/profile     # Get user profile
-PUT    /api/users/profile     # Update user profile
-GET    /api/users/:id         # Get user by ID
-```
-
-#### Item Endpoints
-```
-GET    /api/items             # Get all items (with pagination)
-GET    /api/items/:id         # Get item by ID
-POST   /api/items             # Create new item
-PUT    /api/items/:id         # Update item
-DELETE /api/items/:id         # Delete item
-GET    /api/items/search      # Search items
-```
-
-#### Category Endpoints
-```
-GET    /api/categories        # Get all categories
-GET    /api/categories/:id    # Get category by ID
-```
-
-#### Cart Endpoints
-```
-GET    /api/cart              # Get user's cart
-POST   /api/cart/items        # Add item to cart
-PUT    /api/cart/items/:id    # Update cart item
-DELETE /api/cart/items/:id    # Remove item from cart
-DELETE /api/cart              # Clear cart
-```
-
-#### Order Endpoints
-```
-GET    /api/orders            # Get user's orders
-POST   /api/orders            # Create new order
-GET    /api/orders/:id        # Get order by ID
-PUT    /api/orders/:id        # Update order status
-```
-
-#### Message Endpoints
-```
-GET    /api/conversations     # Get user's conversations
-POST   /api/conversations     # Create new conversation
-GET    /api/conversations/:id # Get conversation messages
-POST   /api/conversations/:id/messages # Send message
-```
-
-### API Response Format
-
-#### Success Response
-```json
-{
-  "success": true,
-  "data": {
-    // Response data
-  },
-  "message": "Operation completed successfully"
-}
-```
-
-#### Error Response
-```json
-{
-  "success": false,
-  "error": {
-    "code": "VALIDATION_ERROR",
-    "message": "Invalid input data",
-    "details": [
-      {
-        "field": "email",
-        "message": "Email is required"
-      }
-    ]
-  }
-}
-```
+Firestore requires composite indexes for:
+- Listings queries: `sellerId + isActive + createdAt`
+- Search queries: `category + isActive + createdAt`
 
 ## 🔒 Security Architecture
 
-### Authentication & Authorization
+### Authentication Flow
 
-#### JWT Token Strategy
-```
-1. User logs in with credentials
-2. Server validates credentials
-3. Server generates JWT token with user info
-4. Token sent to client and stored securely
-5. Client includes token in subsequent requests
-6. Server validates token on each request
-```
+1. **User Registration/Login**
+   - Firebase Auth handles credentials
+   - JWT tokens managed by Firebase
+   - Tokens stored in browser memory
 
-#### Password Security
-- Passwords hashed using bcrypt
-- Minimum password requirements
-- Password reset functionality
-- Account lockout after failed attempts
+2. **Authorization**
+   - Firestore Security Rules enforce access
+   - Rules check `request.auth.uid`
+   - User can only access their own data
 
-### Data Protection
-
-#### Input Validation
-- Server-side validation for all inputs
-- SQL injection prevention
-- XSS protection
-- File upload restrictions
-
-#### HTTPS Enforcement
-- All communications encrypted
-- Secure cookie settings
-- HSTS headers
-- Certificate validation
-
-### Security Headers
+### Security Rules Example
 
 ```javascript
-// Helmet configuration
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      scriptSrc: ["'self'"],
-      imgSrc: ["'self'", "data:", "https:"],
-    },
-  },
-  hsts: {
-    maxAge: 31536000,
-    includeSubDomains: true,
-    preload: true
+// Firestore Security Rules
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Users: read own profile, write own profile
+    match /users/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Listings: read all active, write own
+    match /listings/{listingId} {
+      allow read: if resource.data.isActive == true;
+      allow create: if request.auth != null && 
+                       request.resource.data.sellerId == request.auth.uid;
+      allow update, delete: if request.auth != null && 
+                               resource.data.sellerId == request.auth.uid;
+    }
+    
+    // Cart: user can only access their own cart
+    match /cart/{userId}/{document=**} {
+      allow read, write: if request.auth != null && 
+                            request.auth.uid == userId;
+    }
   }
-}));
+}
 ```
 
 ## 🚀 Deployment Architecture
 
-### Development Environment
+### Production Architecture
+
 ```
-Developer Machine
-├── Frontend (Vite Dev Server) - Port 5173
-├── Backend (Express.js) - Port 3001
-└── Database (PostgreSQL) - Port 5432
+┌─────────────────────────────────────────┐
+│         Render Platform                 │
+│                                         │
+│  ┌──────────────────────────────────┐  │
+│  │   Express Static Server           │  │
+│  │   - Serves React build (dist/)    │  │
+│  │   - Health check endpoint         │  │
+│  │   - SPA routing fallback          │  │
+│  └──────────────────────────────────┘  │
+│                                         │
+└─────────────────────────────────────────┘
+              │
+              │ HTTPS
+              │
+┌─────────────▼─────────────────────────────┐
+│         Firebase Services                │
+│  ┌──────────┐  ┌──────────┐  ┌────────┐ │
+│  │   Auth   │  │ Firestore│  │Storage │ │
+│  └──────────┘  └──────────┘  └────────┘ │
+└──────────────────────────────────────────┘
 ```
 
-### Production Environment
-```
-Load Balancer
-├── Frontend (Static Files)
-│   └── CDN (Static Assets)
-├── Backend (Express.js)
-│   ├── API Server 1
-│   └── API Server 2
-└── Database
-    ├── Primary (PostgreSQL)
-    └── Replica (PostgreSQL)
-```
+### Deployment Flow
 
-### Deployment Strategy
+1. **Build**: `npm run build` → Creates `dist/` folder
+2. **Deploy**: Render serves `dist/` via Express
+3. **Runtime**: Browser loads React app
+4. **Data Access**: App connects directly to Firebase
 
-#### Frontend Deployment
-1. Build production bundle (`npm run build`)
-2. Deploy static files to CDN
-3. Configure caching headers
-4. Set up SSL certificate
+### Environment Variables
 
-#### Backend Deployment
-1. Build and test application
-2. Deploy to server with PM2
-3. Configure reverse proxy (Nginx)
-4. Set up monitoring and logging
+**Client-side (VITE_*)**:
+- `VITE_FIREBASE_API_KEY`
+- `VITE_FIREBASE_AUTH_DOMAIN`
+- `VITE_FIREBASE_PROJECT_ID`
+- `VITE_FIREBASE_STORAGE_BUCKET`
+- `VITE_FIREBASE_MESSAGING_SENDER_ID`
+- `VITE_FIREBASE_APP_ID`
 
-#### Database Deployment
-1. Set up PostgreSQL cluster
-2. Configure backups
-3. Set up monitoring
-4. Configure connection pooling
+**Server-side**:
+- `PORT` (Render sets automatically)
+- `NODE_ENV=production`
 
 ---
 
-**Note**: This architecture documentation should be updated as the system evolves and new components are added. Regular reviews ensure the documentation remains accurate and useful for the development team.
+## 📊 Architecture Summary
+
+### Key Characteristics
+
+1. **Client-Side Architecture**: All logic runs in browser
+2. **Firebase BaaS**: Complete backend via Firebase
+3. **MVC Pattern**: React components (View), Context/Services (Controller), Firestore (Model)
+4. **Type-Safe**: TypeScript throughout
+5. **Component-Based**: React functional components
+6. **State Management**: Context API for global state
+
+### Strengths
+
+- ✅ Rapid development
+- ✅ Auto-scaling infrastructure
+- ✅ Built-in security
+- ✅ Real-time capabilities
+- ✅ Simple deployment
+
+### Limitations
+
+- ⚠️ Vendor lock-in (Firebase)
+- ⚠️ Cost scales with usage
+- ⚠️ Limited query flexibility (Firestore)
+- ⚠️ Client-side business logic (security concerns)
+
+---
+
+**Last Updated**: After Firebase-only migration (PostgreSQL removed)
+**Architecture Version**: 2.0 (Firebase BaaS)

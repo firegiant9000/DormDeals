@@ -3,7 +3,6 @@ import { UserType } from './user';
 
 export interface User {
   id: string;
-  dbId?: number;
   email: string;
   name: string;
   displayName?: string; // Alias for name, used with Firebase

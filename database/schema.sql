@@ -1,5 +1,9 @@
--- DormDeal Database Schema
+-- DormDeal Database Schema (LEGACY - NO LONGER USED)
 -- PostgreSQL Database Schema for DormDeal Marketplace
+-- 
+-- NOTE: This schema is kept for historical reference only.
+-- The application now uses Firebase Firestore for all data storage.
+-- This file is not used in the current implementation.
 
 -- Enable UUID extension for generating unique IDs
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
