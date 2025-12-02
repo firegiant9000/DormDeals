@@ -235,3 +235,45 @@ export async function userProfileExists(userId: string): Promise<boolean> {
   }
 }
 
+/**
+ * Get user profile with computed stats from Firestore
+ * @param userId - Firebase Auth UID
+ * @returns UserProfile with stats (totalListings, totalSales, totalFavorites) or null if not found
+ */
+export async function getUserProfileWithStats(userId: string): Promise<(UserProfile & {
+  totalListings: number;
+  totalSales: number;
+  totalFavorites: number;
+}) | null> {
+  try {
+    const profile = await getUserProfile(userId);
+    if (!profile) {
+      return null;
+    }
+
+    // Import services dynamically to avoid circular dependencies
+    const { getListings } = await import('./listingsService');
+    const { getFavorites } = await import('./favoritesService');
+
+    // Compute stats from Firestore
+    const [userListings, userFavorites] = await Promise.all([
+      getListings({ sellerId: userId }).catch(() => []),
+      getFavorites(userId).catch(() => [])
+    ]);
+
+    const totalListings = userListings.length;
+    const totalSales = userListings.filter(listing => listing.status === 'Sold' || listing.status === 'SOLD').length;
+    const totalFavorites = userFavorites.length;
+
+    return {
+      ...profile,
+      totalListings,
+      totalSales,
+      totalFavorites
+    };
+  } catch (error) {
+    console.error('Error fetching user profile with stats:', error);
+    throw new Error('Failed to fetch user profile with stats');
+  }
+}
+

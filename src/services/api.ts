@@ -112,35 +112,9 @@ export const itemApi = {
   feature: (id: string) => apiPatch(`${endpoints.itemById(id)}/feature`, {}),
 }
 
-// Specific API functions for users
-export const userApi = {
-  getProfile: () => apiGet(endpoints.userProfile),
-  updateProfile: (data: any) => apiPut(endpoints.userProfile, data),
-  getById: (id: string) => apiGet(endpoints.userById(id)),
-  getProfileById: (id: string) => apiGet(`/users/${id}/profile`),
-  getListings: (id: string) => apiGet(`/users/${id}/listings`),
-  getFavorites: (id: string) => apiGet(`/users/${id}/favorites`),
-  getByEmail: (email: string) => apiGet(`/users/email/${encodeURIComponent(email)}`),
-  updateProfileById: (id: string, data: any) => apiPut(`/users/${id}/profile`, data),
-  // Cart operations
-  getCart: (id: string) => apiGet(`/users/${id}/cart`),
-  addToCart: (id: string, listingId: string, quantity?: number) => apiPost(`/users/${id}/cart`, { listing_id: listingId, quantity: quantity || 1 }),
-  updateCartItem: (id: string, listingId: string, quantity: number) => apiPut(`/users/${id}/cart/${listingId}`, { quantity }),
-  removeFromCart: (id: string, listingId: string) => apiDelete(`/users/${id}/cart/${listingId}`),
-  // Wishlist/Favorites operations
-  addToFavorites: (id: string, listingId: string) => apiPost(`/users/${id}/favorites`, { listing_id: listingId }),
-  removeFromFavorites: (id: string, listingId: string) => apiDelete(`/users/${id}/favorites/${listingId}`),
-  syncUser: (data: {
-    firebaseUid: string
-    email: string
-    displayName?: string
-    firstName?: string
-    lastName?: string
-    phone?: string
-    university?: string
-    profileImageUrl?: string
-  }) => apiPost('/users/sync', data),
-}
+// Note: All user operations now use Firestore directly via userService
+// This API layer is kept for backward compatibility but userApi methods have been removed
+// Use src/services/userService.ts for all user operations
 
 // Specific API functions for categories
 export const categoryApi = {
