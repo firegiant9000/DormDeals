@@ -11,6 +11,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { UserType, UserProfile, CreateUserProfileData, UpdateUserProfileData } from '../types/user';
+import { ItemStatus, ListingStatus } from '../types';
 
 const USERS_COLLECTION = 'users';
 
@@ -262,7 +263,10 @@ export async function getUserProfileWithStats(userId: string): Promise<(UserProf
     ]);
 
     const totalListings = userListings.length;
-    const totalSales = userListings.filter(listing => listing.status === 'Sold' || listing.status === 'SOLD').length;
+    // Check for sold status using enum values
+    const totalSales = userListings.filter(listing => 
+      listing.status === ItemStatus.SOLD || listing.status === ListingStatus.SOLD
+    ).length;
     const totalFavorites = userFavorites.length;
 
     return {

@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext'
 import { useAccessControl } from '../hooks/useAccessControl'
 import ProtectedFeature from '../components/ProtectedFeature'
 import { UserType } from '../types/user'
-import { getUserProfile, getUserProfileByEmail, getUserProfileWithStats, updateUserProfile } from '../services/userService'
+import { getUserProfileWithStats, updateUserProfile } from '../services/userService'
 import { useNavigate, useLocation } from 'react-router-dom'
 import toast from 'react-hot-toast'
 
@@ -98,10 +98,10 @@ const Profile = () => {
             totalSales: profileWithStats.totalSales || 0,
             totalListings: profileWithStats.totalListings || 0,
             totalFavorites: profileWithStats.totalFavorites || 0,
-            createdAt: profileWithStats.createdAt,
-            created_at: profileWithStats.createdAt?.toISOString() || new Date().toISOString(),
-            joinedDate: profileWithStats.createdAt?.toISOString() || new Date().toISOString(),
-            joinDate: profileWithStats.createdAt?.toISOString() || new Date().toISOString(),
+            createdAt: profileWithStats.createdAt ? (profileWithStats.createdAt instanceof Date ? profileWithStats.createdAt : new Date(profileWithStats.createdAt)) : undefined,
+            created_at: profileWithStats.createdAt ? (profileWithStats.createdAt instanceof Date ? profileWithStats.createdAt.toISOString() : new Date(profileWithStats.createdAt).toISOString()) : new Date().toISOString(),
+            joinedDate: profileWithStats.createdAt ? (profileWithStats.createdAt instanceof Date ? profileWithStats.createdAt.toISOString() : new Date(profileWithStats.createdAt).toISOString()) : new Date().toISOString(),
+            joinDate: profileWithStats.createdAt ? (profileWithStats.createdAt instanceof Date ? profileWithStats.createdAt.toISOString() : new Date(profileWithStats.createdAt).toISOString()) : new Date().toISOString(),
             profileImage: profileWithStats.profileImage
           })
         } else {
@@ -442,7 +442,7 @@ const Profile = () => {
                       <span className="text-gray-500">Member since:</span>
                       <span className="ml-2 font-medium">
                         {displayUserData.joinedDate || (displayUserData as UserProfile).created_at
-                          ? new Date(displayUserData.joinedDate || (displayUserData as UserProfile).created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long' })
+                          ? new Date(displayUserData.joinedDate || (displayUserData as UserProfile).created_at || new Date()).toLocaleDateString('en-US', { year: 'numeric', month: 'long' })
                           : 'Recently'}
                       </span>
                     </div>
@@ -856,10 +856,10 @@ const Profile = () => {
                           totalSales: updatedProfileWithStats.totalSales || 0,
                           totalListings: updatedProfileWithStats.totalListings || 0,
                           totalFavorites: updatedProfileWithStats.totalFavorites || 0,
-                          createdAt: updatedProfileWithStats.createdAt,
-                          created_at: updatedProfileWithStats.createdAt?.toISOString() || new Date().toISOString(),
-                          joinedDate: updatedProfileWithStats.createdAt?.toISOString() || new Date().toISOString(),
-                          joinDate: updatedProfileWithStats.createdAt?.toISOString() || new Date().toISOString(),
+                          createdAt: updatedProfileWithStats.createdAt ? (updatedProfileWithStats.createdAt instanceof Date ? updatedProfileWithStats.createdAt : new Date(updatedProfileWithStats.createdAt)) : undefined,
+                          created_at: updatedProfileWithStats.createdAt ? (updatedProfileWithStats.createdAt instanceof Date ? updatedProfileWithStats.createdAt.toISOString() : new Date(updatedProfileWithStats.createdAt).toISOString()) : new Date().toISOString(),
+                          joinedDate: updatedProfileWithStats.createdAt ? (updatedProfileWithStats.createdAt instanceof Date ? updatedProfileWithStats.createdAt.toISOString() : new Date(updatedProfileWithStats.createdAt).toISOString()) : new Date().toISOString(),
+                          joinDate: updatedProfileWithStats.createdAt ? (updatedProfileWithStats.createdAt instanceof Date ? updatedProfileWithStats.createdAt.toISOString() : new Date(updatedProfileWithStats.createdAt).toISOString()) : new Date().toISOString(),
                           profileImage: updatedProfileWithStats.profileImage
                         })
                       }
