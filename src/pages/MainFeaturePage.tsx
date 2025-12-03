@@ -136,7 +136,7 @@ const MainFeaturePage: React.FC = () => {
         sortBy: formData.sortBy as SortOption
       };
 
-      // Local filtering using mockItems to avoid network calls
+      // Local filtering using listings to avoid network calls
       let items = [...mockItems] as Item[];
 
       const normalize = (v?: string) => (v ?? '').toString().toLowerCase();
@@ -215,20 +215,28 @@ const MainFeaturePage: React.FC = () => {
 
   // Load featured items on component mount
   useEffect(() => {
+    // Show listings immediately as fallback
+    setFeaturedItems(mockItems.slice(0, 6));
+    
     const fetchFeaturedItems = async () => {
       try {
+        // Add timeout to prevent hanging
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Request timeout')), 5000)
+        );
+        
         const { getListings } = await import('../services/listingsService');
-        const featured = await getListings({ featured: true, active: true, limitCount: 6 });
+        const fetchPromise = getListings({ featured: true, active: true, limitCount: 6 });
+        
+        const featured = await Promise.race([fetchPromise, timeoutPromise]) as Item[];
+        
         if (Array.isArray(featured) && featured.length > 0) {
           setFeaturedItems(featured);
-        } else {
-          // Fallback to mock data if no featured items
-          setFeaturedItems(mockItems.slice(0, 6));
         }
+        // If no featured items, keep the fallback listings already shown
       } catch (error) {
         console.error('Error fetching featured items:', error);
-        // Fallback to mock data on error
-        setFeaturedItems(mockItems.slice(0, 6));
+        // Keep the fallback listings already shown
       }
     };
 

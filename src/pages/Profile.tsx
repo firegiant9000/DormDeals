@@ -207,7 +207,7 @@ const Profile = () => {
         }
       } catch (error) {
         console.error('Error fetching listings from database:', error)
-        // Clear listings on error - don't show any mock data
+        // Clear listings on error
         setListings([])
         toast.error('Failed to load listings')
       } finally {
@@ -253,7 +253,7 @@ const Profile = () => {
         }
       } catch (error) {
         console.error('Error fetching favorites from database:', error)
-        // Clear favorites on error - don't show any mock data
+        // Clear favorites on error
         setFavorites([])
         toast.error('Failed to load favorites')
       } finally {
@@ -298,7 +298,7 @@ const Profile = () => {
         }
       } catch (error) {
         console.error('Error fetching cart from database:', error)
-        // Clear cart on error - don't show any mock data
+        // Clear cart on error
         setCartItems([])
         toast.error('Failed to load cart')
       } finally {

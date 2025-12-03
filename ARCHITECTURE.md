@@ -26,10 +26,10 @@ DormDeals is a **single-page application (SPA)** built with React and TypeScript
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    Client Browser (SPA)                      │
+│                    Client Browser (SPA)                     │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐    │
 │  │   React UI   │  │   Context    │  │   Services   │    │
-│  │  Components  │◄─►│  Providers   │◄─►│  (Firebase) │    │
+│  │  Components  │◄─►│  Providers   │◄─►│  (Firebase)│    │
 │  └──────────────┘  └──────────────┘  └──────────────┘    │
 │         │                  │                  │            │
 │         └──────────────────┴──────────────────┘            │
