@@ -14,13 +14,20 @@ export type CreateListingErrorCode =
   | 'storage/unavailable'
   | 'unknown';
 
-export interface CreateListingResult {
-  success: boolean;
-  listingId?: string;
-  errorCode?: CreateListingErrorCode;
-  failedStep?: string;
+export interface CreateListingResultOk {
+  ok: true;
+  id: string;
+  imageUrls: string[];
+}
+
+export interface CreateListingResultErr {
+  ok: false;
+  code: CreateListingErrorCode;
+  step: string;
   message?: string;
 }
+
+export type CreateListingResult = CreateListingResultOk | CreateListingResultErr;
 
 export async function createListing(data: {
   title: string;
@@ -33,10 +40,10 @@ export async function createListing(data: {
 }): Promise<CreateListingResult> {
   const user = auth.currentUser;
   if (!user) {
-    const result = {
-      success: false,
-      errorCode: 'unauthenticated' as CreateListingErrorCode,
-      failedStep: 'auth-check',
+    const result: CreateListingResultErr = {
+      ok: false,
+      code: 'unauthenticated',
+      step: 'auth-check',
       message: 'User not authenticated',
     };
     devLog('createListing failed', result);
@@ -46,10 +53,10 @@ export async function createListing(data: {
   // Step 1: Validation
   devLog('Step 1: Validation');
   if (!data.title?.trim() || !data.description?.trim() || !data.price || !data.category || !data.condition) {
-    const result = {
-      success: false,
-      errorCode: 'validation-failed' as CreateListingErrorCode,
-      failedStep: 'validation',
+    const result: CreateListingResultErr = {
+      ok: false,
+      code: 'validation-failed',
+      step: 'validation',
       message: 'Missing required fields',
     };
     devLog('createListing failed', result);
@@ -70,10 +77,10 @@ export async function createListing(data: {
         imageUrls.push(url);
         devLog(`Image ${i + 1} uploaded`, { url });
       } catch (error: any) {
-        const result = {
-          success: false,
-          errorCode: 'image-upload-failed' as CreateListingErrorCode,
-          failedStep: `image-upload-${i}`,
+        const result: CreateListingResultErr = {
+          ok: false,
+          code: 'image-upload-failed',
+          step: `image-upload-${i}`,
           message: `Failed to upload image ${i + 1}: ${error?.message}`,
         };
         devLog('createListing failed', result);
@@ -83,46 +90,59 @@ export async function createListing(data: {
 
     // Step 3: Create Firestore document
     devLog('Step 3: Create Firestore document');
-    const listingData = {
-      title: data.title.trim(),
-      description: data.description.trim(),
-      price: parseFloat(data.price.toString()),
-      category: data.category,
-      condition: data.condition,
-      location: data.location?.trim() || '',
-      imageUrls,
-      ownerId: user.uid,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-      isHidden: false,
-      isFeatured: false,
-      views: 0,
-      likes: 0,
-      tags: [],
-    };
+    try {
+      const listingData = {
+        title: data.title.trim(),
+        description: data.description.trim(),
+        price: parseFloat(data.price.toString()),
+        category: data.category,
+        condition: data.condition,
+        location: data.location?.trim() || '',
+        imageUrls,
+        ownerId: user.uid,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        isHidden: false,
+        isFeatured: false,
+        views: 0,
+        likes: 0,
+        tags: [],
+      };
 
-    const docRef = await addDoc(collection(db, 'listings'), listingData);
-    devLog('createListing success', { listingId: docRef.id });
+      const docRef = await addDoc(collection(db, 'listings'), listingData);
+      devLog('createListing success', { listingId: docRef.id });
 
-    return {
-      success: true,
-      listingId: docRef.id,
-    };
+      const result: CreateListingResultOk = {
+        ok: true,
+        id: docRef.id,
+        imageUrls,
+      };
+      return result;
+    } catch (error: any) {
+      const code = error?.code || 'unknown';
+      const errorCode: CreateListingErrorCode = 
+        code.includes('storage') ? 'storage/unavailable' :
+        code.includes('firestore') || code.includes('permission') ? 'firestore/write-failed' :
+        'unknown';
+      
+      const result: CreateListingResultErr = {
+        ok: false,
+        code: errorCode,
+        step: 'firestore-write',
+        message: error?.message || 'Failed to create listing',
+      };
+      devLog('createListing failed', result);
+      return result;
+    }
   } catch (error: any) {
-    const code = error?.code || 'unknown';
-    const errorCode: CreateListingErrorCode = 
-      code.includes('storage') ? 'storage/unavailable' :
-      code.includes('firestore') ? 'firestore/write-failed' :
-      'unknown';
-    
-    const result = {
-      success: false,
-      errorCode,
-      failedStep: 'firestore-write',
-      message: error?.message || 'Failed to create listing',
+    // Catch-all for any unexpected errors
+    const result: CreateListingResultErr = {
+      ok: false,
+      code: 'unknown',
+      step: 'unknown',
+      message: error?.message || 'An unexpected error occurred',
     };
-    devLog('createListing failed', result);
+    devLog('createListing failed (catch-all)', result);
     return result;
   }
 }
-
