@@ -129,6 +129,12 @@ export async function createListing(input: CreateListingInput): Promise<CreateLi
     const WHOLE_OP_MS = 30000
 
     const op = (async (): Promise<CreateListingResult> => {
+      // Fast-fail for missing storage bucket
+      if (!import.meta.env.VITE_FIREBASE_STORAGE_BUCKET) {
+        if (import.meta.env.DEV) console.error('Missing VITE_FIREBASE_STORAGE_BUCKET')
+        return { ok: false, code: 'invalid-argument', step: 'upload:start', message: 'No storage bucket configured' }
+      }
+
       // Upload images with per-file timeouts & metadata
       devLog('upload:start')
       const urls: string[] = []
@@ -143,7 +149,10 @@ export async function createListing(input: CreateListingInput): Promise<CreateLi
 
         try {
           const sref = ref(storage, path)
-          const metadata: UploadMetadata = { contentType: file.type || 'application/octet-stream' }
+          const metadata: UploadMetadata = {
+            contentType: file.type || 'image/jpeg',
+            cacheControl: 'public,max-age=3600'
+          }
 
           // 10s timeout per file (tune if needed)
           const snap = await withTimeout(uploadBytes(sref, file, metadata), 10000, `uploadBytes(${i})`)
