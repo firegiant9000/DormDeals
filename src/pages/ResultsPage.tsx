@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react'
+import React, { useMemo, useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { LayoutGrid, List, Search } from 'lucide-react'
@@ -6,16 +6,23 @@ import {
   resultsGrid, 
   resultCard,
   getAnimationVariants
-} from '../utils/animations'
+} from '@/utils/animations'
+
+const getMillis = (d: any): number => {
+  if (!d) return 0
+  if (typeof d?.toMillis === 'function') return d.toMillis()
+  if (d instanceof Date) return d.getTime()
+  return 0
+}
 import { 
   Item, 
   SearchFilters, 
   SortOption 
-} from '../types'
-import { formatCurrency, formatRelativeTime } from '../utils/helpers'
+} from '@/types'
+import { formatCurrency, formatRelativeTime } from '@/utils/helpers'
 import { useShop } from '@/context/ShopContext'
-import { mockItems } from '../data/mockData'
-import SearchFiltersBar from '../components/SearchFiltersBar'
+import { fetchListings, subscribeListings } from '@/data/listingsProvider'
+import SearchFiltersBar from '@/components/SearchFiltersBar'
 
 type RouterState = {
   // When navigating from MainFeaturePage we pass these
@@ -41,10 +48,29 @@ const ResultsPage: React.FC = () => {
   const [maxPrice, setMaxPrice] = useState<string>(state?.filters?.priceMax?.toString() || '')
   const [query, setQuery] = useState<string>(state?.filters?.query || state?.searchQuery || '')
   const [error, setError] = useState<string | null>(null)
+  const [baseItems, setBaseItems] = useState<Item[]>([])
 
-  // Compute the base item set: always use the full local dataset so filters can broaden results
-  const baseItems: Item[] = useMemo(() => {
-    return mockItems as Item[]
+  // Fetch listings from Firestore (or mocks)
+  useEffect(() => {
+    fetchListings({ limitN: 100 }).then(setBaseItems).catch((err) => {
+      if (import.meta.env.DEV) {
+        console.error('[ResultsPage] Failed to fetch listings', err);
+      }
+      setError('Failed to load listings');
+    });
+  }, []);
+
+  // Optional: Subscribe to real-time updates
+  useEffect(() => {
+    const unsubscribe = subscribeListings(
+      (items) => setBaseItems(items),
+      (err) => {
+        if (import.meta.env.DEV) {
+          console.error('[ResultsPage] Subscription error', err);
+        }
+      }
+    );
+    return unsubscribe;
   }, [])
 
   // Apply client-side filtering and sorting
@@ -102,10 +128,10 @@ const ResultsPage: React.FC = () => {
           items.sort((a, b) => b.price - a.price)
           break
         case SortOption.NEWEST:
-          items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+          items.sort((a, b) => getMillis(b.createdAt) - getMillis(a.createdAt))
           break
         case SortOption.OLDEST:
-          items.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+          items.sort((a, b) => getMillis(a.createdAt) - getMillis(b.createdAt))
           break
         case SortOption.MOST_VIEWED:
           items.sort((a, b) => (b.views || 0) - (a.views || 0))
