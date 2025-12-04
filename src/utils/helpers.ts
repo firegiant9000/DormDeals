@@ -7,17 +7,18 @@ export const formatCurrency = (amount: number): string => {
 };
 
 // Format relative time helper
-export const formatRelativeTime = (dateString: string): string => {
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffTime = Math.abs(now.getTime() - date.getTime());
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  
-  if (diffDays === 1) return '1 day ago';
-  if (diffDays < 7) return `${diffDays} days ago`;
-  if (diffDays < 30) return `${Math.ceil(diffDays / 7)} weeks ago`;
-  return `${Math.ceil(diffDays / 30)} months ago`;
-};
+export function formatRelativeTime(input: Date | number | string): string {
+  const d = typeof input === 'string' ? new Date(input) : new Date(input)
+  const diffMs = Date.now() - d.getTime()
+  const sec = Math.floor(diffMs / 1000)
+  const min = Math.floor(sec / 60)
+  const hr = Math.floor(min / 60)
+  const day = Math.floor(hr / 24)
+  if (day > 0) return `${day}d ago`
+  if (hr > 0) return `${hr}h ago`
+  if (min > 0) return `${min}m ago`
+  return `${sec}s ago`
+}
 
 // Format date helper
 export const formatDate = (date: Date | string): string => {

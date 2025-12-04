@@ -23,7 +23,6 @@ export function useCartWishlist() {
 
     let cartUnsub: (() => void) | null = null;
     let wishlistUnsub: (() => void) | null = null;
-    let hasError = false;
 
     try {
       cartUnsub = onSnapshot(
@@ -37,7 +36,6 @@ export function useCartWishlist() {
           }
         },
         (error) => {
-          hasError = true;
           setListenerStatus('error');
           if (import.meta.env.DEV) {
             console.error('[COMMERCE] Cart listener error', error);
@@ -56,7 +54,6 @@ export function useCartWishlist() {
           }
         },
         (error) => {
-          hasError = true;
           setListenerStatus('error');
           if (import.meta.env.DEV) {
             console.error('[COMMERCE] Wishlist listener error', error);
@@ -64,7 +61,6 @@ export function useCartWishlist() {
         }
       );
     } catch (error) {
-      hasError = true;
       setListenerStatus('error');
       if (import.meta.env.DEV) {
         console.error('[COMMERCE] Listener setup error', error);

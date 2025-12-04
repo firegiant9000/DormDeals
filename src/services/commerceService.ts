@@ -1,18 +1,11 @@
 import { auth, db } from '@/firebase';
 import {
-  doc, getDoc, runTransaction, serverTimestamp, setDoc
+  doc, runTransaction, serverTimestamp
 } from 'firebase/firestore';
-import type { CommerceOp, CommerceResult, ListingID, CartDoc, WishlistDoc } from '@/types/commerce';
+import type { CommerceResult, CommerceErrorCode, ListingID, CartDoc, WishlistDoc } from '@/types/commerce';
 
 function devLog(msg: string, extra?: unknown) {
   if (import.meta.env.DEV) console.log('[COMMERCE]', msg, extra ?? '');
-}
-
-async function ensureDoc(path: string, seed: object) {
-  const ref = doc(db, path);
-  const s = await getDoc(ref);
-  if (!s.exists()) await setDoc(ref, { ...seed, updatedAt: serverTimestamp() });
-  return ref;
 }
 
 export async function addToCart(listingId: ListingID): Promise<CommerceResult> {
@@ -34,7 +27,7 @@ export async function addToCart(listingId: ListingID): Promise<CommerceResult> {
     devLog('cart:add ok', { listingId });
     return { ok: true, op: 'cart:add' };
   } catch (e: any) {
-    let code: CommerceResult['code'] = 'unknown';
+    let code = 'unknown' as CommerceErrorCode;
     if (e?.code === 'already-exists') code = 'already-exists';
     else if (e?.code === 'permission-denied' || e?.code?.includes('permission')) code = 'permission-denied';
     else if (e?.code === 'unavailable' || e?.code?.includes('unavailable')) code = 'firestore/unavailable';
@@ -63,7 +56,7 @@ export async function removeFromCart(listingId: ListingID): Promise<CommerceResu
     devLog('cart:remove ok', { listingId });
     return { ok: true, op: 'cart:remove' };
   } catch (e: any) {
-    let code: CommerceResult['code'] = 'unknown';
+    let code = 'unknown' as CommerceErrorCode;
     if (e?.code === 'not-found') code = 'not-found';
     else if (e?.code === 'permission-denied' || e?.code?.includes('permission')) code = 'permission-denied';
     else if (e?.code === 'unavailable' || e?.code?.includes('unavailable')) code = 'firestore/unavailable';
@@ -91,7 +84,7 @@ export async function addToWishlist(listingId: ListingID): Promise<CommerceResul
     devLog('wishlist:add ok', { listingId });
     return { ok: true, op: 'wishlist:add' };
   } catch (e: any) {
-    let code: CommerceResult['code'] = 'unknown';
+    let code = 'unknown' as CommerceErrorCode;
     if (e?.code === 'already-exists') code = 'already-exists';
     else if (e?.code === 'permission-denied' || e?.code?.includes('permission')) code = 'permission-denied';
     else if (e?.code === 'unavailable' || e?.code?.includes('unavailable')) code = 'firestore/unavailable';
@@ -120,7 +113,7 @@ export async function removeFromWishlist(listingId: ListingID): Promise<Commerce
     devLog('wishlist:remove ok', { listingId });
     return { ok: true, op: 'wishlist:remove' };
   } catch (e: any) {
-    let code: CommerceResult['code'] = 'unknown';
+    let code = 'unknown' as CommerceErrorCode;
     if (e?.code === 'not-found') code = 'not-found';
     else if (e?.code === 'permission-denied' || e?.code?.includes('permission')) code = 'permission-denied';
     else if (e?.code === 'unavailable' || e?.code?.includes('unavailable')) code = 'firestore/unavailable';

@@ -19,17 +19,19 @@ export interface CommerceResultOk {
   op: CommerceOp;
 }
 
+export type CommerceErrorCode =
+  | 'unauthenticated'
+  | 'not-found'
+  | 'permission-denied'
+  | 'already-exists'
+  | 'invalid-argument'
+  | 'firestore/unavailable'
+  | 'unknown';
+
 export interface CommerceResultErr {
   ok: false;
   op: CommerceOp;
-  code:
-    | 'unauthenticated'
-    | 'not-found'
-    | 'permission-denied'
-    | 'already-exists'
-    | 'invalid-argument'
-    | 'firestore/unavailable'
-    | 'unknown';
+  code: CommerceErrorCode;
   message?: string;
 }
 

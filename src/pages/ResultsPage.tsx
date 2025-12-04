@@ -6,16 +6,23 @@ import {
   resultsGrid, 
   resultCard,
   getAnimationVariants
-} from '../utils/animations'
+} from '@/utils/animations'
+
+const getMillis = (d: any): number => {
+  if (!d) return 0
+  if (typeof d?.toMillis === 'function') return d.toMillis()
+  if (d instanceof Date) return d.getTime()
+  return 0
+}
 import { 
   Item, 
   SearchFilters, 
   SortOption 
-} from '../types'
-import { formatCurrency, formatRelativeTime } from '../utils/helpers'
+} from '@/types'
+import { formatCurrency, formatRelativeTime } from '@/utils/helpers'
 import { useShop } from '@/context/ShopContext'
 import { fetchListings, subscribeListings } from '@/data/listingsProvider'
-import SearchFiltersBar from '../components/SearchFiltersBar'
+import SearchFiltersBar from '@/components/SearchFiltersBar'
 
 type RouterState = {
   // When navigating from MainFeaturePage we pass these
@@ -121,10 +128,10 @@ const ResultsPage: React.FC = () => {
           items.sort((a, b) => b.price - a.price)
           break
         case SortOption.NEWEST:
-          items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+          items.sort((a, b) => getMillis(b.createdAt) - getMillis(a.createdAt))
           break
         case SortOption.OLDEST:
-          items.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+          items.sort((a, b) => getMillis(a.createdAt) - getMillis(b.createdAt))
           break
         case SortOption.MOST_VIEWED:
           items.sort((a, b) => (b.views || 0) - (a.views || 0))
