@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react'
+import React, { useMemo, useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { LayoutGrid, List, Search } from 'lucide-react'
@@ -14,7 +14,7 @@ import {
 } from '../types'
 import { formatCurrency, formatRelativeTime } from '../utils/helpers'
 import { useShop } from '@/context/ShopContext'
-import { mockItems } from '../data/mockData'
+import { fetchListings, subscribeListings } from '@/data/listingsProvider'
 import SearchFiltersBar from '../components/SearchFiltersBar'
 
 type RouterState = {
@@ -41,10 +41,29 @@ const ResultsPage: React.FC = () => {
   const [maxPrice, setMaxPrice] = useState<string>(state?.filters?.priceMax?.toString() || '')
   const [query, setQuery] = useState<string>(state?.filters?.query || state?.searchQuery || '')
   const [error, setError] = useState<string | null>(null)
+  const [baseItems, setBaseItems] = useState<Item[]>([])
 
-  // Compute the base item set: always use the full local dataset so filters can broaden results
-  const baseItems: Item[] = useMemo(() => {
-    return mockItems as Item[]
+  // Fetch listings from Firestore (or mocks)
+  useEffect(() => {
+    fetchListings({ limitN: 100 }).then(setBaseItems).catch((err) => {
+      if (import.meta.env.DEV) {
+        console.error('[ResultsPage] Failed to fetch listings', err);
+      }
+      setError('Failed to load listings');
+    });
+  }, []);
+
+  // Optional: Subscribe to real-time updates
+  useEffect(() => {
+    const unsubscribe = subscribeListings(
+      (items) => setBaseItems(items),
+      (err) => {
+        if (import.meta.env.DEV) {
+          console.error('[ResultsPage] Subscription error', err);
+        }
+      }
+    );
+    return unsubscribe;
   }, [])
 
   // Apply client-side filtering and sorting

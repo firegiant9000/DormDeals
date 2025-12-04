@@ -6,6 +6,7 @@ import { ShopDrawers } from '@/context/ShopContext'
 import LoginPopupWrapper from '@/components/LoginPopupWrapper'
 import PageTransition from '@/components/PageTransition'
 import ProtectedRoute from '@/components/ProtectedRoute'
+import DebugDrawer from '@/components/DebugDrawer'
 
 const MainFeaturePage = lazy(() => import('@/pages/MainFeaturePage'))
 const Marketplace = lazy(() => import('@/pages/Marketplace'))
@@ -24,7 +25,7 @@ const PremiumPage = lazy(() => import('@/pages/PremiumPage'))
 const NotFoundPage = lazy(() => import('@/pages/NotFoundPage'))
 
 function App() {
-  const location = useLocation();
+  const location = useLocation()
   const RouteFallback = (
     <div className="min-h-[50vh] flex items-center justify-center text-muted">
       Loading...
@@ -42,100 +43,149 @@ function App() {
         <Suspense fallback={RouteFallback}>
           <AnimatePresence mode="wait">
             <Routes location={location} key={location.pathname}>
-            <Route path="/" element={
-              <PageTransition>
-                <MainFeaturePage />
-              </PageTransition>
-            } />
-            <Route path="/marketplace" element={
-              <PageTransition>
-                <Marketplace />
-              </PageTransition>
-            } />
-            <Route path="/results" element={
-              <PageTransition>
-                <ResultsPage />
-              </PageTransition>
-            } />
-            <Route path="/about" element={
-              <PageTransition>
-                <AboutPage />
-              </PageTransition>
-            } />
-            <Route path="/profile" element={
-              <ProtectedRoute>
-                <PageTransition>
-                  <Profile />
-                </PageTransition>
-              </ProtectedRoute>
-            } />
-            <Route path="/item/:id" element={
-              <PageTransition>
-                <ItemDetail />
-              </PageTransition>
-            } />
-            <Route path="/listing/:id" element={
-              <PageTransition>
-                <ListingDetailPage />
-              </PageTransition>
-            } />
-            <Route path="/create-listing" element={
-              <ProtectedRoute>
-                <PageTransition>
-                  <CreateListing />
-                </PageTransition>
-              </ProtectedRoute>
-            } />
-            <Route path="/checkout" element={
-              <ProtectedRoute>
-                <PageTransition>
-                  <Checkout />
-                </PageTransition>
-              </ProtectedRoute>
-            } />
-            <Route path="/chat" element={
-              <ProtectedRoute>
-                <PageTransition>
-                  <MessagePage />
-                </PageTransition>
-              </ProtectedRoute>
-            } />
-            <Route path="/login" element={
-              <PageTransition>
-                <LoginPage />
-              </PageTransition>
-            } />
-            <Route path="/register" element={
-              <PageTransition>
-                <RegisterPage />
-              </PageTransition>
-            } />
-            <Route path="/home" element={
-              <PageTransition>
-                <Home />
-              </PageTransition>
-            } />
-            <Route path="/premium" element={
-              <PageTransition>
-                <PremiumPage />
-              </PageTransition>
-            } />
-            <Route path="/:feature" element={
-              <PageTransition>
-                <MainFeaturePage />
-              </PageTransition>
-            } />
-              <Route path="*" element={
-                <PageTransition>
-                  <NotFoundPage />
-                </PageTransition>
-              } />
+              <Route
+                path="/"
+                element={
+                  <PageTransition key={location.key}>
+                    <MainFeaturePage />
+                  </PageTransition>
+                }
+              />
+              <Route
+                path="/marketplace"
+                element={
+                  <PageTransition key={location.key}>
+                    <Marketplace />
+                  </PageTransition>
+                }
+              />
+              <Route
+                path="/results"
+                element={
+                  <PageTransition key={location.key}>
+                    <ResultsPage />
+                  </PageTransition>
+                }
+              />
+              <Route
+                path="/about"
+                element={
+                  <PageTransition key={location.key}>
+                    <AboutPage />
+                  </PageTransition>
+                }
+              />
+              <Route
+                path="/profile"
+                element={
+                  <ProtectedRoute>
+                    <PageTransition key={location.key}>
+                      <Profile />
+                    </PageTransition>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/item/:id"
+                element={
+                  <PageTransition key={location.key}>
+                    <ItemDetail />
+                  </PageTransition>
+                }
+              />
+              <Route
+                path="/listing/:id"
+                element={
+                  <PageTransition key={location.key}>
+                    <ListingDetailPage />
+                  </PageTransition>
+                }
+              />
+              <Route
+                path="/create-listing"
+                element={
+                  <ProtectedRoute>
+                    <PageTransition key={location.key}>
+                      <CreateListing />
+                    </PageTransition>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/checkout"
+                element={
+                  <ProtectedRoute>
+                    <PageTransition key={location.key}>
+                      <Checkout />
+                    </PageTransition>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/chat"
+                element={
+                  <ProtectedRoute>
+                    <PageTransition key={location.key}>
+                      <MessagePage />
+                    </PageTransition>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/login"
+                element={
+                  <PageTransition key={location.key}>
+                    <LoginPage />
+                  </PageTransition>
+                }
+              />
+              <Route
+                path="/register"
+                element={
+                  <PageTransition key={location.key}>
+                    <RegisterPage />
+                  </PageTransition>
+                }
+              />
+              <Route
+                path="/home"
+                element={
+                  <PageTransition key={location.key}>
+                    <Home />
+                  </PageTransition>
+                }
+              />
+              <Route
+                path="/premium"
+                element={
+                  <PageTransition key={location.key}>
+                    <PremiumPage />
+                  </PageTransition>
+                }
+              />
+              <Route
+                path="/:feature"
+                element={
+                  <PageTransition key={location.key}>
+                    <MainFeaturePage />
+                  </PageTransition>
+                }
+              />
+              <Route
+                path="*"
+                element={
+                  <PageTransition key={location.key}>
+                    <NotFoundPage />
+                  </PageTransition>
+                }
+              />
             </Routes>
           </AnimatePresence>
         </Suspense>
       </Layout>
       <ShopDrawers />
       <LoginPopupWrapper />
+      {import.meta.env.DEV && <DebugDrawer />}
     </motion.div>
   )
 }
