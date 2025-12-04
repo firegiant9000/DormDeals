@@ -83,19 +83,24 @@ export const throttle = <T extends (...args: any[]) => any>(
 // Normalize listing to unified imageUrls format
 import type { Listing } from '@/types/commerce';
 
-export function normalizeListing(doc: any): Listing {
-  const data = doc.data ? doc.data() : doc
-  const id = doc.id ?? data.id
-
-  // migrate legacy fields to imageUrls
+export function normalizeListing(raw: any): Listing {
   const imageUrls: string[] =
-    Array.isArray(data.imageUrls) ? data.imageUrls :
-    Array.isArray(data.images) ? data.images :
-    (data.imageUrl ? [data.imageUrl] : [])
+    Array.isArray(raw.imageUrls) ? raw.imageUrls :
+    Array.isArray(raw.images) ? raw.images :
+    (raw.imageUrl ? [raw.imageUrl] : [])
 
   return {
-    ...data,
-    id,
+    id: raw.id,
+    title: raw.title ?? '',
+    description: raw.description ?? '',
+    price: Number(raw.price ?? 0),
+    category: raw.category ?? 'Other',
+    condition: raw.condition ?? 'Good',
+    ownerId: raw.ownerId ?? raw.userId ?? '',
+    status: raw.status ?? 'active',
+    createdAt: raw.createdAt ?? (raw.created_at ?? null),
     imageUrls,
+    // keep other fields:
+    ...raw,
   } as Listing
 }

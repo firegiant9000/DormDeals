@@ -11,7 +11,7 @@ import toast from 'react-hot-toast'
 import { db } from '@/firebase'
 import { collection, query, where, orderBy, limit, getDocs, doc, getDoc } from 'firebase/firestore'
 import { normalizeListing } from '@/utils/helpers'
-import { dlog } from '@/utils/debug'
+import { useLocation } from 'react-router-dom'
 
 interface UserProfile {
   id: string
@@ -58,6 +58,9 @@ const Profile = () => {
   const { user } = useAuth()
   const { isAdmin, isPremium, canAccess } = useAccessControl()
   const navigate = useNavigate()
+  const location = useLocation()
+  const DEBUG = new URLSearchParams(location.search).has('debug')
+  const dlog = (...a: any[]) => { if (DEBUG) console.log('[PROFILE]', ...a); }
   
   const [userData, setUserData] = useState<UserProfile | null>(null)
   const [listings, setListings] = useState<Listing[]>([])
@@ -167,26 +170,21 @@ const Profile = () => {
   // Fetch listings when listings tab is active or when userData changes
   useEffect(() => {
     const loadMyListings = async () => {
-      if (activeTab !== 'listings' || !user?.id) {
-        if (activeTab !== 'listings') {
-          return
-        }
-        setListings([])
-        return
-      }
+      const uid = (user as any)?.uid || user?.id
+      if (!uid) return
+      if (activeTab !== 'listings') return
 
       try {
         setIsLoadingListings(true)
-        // Try indexed query first
         const q1 = query(
           collection(db, 'listings'),
-          where('ownerId', '==', user.id),
+          where('ownerId', '==', uid),
           orderBy('createdAt', 'desc'),
           limit(50)
         )
         const snap = await getDocs(q1)
-        const items = snap.docs.map(d => normalizeListing(d))
-        const convertedListings: Listing[] = items.map(item => ({
+        const rows = snap.docs.map(d => normalizeListing({ id: d.id, ...(d.data() as any) }))
+        const convertedListings: Listing[] = rows.map(item => ({
           id: item.id,
           title: item.title,
           price: item.price,
@@ -197,33 +195,27 @@ const Profile = () => {
           category: item.category
         }))
         setListings(convertedListings)
-        dlog('[MY_LISTINGS]', { count: convertedListings.length })
-        
-        if (convertedListings.length === 0) {
-          toast.success('You haven\'t created any listings yet. Create one to get started!')
-        }
+        dlog('loaded (indexed)', convertedListings.length)
       } catch (err: any) {
-        const msg = String(err?.message || err)
         const code = String(err?.code || '')
+        const msg = String(err?.message || '')
         
-        if (code === 'failed-precondition' || /index/i.test(msg)) {
-          // DEV: show index link if present
-          if (typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('debug') && err?.message) {
-            const m = err.message.match(/https:\/\/console\.firebase\.google\.com\/project\/[^\s]+/)
-            if (m) console.warn('[INDEX] Create composite index:', m[0])
+        if (code === 'failed-precondition' || /create index/i.test(msg)) {
+          if (DEBUG) {
+            const m = msg.match(/https:\/\/console\.firebase\.google\.com\/project\/[^\s]+/)
+            if (m) console.warn('[INDEX LINK]', m[0])
           }
           
-          // Fallback: no orderBy
+          // Retry without orderBy; sort client-side
           try {
             const q2 = query(
               collection(db, 'listings'),
-              where('ownerId', '==', user.id),
+              where('ownerId', '==', uid),
               limit(50)
             )
             const snap2 = await getDocs(q2)
-            const rows = snap2.docs.map(d => normalizeListing(d))
-            // Sort client-side by createdAt desc if present
-            rows.sort((a, b) => {
+            const rows2 = snap2.docs.map(d => normalizeListing({ id: d.id, ...(d.data() as any) }))
+            rows2.sort((a, b) => {
               const getMillis = (d: any): number => {
                 if (!d) return 0
                 if (typeof d?.toMillis === 'function') return d.toMillis()
@@ -233,7 +225,7 @@ const Profile = () => {
               }
               return getMillis(b.createdAt) - getMillis(a.createdAt)
             })
-            const convertedListings: Listing[] = rows.map(item => ({
+            const convertedListings: Listing[] = rows2.map(item => ({
               id: item.id,
               title: item.title,
               price: item.price,
@@ -244,21 +236,15 @@ const Profile = () => {
               category: item.category
             }))
             setListings(convertedListings)
-            dlog('[MY_LISTINGS] fallback', { count: convertedListings.length })
-            
-            if (convertedListings.length === 0) {
-              toast.success('You haven\'t created any listings yet. Create one to get started!')
-            }
-            return
+            dlog('loaded (fallback)', convertedListings.length)
           } catch (fallbackErr: any) {
-            console.error('Fallback query failed:', fallbackErr)
+            console.error(err)
             setListings([])
-            toast.error(`Failed to load listings: ${fallbackErr?.code || 'unknown'}`)
-            return
           }
+        } else {
+          console.error(err)
+          setListings([])
         }
-        
-        throw err
       } finally {
         setIsLoadingListings(false)
       }
@@ -266,7 +252,7 @@ const Profile = () => {
 
     loadMyListings()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, user?.id])
+  }, [activeTab, user?.id, user])
 
   // Fetch favorites when favorites tab is active
   useEffect(() => {

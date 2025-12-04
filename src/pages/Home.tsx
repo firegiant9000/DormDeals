@@ -25,16 +25,19 @@ import {
 import { db } from '@/firebase'
 import { collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore'
 import { normalizeListing } from '@/utils/helpers'
-import { dlog } from '@/utils/debug'
+import { useLocation } from 'react-router-dom'
 
 const Home = () => {
+  const location = useLocation()
   const navigate = useNavigate()
+  const DEBUG = new URLSearchParams(location.search).has('debug')
+  const dlog = (...a: any[]) => { if (DEBUG) console.log('[HOME]', ...a); }
+  
   const [keywords, setKeywords] = useState('')
-  const [category, setCategory] = useState<string>('all')
+  const [category, setCategory] = useState('all')
   const [sort, setSort] = useState<'newest' | 'priceLow' | 'priceHigh'>('newest')
-  const [minPrice, setMinPrice] = useState<string>('')
-  const [maxPrice, setMaxPrice] = useState<string>('')
-  const debug = typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('debug')
+  const [minPrice, setMinPrice] = useState('')
+  const [maxPrice, setMaxPrice] = useState('')
   
   function onSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -44,7 +47,7 @@ const Home = () => {
     if (sort) p.set('sort', sort)
     if (minPrice) p.set('min', minPrice)
     if (maxPrice) p.set('max', maxPrice)
-    if (debug) console.log('[HOME] submit →', { keywords, category, sort, minPrice, maxPrice })
+    dlog('submit → /marketplace', Object.fromEntries(p.entries()))
     navigate(`/marketplace?${p.toString()}`)
   }
   
