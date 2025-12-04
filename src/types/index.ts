@@ -73,6 +73,7 @@ export interface Item {
   isInWishlist?: boolean;
   tags: string[];
   pickupMethod?: PickupMethod;
+  isFeatured?: boolean;
 }
 
 export type Listing = Item;

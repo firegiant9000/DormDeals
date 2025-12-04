@@ -49,10 +49,10 @@ api.interceptors.response.use(
 
 // API endpoints
 export const endpoints = {
-  // Items
-  items: '/items',
-  itemById: (id: string) => `/items/${id}`,
-  userItems: '/items/user',
+  // Items/Listings (backend uses /api/listings)
+  items: '/listings',
+  itemById: (id: string) => `/listings/${id}`,
+  userItems: '/listings/user',
   
   // Users
   users: '/users',
@@ -104,18 +104,17 @@ export const itemApi = {
   getAll: () => apiGet(endpoints.items),
   getById: (id: string) => apiGet(endpoints.itemById(id)),
   getUserItems: () => apiGet(endpoints.userItems),
+  getFeatured: () => apiGet(`${endpoints.items}?featured=true`),
   create: (data: any) => apiPost(endpoints.items, data),
   update: (id: string, data: any) => apiPut(endpoints.itemById(id), data),
   delete: (id: string) => apiDelete(endpoints.itemById(id)),
   search: (query: string) => apiGet(`${endpoints.search}?q=${encodeURIComponent(query)}`),
+  feature: (id: string) => apiPatch(`${endpoints.itemById(id)}/feature`, {}),
 }
 
-// Specific API functions for users
-export const userApi = {
-  getProfile: () => apiGet(endpoints.userProfile),
-  updateProfile: (data: any) => apiPut(endpoints.userProfile, data),
-  getById: (id: string) => apiGet(endpoints.userById(id)),
-}
+// Note: All user operations now use Firestore directly via userService
+// This API layer is kept for backward compatibility but userApi methods have been removed
+// Use src/services/userService.ts for all user operations
 
 // Specific API functions for categories
 export const categoryApi = {

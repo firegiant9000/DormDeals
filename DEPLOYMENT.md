@@ -6,8 +6,7 @@ Complete guide for deploying DormDeals to Render platform.
 
 ### Prerequisites
 - Node.js 16+ project
-- PostgreSQL database (can be provisioned on Render)
-- Firebase project (for authentication and user management)
+- Firebase project (for authentication, Firestore database, and storage)
 - Git repository connected to Render
 
 ### Deployment Steps
@@ -40,24 +39,11 @@ The project includes a `render.yaml` file that configures:
 
 ## 🔐 Environment Variables
 
-### Required Server-side Variables
+### Required Environment Variables
 
-Set these in the Render Dashboard under "Environment":
+**Note**: This application uses Firebase (Auth + Firestore) for all data storage. No PostgreSQL database is required.
 
-1. **DATABASE_URL** (REQUIRED)
-   - PostgreSQL connection string
-   - Format: `postgresql://username:password@hostname:port/database?sslmode=require`
-   - Can use Render's PostgreSQL service or external provider
-
-2. **SECRET_KEY** (REQUIRED)
-   - Generate with: `openssl rand -base64 32`
-   - Used for session encryption
-
-3. **JWT_SECRET** (REQUIRED)
-   - Generate with: `openssl rand -base64 32`
-   - Used for JWT token signing
-
-### Required Client-side Variables (Firebase)
+#### Required Client-side Variables (Firebase)
 
 These are embedded in the client bundle at build time:
 
@@ -99,19 +85,6 @@ These are embedded in the client bundle at build time:
 
 **⚠️ Important**: All `VITE_*` environment variables are exposed to the client-side code. Do not put sensitive secrets in `VITE_*` variables.
 
-## 🗄️ Database Setup
-
-### Option 1: Render PostgreSQL (Recommended)
-1. In Render Dashboard, click "New +" → "PostgreSQL"
-2. Choose a name and plan
-3. Copy the "Internal Database URL" or "External Database URL"
-4. Set as `DATABASE_URL` environment variable
-5. Run your database migrations if needed
-
-### Option 2: External Database
-1. Use any PostgreSQL provider (Neon, Supabase, Railway, etc.)
-2. Set the connection string as `DATABASE_URL`
-
 ## 🔥 Firebase Setup
 
 See [docs/FIREBASE_SETUP.md](./docs/FIREBASE_SETUP.md) for detailed Firebase setup instructions.
@@ -148,10 +121,10 @@ See [docs/FIREBASE_SETUP.md](./docs/FIREBASE_SETUP.md) for detailed Firebase set
 
 The server:
 - Serves static files from `dist/` folder (Vite build output)
-- Handles API routes at `/api/*`
-- Serves React SPA for all other routes (SPA fallback)
+- Serves React SPA for all routes (SPA fallback)
 - Listens on port from `PORT` environment variable
 - Health check endpoint at `/health`
+- Note: All API operations are handled client-side via Firebase SDK
 
 ## 🧪 Local Testing
 
@@ -187,8 +160,9 @@ Before deploying:
 - [ ] Server starts locally (`npm start`)
 - [ ] No TypeScript errors (`npm run type-check`)
 - [ ] No linting errors (`npm run lint`)
-- [ ] All environment variables set in Render
-- [ ] Database connection working
+- [ ] All Firebase environment variables set in Render
+- [ ] Firebase project configured with Firestore enabled
+- [ ] Firebase security rules configured properly
 - [ ] Firebase configured and working
 - [ ] All routes work correctly
 - [ ] Authentication flow works

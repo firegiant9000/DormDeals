@@ -2,11 +2,33 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{db}/documents {
 
+    // Helpers
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    function isOwnerFieldValidOnCreate() {
+      // Accept either ownerId or sellerId matching the auth uid
+      return (
+        (request.resource.data.ownerId != null && request.resource.data.ownerId == request.auth.uid) ||
+        (request.resource.data.sellerId != null && request.resource.data.sellerId == request.auth.uid)
+      );
+    }
+    function isOwnerOfResource() {
+      // Accept either ownerId or sellerId on the existing doc
+      return isAuthenticated() &&
+        (
+          (resource.data.ownerId != null && resource.data.ownerId == request.auth.uid) ||
+          (resource.data.sellerId != null && resource.data.sellerId == request.auth.uid)
+        );
+    }
+
+    // ---- Listings (public read; owner/seller can write) ----
     match /listings/{id} {
       allow read: if true;
 
-      allow create: if request.auth != null
-        && request.resource.data.ownerId == request.auth.uid
+      // Basic schema checks (relaxed so both apps work)
+      allow create: if isAuthenticated()
+        && isOwnerFieldValidOnCreate()
         && request.resource.data.title is string
         && request.resource.data.price is number
         && request.resource.data.category is string
@@ -14,19 +36,45 @@ service cloud.firestore {
         && request.resource.data.description is string
         && request.resource.data.imageUrls is list;
 
-      allow update, delete: if request.auth != null
-        && resource.data.ownerId == request.auth.uid;
+      allow update, delete: if isOwnerOfResource();
     }
 
+    // ---- Your cart/wishlist layout ----
     match /carts/{uid} {
-      allow read, write: if request.auth != null && request.auth.uid == uid;
+      allow read, write: if isAuthenticated() && request.auth.uid == uid;
     }
     match /wishlists/{uid} {
-      allow read, write: if request.auth != null && request.auth.uid == uid;
+      allow read, write: if isAuthenticated() && request.auth.uid == uid;
     }
 
-    match /users/{uid} {
-      allow read, write: if request.auth != null && request.auth.uid == uid;
+    // ---- Their cart/favorites layout (back-compat) ----
+    // Only allow user to access docs where userId == their uid
+    match /cart/{cartId} {
+      allow read, write: if isAuthenticated()
+        && (
+          (resource == null || resource.data.userId == request.auth.uid) &&
+          (request.resource == null || request.resource.data.userId == request.auth.uid)
+        );
+    }
+    match /favorites/{favoriteId} {
+      allow read, write: if isAuthenticated()
+        && (
+          (resource == null || resource.data.userId == request.auth.uid) &&
+          (request.resource == null || request.resource.data.userId == request.auth.uid)
+        );
+    }
+
+    // ---- Users ----
+    // Public read (their rule), with self-only writes
+    match /users/{userId} {
+      allow read: if true;
+      allow create: if isAuthenticated() && (
+        // support either id in the payload or the doc id equal to auth uid
+        (request.resource.data.id != null && request.resource.data.id == request.auth.uid) ||
+        (userId == request.auth.uid)
+      );
+      allow update, delete: if isAuthenticated() && userId == request.auth.uid;
     }
   }
 }
+

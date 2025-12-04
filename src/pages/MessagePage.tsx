@@ -16,7 +16,7 @@ import {
 import { Item, User } from '../types';
 import { formatCurrency, formatRelativeTime } from '../utils/helpers';
 
-// Mock items for each conversation context
+// Items for each conversation context
 const mockItems: { [conversationId: string]: Item } = {
   '1': {
     id: 'macbook-1',

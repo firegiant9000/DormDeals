@@ -54,8 +54,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  // No longer syncing to PostgreSQL - all user data is in Firestore
+
   // Listen to Firebase auth state changes
   useEffect(() => {
+    // Set up auth state listener
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       try {
         setIsLoading(true)
@@ -81,6 +84,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           } catch (profileError) {
             console.error('Error fetching user profile:', profileError)
             // Create a minimal user object if profile fetch fails
+            // This ensures the user stays logged in even if Firestore is unavailable
             const minimalUser: User = {
               id: firebaseUser.uid,
               email: firebaseUser.email || '',
@@ -99,13 +103,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setError('Failed to load user profile. Some features may be limited.')
           }
         } else {
-          // User is signed out
+          // User is signed out - only set to null if Firebase confirms no user
           setUser(null)
         }
       } catch (error) {
         console.error('Auth state change error:', error)
-        setError('Authentication error occurred')
-        setUser(null)
+        // Don't clear user on error - Firebase auth state is the source of truth
+        // If Firebase says user is authenticated, keep them logged in even if profile fetch fails
+        if (firebaseUser) {
+          // Create minimal user from Firebase auth to keep them logged in
+          const minimalUser: User = {
+            id: firebaseUser.uid,
+            email: firebaseUser.email || '',
+            name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
+            displayName: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
+            userType: UserType.REGULAR,
+            school: 'University of Louisiana',
+            joinDate: new Date().toISOString(),
+            joinedDate: new Date().toISOString(),
+            rating: 0,
+            reviewCount: 0,
+            totalSales: 0,
+            isVerified: false
+          }
+          setUser(minimalUser)
+          setError('Failed to load complete profile. Some features may be limited.')
+        } else {
+          // Only clear user if Firebase confirms no user
+          setUser(null)
+        }
       } finally {
         setIsLoading(false)
       }

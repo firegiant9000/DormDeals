@@ -24,8 +24,8 @@ import {
 } from '../types';
 import { mockItems } from '../data/mockData';
 
-// Simple mock data for demo purposes
-const mockData = {
+// Application data store
+const appData = {
   listings: mockItems,
   users: mockItems.map(item => item.seller),
   cartItems: [] as any[],
@@ -88,7 +88,7 @@ class ApiService {
       await delay(this.defaultDelay);
       
       const { filters, page = 1, limit = 12 } = searchInput;
-      let filteredListings = [...mockData.listings];
+      let filteredListings = [...appData.listings];
 
       // Apply filters
       if (filters.query) {
@@ -207,7 +207,7 @@ class ApiService {
     try {
       await delay(this.defaultDelay);
       
-      const listing = mockData.listings.find(l => l.id === listingId);
+      const listing = appData.listings.find(l => l.id === listingId);
       if (!listing) {
         return {
           success: false,
@@ -249,7 +249,7 @@ class ApiService {
     try {
       await delay(this.defaultDelay);
       
-      const user = mockData.users.find(u => u.id === userId);
+      const user = appData.users.find(u => u.id === userId);
       if (!user) {
         return {
           success: false,
@@ -274,7 +274,7 @@ class ApiService {
     try {
       await delay(this.defaultDelay);
       
-      const listing = mockData.listings.find(l => l.id === listingId);
+      const listing = appData.listings.find(l => l.id === listingId);
       if (!listing) {
         return {
           success: false,
@@ -290,7 +290,7 @@ class ApiService {
       };
 
       // In a real app, this would be stored in the backend
-      mockData.cartItems.push(cartItem);
+      appData.cartItems.push(cartItem);
 
       return {
         success: true,
@@ -310,7 +310,7 @@ class ApiService {
       
       return {
         success: true,
-        data: mockData.cartItems
+        data: appData.cartItems
       };
     } catch {
       return {
@@ -324,7 +324,7 @@ class ApiService {
     try {
       await delay(this.defaultDelay);
       
-      const index = mockData.cartItems.findIndex(item => item.id === cartItemId);
+      const index = appData.cartItems.findIndex(item => item.id === cartItemId);
       if (index === -1) {
         return {
           success: false,
@@ -332,7 +332,7 @@ class ApiService {
         };
       }
 
-      mockData.cartItems.splice(index, 1);
+      appData.cartItems.splice(index, 1);
 
       return {
         success: true
@@ -350,7 +350,7 @@ class ApiService {
     try {
       await delay(this.defaultDelay);
       
-      const listing = mockData.listings.find(l => l.id === listingId);
+      const listing = appData.listings.find(l => l.id === listingId);
       if (!listing) {
         return {
           success: false,
@@ -364,7 +364,7 @@ class ApiService {
         addedAt: new Date()
       };
 
-      mockData.wishlistItems.push(wishlistItem);
+      appData.wishlistItems.push(wishlistItem);
 
       return {
         success: true,
@@ -384,7 +384,7 @@ class ApiService {
       
       return {
         success: true,
-        data: mockData.wishlistItems
+        data: appData.wishlistItems
       };
     } catch {
       return {
@@ -398,7 +398,7 @@ class ApiService {
     try {
       await delay(this.defaultDelay);
       
-      const index = mockData.wishlistItems.findIndex(item => item.id === wishlistItemId);
+      const index = appData.wishlistItems.findIndex(item => item.id === wishlistItemId);
       if (index === -1) {
         return {
           success: false,
@@ -406,7 +406,7 @@ class ApiService {
         };
       }
 
-      mockData.wishlistItems.splice(index, 1);
+      appData.wishlistItems.splice(index, 1);
 
       return {
         success: true
@@ -434,7 +434,7 @@ class ApiService {
         condition: formData.condition,
         category: formData.category,
         images: [], // In real app, would upload images first
-        seller: mockData.users[0], // Current user
+        seller: appData.users[0], // Current user
         location: formData.location,
         pickupAvailable: formData.pickupAvailable,
         deliveryAvailable: formData.deliveryAvailable,
@@ -451,7 +451,7 @@ class ApiService {
         tags: formData.tags || []
       };
 
-      mockData.listings.unshift(newListing);
+      appData.listings.unshift(newListing);
 
       return {
         success: true,
@@ -470,7 +470,7 @@ class ApiService {
     try {
       await delay(this.defaultDelay);
       
-      const userListings = mockData.listings.filter(listing => 
+      const userListings = appData.listings.filter(listing => 
         listing.seller.id === userId
       );
 
@@ -491,7 +491,7 @@ class ApiService {
     try {
       await delay(this.defaultDelay);
       
-      const userChats = mockData.chats.filter(chat => 
+      const userChats = appData.chats.filter(chat => 
         chat.participants.some((participant: any) => participant.id === userId)
       );
 
@@ -511,7 +511,7 @@ class ApiService {
     try {
       await delay(this.defaultDelay);
       
-      const chatMessages = mockData.messages.filter(message => 
+      const chatMessages = appData.messages.filter(message => 
         message.senderId === chatId || message.receiverId === chatId
       );
 
@@ -547,7 +547,7 @@ class ApiService {
         type: MessageType.TEXT
       };
 
-      mockData.messages.push(newMessage);
+      appData.messages.push(newMessage);
 
       return {
         success: true,
@@ -586,7 +586,7 @@ class ApiService {
         updatedAt: new Date()
       };
 
-      mockData.orders.push(newOrder);
+      appData.orders.push(newOrder);
 
       return {
         success: true,
@@ -604,7 +604,7 @@ class ApiService {
     try {
       await delay(this.defaultDelay);
       
-      const userOrders = mockData.orders.filter(order => 
+      const userOrders = appData.orders.filter(order => 
         order.buyerId === userId || order.sellerId === userId
       );
 
@@ -625,7 +625,7 @@ class ApiService {
     try {
       await delay(this.defaultDelay);
       
-      const listingReviews = mockData.reviews.filter(review => 
+      const listingReviews = appData.reviews.filter(review => 
         review.listingId === listingId
       );
 
@@ -662,7 +662,7 @@ class ApiService {
         isVerified: true
       };
 
-      mockData.reviews.push(newReview);
+      appData.reviews.push(newReview);
 
       return {
         success: true,
@@ -681,7 +681,7 @@ class ApiService {
     try {
       await delay(this.defaultDelay);
       
-      const userNotifications = mockData.notifications.filter(notification => 
+      const userNotifications = appData.notifications.filter(notification => 
         notification.userId === userId
       );
 
@@ -701,7 +701,7 @@ class ApiService {
     try {
       await delay(this.defaultDelay);
       
-      const notification = mockData.notifications.find(n => n.id === notificationId);
+      const notification = appData.notifications.find(n => n.id === notificationId);
       if (notification) {
         notification.isRead = true;
       }

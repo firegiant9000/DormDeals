@@ -1,5 +1,9 @@
--- DormDeal Database Schema
+-- DormDeal Database Schema (LEGACY - NO LONGER USED)
 -- PostgreSQL Database Schema for DormDeal Marketplace
+-- 
+-- NOTE: This schema is kept for historical reference only.
+-- The application now uses Firebase Firestore for all data storage.
+-- This file is not used in the current implementation.
 
 -- Enable UUID extension for generating unique IDs
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
@@ -46,6 +50,7 @@ CREATE TABLE listings (
     location VARCHAR(100),
     is_active BOOLEAN DEFAULT true,
     is_sold BOOLEAN DEFAULT false,
+    is_featured BOOLEAN DEFAULT false,
     views_count INTEGER DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -80,6 +85,17 @@ CREATE TABLE favorites (
     user_id INTEGER REFERENCES users(id),
     listing_id INTEGER REFERENCES listings(id),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, listing_id)
+);
+
+-- Cart table (for users to save items in shopping cart)
+CREATE TABLE cart (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id),
+    listing_id INTEGER REFERENCES listings(id),
+    quantity INTEGER DEFAULT 1 CHECK (quantity > 0),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(user_id, listing_id)
 );
 
@@ -118,6 +134,7 @@ CREATE INDEX idx_listings_price ON listings(price);
 CREATE INDEX idx_listings_created_at ON listings(created_at);
 CREATE INDEX idx_listings_is_active ON listings(is_active);
 CREATE INDEX idx_listings_is_sold ON listings(is_sold);
+CREATE INDEX idx_listings_is_featured ON listings(is_featured);
 CREATE INDEX idx_listings_location ON listings(location);
 
 CREATE INDEX idx_messages_sender_id ON messages(sender_id);
@@ -131,6 +148,9 @@ CREATE INDEX idx_conversations_seller_id ON conversations(seller_id);
 
 CREATE INDEX idx_favorites_user_id ON favorites(user_id);
 CREATE INDEX idx_favorites_listing_id ON favorites(listing_id);
+
+CREATE INDEX idx_cart_user_id ON cart(user_id);
+CREATE INDEX idx_cart_listing_id ON cart(listing_id);
 
 CREATE INDEX idx_reviews_reviewee_id ON reviews(reviewee_id);
 CREATE INDEX idx_reviews_listing_id ON reviews(listing_id);
@@ -163,6 +183,9 @@ CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_listings_updated_at BEFORE UPDATE ON listings
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_cart_updated_at BEFORE UPDATE ON cart
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_reports_updated_at BEFORE UPDATE ON reports

@@ -11,6 +11,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { UserType, UserProfile, CreateUserProfileData, UpdateUserProfileData } from '../types/user';
+import { ItemStatus, ListingStatus } from '../types';
 
 const USERS_COLLECTION = 'users';
 
@@ -232,6 +233,51 @@ export async function userProfileExists(userId: string): Promise<boolean> {
   } catch (error) {
     console.error('Error checking user profile existence:', error);
     return false;
+  }
+}
+
+/**
+ * Get user profile with computed stats from Firestore
+ * @param userId - Firebase Auth UID
+ * @returns UserProfile with stats (totalListings, totalSales, totalFavorites) or null if not found
+ */
+export async function getUserProfileWithStats(userId: string): Promise<(UserProfile & {
+  totalListings: number;
+  totalSales: number;
+  totalFavorites: number;
+}) | null> {
+  try {
+    const profile = await getUserProfile(userId);
+    if (!profile) {
+      return null;
+    }
+
+    // Import services dynamically to avoid circular dependencies
+    const { getListings } = await import('./listingsService');
+    const { getFavorites } = await import('./favoritesService');
+
+    // Compute stats from Firestore
+    const [userListings, userFavorites] = await Promise.all([
+      getListings({ sellerId: userId }).catch(() => []),
+      getFavorites(userId).catch(() => [])
+    ]);
+
+    const totalListings = userListings.length;
+    // Check for sold status using enum values
+    const totalSales = userListings.filter(listing => 
+      listing.status === ItemStatus.SOLD || listing.status === ListingStatus.SOLD
+    ).length;
+    const totalFavorites = userFavorites.length;
+
+    return {
+      ...profile,
+      totalListings,
+      totalSales,
+      totalFavorites
+    };
+  } catch (error) {
+    console.error('Error fetching user profile with stats:', error);
+    throw new Error('Failed to fetch user profile with stats');
   }
 }
 

@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
+import { getAuth, setPersistence, browserLocalPersistence } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
@@ -14,27 +14,6 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID || '',
   measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || ''
 };
-
-// Validate Firebase configuration (only warn, don't fail build)
-// This allows the app to build even if Firebase config is missing
-// The app will show warnings but won't crash
-const hasRequiredConfig = firebaseConfig.apiKey && firebaseConfig.projectId;
-
-if (!hasRequiredConfig) {
-  if (typeof window !== 'undefined') {
-    // Only warn in browser console, not during build
-    console.warn(
-      '⚠️ Firebase configuration is incomplete. Please set the required environment variables:\n' +
-      'VITE_FIREBASE_API_KEY\n' +
-      'VITE_FIREBASE_AUTH_DOMAIN\n' +
-      'VITE_FIREBASE_PROJECT_ID\n' +
-      'VITE_FIREBASE_STORAGE_BUCKET\n' +
-      'VITE_FIREBASE_MESSAGING_SENDER_ID\n' +
-      'VITE_FIREBASE_APP_ID\n\n' +
-      'Firebase features will not work until these are configured.'
-    );
-  }
-}
 
 // Initialize Firebase
 // If config is missing, Firebase will still initialize but won't work
@@ -74,8 +53,37 @@ try {
 
 // Initialize Firebase services
 export const auth = getAuth(app);
+// Firebase Auth uses LOCAL persistence by default, which stores sessions in localStorage/indexedDB
+// This means users will stay logged in after page refresh
+// Explicitly set persistence to LOCAL to ensure sessions persist across page refreshes
+// This must be done before any auth operations
+if (typeof window !== 'undefined') {
+  setPersistence(auth, browserLocalPersistence).catch((error) => {
+    console.error('Error setting auth persistence:', error);
+  });
+}
+
 export const db = getFirestore(app);
 export const storage = getStorage(app);
+
+// Validate Firebase initialization
+if (typeof window !== 'undefined') {
+  // Check if Firebase is properly initialized (not using dummy config)
+  const isDummyConfig = firebaseConfig.apiKey === 'dummy-key' || 
+                        firebaseConfig.projectId === 'dummy-project';
+  
+  if (isDummyConfig) {
+    console.warn('⚠️ Firebase is using dummy configuration. Please set environment variables:');
+    console.warn('   VITE_FIREBASE_API_KEY');
+    console.warn('   VITE_FIREBASE_AUTH_DOMAIN');
+    console.warn('   VITE_FIREBASE_PROJECT_ID');
+    console.warn('   VITE_FIREBASE_STORAGE_BUCKET');
+    console.warn('   VITE_FIREBASE_MESSAGING_SENDER_ID');
+    console.warn('   VITE_FIREBASE_APP_ID');
+  } else {
+    console.log('✅ Firebase initialized successfully');
+  }
+}
 
 export default app;
 

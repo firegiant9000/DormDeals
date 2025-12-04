@@ -1,6 +1,6 @@
 import { Item, User } from '../types';
 
-// Mock users
+// Users
 export const mockUsers: User[] = [
   {
     id: '1',
@@ -40,7 +40,7 @@ export const mockUsers: User[] = [
   }
 ];
 
-// Mock items
+// Listings
 export const mockItems: Item[] = [
   {
     id: '1',

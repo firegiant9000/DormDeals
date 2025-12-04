@@ -1,8 +1,11 @@
-import React, { createContext, useContext, useMemo, useState, useCallback } from 'react'
+import React, { createContext, useContext, useMemo, useState, useCallback, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Item } from '../types'
 import { formatCurrency } from '../utils/helpers'
 import { useAuth } from './AuthContext'
+import toast from 'react-hot-toast'
+import { getCartItems, addToCart as addToCartService, removeFromCart as removeFromCartService } from '../services/cartService'
+import { getFavorites, addToFavorites as addToFavoritesService, removeFromFavorites as removeFromFavoritesService } from '../services/favoritesService'
 
 type ShopContextValue = {
   cartItems: Item[]
@@ -33,43 +36,209 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [showWishlist, setShowWishlist] = useState(false)
   const [showLoginPopup, setShowLoginPopup] = useState(false)
   const [loginPopupAction, setLoginPopupAction] = useState<'cart' | 'wishlist' | null>(null)
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, user } = useAuth()
 
-  const isInCart = useCallback((id: string) => cartItems.some(i => i.id === id), [cartItems])
-  const isInWishlist = useCallback((id: string) => wishlistItems.some(i => i.id === id), [wishlistItems])
 
-  const addToCart = useCallback((item: Item) => {
-    console.log('addToCart called, isAuthenticated:', isAuthenticated)
-    if (!isAuthenticated) {
+
+  // Load cart and wishlist from Firestore when user logs in
+  useEffect(() => {
+    const loadUserData = async () => {
+      if (!isAuthenticated || !user?.id) {
+        setCartItems([])
+        setWishlistItems([])
+        return
+      }
+
+      const userId = user.id
+
+      try {
+        // Load cart items from Firestore
+        try {
+          const cartItems = await getCartItems(userId)
+          setCartItems(cartItems.map(item => ({ ...item, isInCart: true, isInWishlist: false })))
+        } catch (error: any) {
+          console.error('Error loading cart from Firestore:', error)
+        }
+
+        // Load wishlist items from Firestore
+        try {
+          const wishlistItems = await getFavorites(userId)
+          setWishlistItems(wishlistItems.map(item => ({ ...item, isInCart: false, isInWishlist: true })))
+        } catch (error: any) {
+          console.error('Error loading wishlist from Firestore:', error)
+        }
+      } catch (error: any) {
+        console.error('Error loading user data:', error)
+      }
+    }
+
+    loadUserData()
+  }, [isAuthenticated, user?.id])
+
+  const isInCart = useCallback((id: string | number) => {
+    const idStr = String(id)
+    return cartItems.some(i => String(i.id) === idStr)
+  }, [cartItems])
+  const isInWishlist = useCallback((id: string | number) => {
+    const idStr = String(id)
+    return wishlistItems.some(i => String(i.id) === idStr)
+  }, [wishlistItems])
+
+  const addToCart = useCallback(async (item: Item) => {
+    console.log('addToCart called, isAuthenticated:', isAuthenticated, 'user:', user?.id, 'item:', item.id)
+    if (!isAuthenticated || !user?.id) {
       console.log('User not authenticated, showing login popup')
       setLoginPopupAction('cart')
       setShowLoginPopup(true)
       return
     }
     
-    setCartItems(prev => (prev.some(i => i.id === item.id) ? prev : [...prev, item]))
-    // Ensure exclusivity: remove from wishlist if present
-    setWishlistItems(prev => prev.filter(i => i.id !== item.id))
-    setShowCart(true)
-  }, [isAuthenticated])
+    if (!item || !item.id) {
+      console.error('Invalid item provided to addToCart:', item)
+      toast.error('Invalid item. Please try again.')
+      return
+    }
+    
+    try {
+      const userId = user.id
+      const listingId = item.id.toString()
+      
+      console.log('Adding to cart - userId:', userId, 'listingId:', listingId)
 
-  const addToWishlist = useCallback((item: Item) => {
-    console.log('addToWishlist called, isAuthenticated:', isAuthenticated)
-    if (!isAuthenticated) {
+      // Save to Firestore
+      await addToCartService(userId, listingId, 1)
+      console.log('Successfully added to cart in Firestore')
+      
+      // Reload cart from Firestore to get the latest state
+      try {
+        const updatedCartItems = await getCartItems(userId)
+        console.log('Reloaded cart items:', updatedCartItems.length)
+        setCartItems(updatedCartItems.map(cartItem => ({ ...cartItem, isInCart: true, isInWishlist: false })))
+      } catch (reloadError: any) {
+        console.error('Error reloading cart:', reloadError)
+        // Fallback to local update if reload fails
+        setCartItems(prev => (prev.some(i => i.id === item.id) ? prev : [...prev, { ...item, isInCart: true, isInWishlist: false }]))
+      }
+      
+      // Ensure exclusivity: remove from wishlist if present
+      if (wishlistItems.some(i => i.id === item.id)) {
+        const updatedWishlist = wishlistItems.filter(i => i.id !== item.id)
+        setWishlistItems(updatedWishlist)
+        
+        // Remove from wishlist in Firestore
+        try {
+          await removeFromFavoritesService(userId, listingId)
+        } catch (error: any) {
+          console.error('Error removing from favorites:', error)
+        }
+      }
+      
+      toast.success('Item added to cart')
+      setShowCart(true)
+    } catch (error: any) {
+      console.error('Error adding to cart:', error)
+      console.error('Error details:', {
+        code: error?.code,
+        message: error?.message,
+        stack: error?.stack
+      })
+      const errorMessage = error?.message || 'Failed to add item to cart'
+      toast.error(errorMessage)
+    }
+  }, [isAuthenticated, user?.id, wishlistItems])
+
+  const addToWishlist = useCallback(async (item: Item) => {
+    console.log('addToWishlist called, isAuthenticated:', isAuthenticated, 'user:', user?.id, 'item:', item.id)
+    if (!isAuthenticated || !user?.id) {
       console.log('User not authenticated, showing login popup')
       setLoginPopupAction('wishlist')
       setShowLoginPopup(true)
       return
     }
     
-    setWishlistItems(prev => (prev.some(i => i.id === item.id) ? prev : [...prev, item]))
-    // Ensure exclusivity: remove from cart if present
-    setCartItems(prev => prev.filter(i => i.id !== item.id))
-    setShowWishlist(true)
-  }, [isAuthenticated])
+    if (!item || !item.id) {
+      console.error('Invalid item provided to addToWishlist:', item)
+      toast.error('Invalid item. Please try again.')
+      return
+    }
+    
+    try {
+      const userId = user.id
+      const listingId = item.id.toString()
+      
+      console.log('Adding to wishlist - userId:', userId, 'listingId:', listingId)
 
-  const removeFromCart = (id: string) => setCartItems(prev => prev.filter(i => i.id !== id))
-  const removeFromWishlist = (id: string) => setWishlistItems(prev => prev.filter(i => i.id !== id))
+      // Save to Firestore
+      await addToFavoritesService(userId, listingId)
+      console.log('Successfully added to wishlist in Firestore')
+      
+      // Reload wishlist from Firestore to get the latest state
+      try {
+        const updatedWishlistItems = await getFavorites(userId)
+        console.log('Reloaded wishlist items:', updatedWishlistItems.length)
+        setWishlistItems(updatedWishlistItems.map(wishlistItem => ({ ...wishlistItem, isInCart: false, isInWishlist: true })))
+      } catch (reloadError: any) {
+        console.error('Error reloading wishlist:', reloadError)
+        // Fallback to local update if reload fails
+        setWishlistItems(prev => (prev.some(i => i.id === item.id) ? prev : [...prev, { ...item, isInCart: false, isInWishlist: true }]))
+      }
+      
+      // Ensure exclusivity: remove from cart if present
+      if (cartItems.some(i => i.id === item.id)) {
+        const updatedCart = cartItems.filter(i => i.id !== item.id)
+        setCartItems(updatedCart)
+        
+        // Remove from cart in Firestore
+        try {
+          await removeFromCartService(userId, listingId)
+        } catch (error: any) {
+          console.error('Error removing from cart:', error)
+        }
+      }
+      
+      toast.success('Item added to wishlist')
+      setShowWishlist(true)
+    } catch (error: any) {
+      console.error('Error adding to wishlist:', error)
+      console.error('Error details:', {
+        code: error?.code,
+        message: error?.message,
+        stack: error?.stack
+      })
+      const errorMessage = error?.message || 'Failed to add item to wishlist'
+      toast.error(errorMessage)
+    }
+  }, [isAuthenticated, user?.id, cartItems])
+
+  const removeFromCart = useCallback(async (id: string) => {
+    setCartItems(prev => prev.filter(i => i.id !== id))
+    
+    if (isAuthenticated && user?.id) {
+      try {
+        await removeFromCartService(user.id, id)
+      } catch (error: any) {
+        console.error('Error removing from cart in Firestore:', error)
+        // Revert local state on error
+        const updatedCartItems = await getCartItems(user.id)
+        setCartItems(updatedCartItems.map(item => ({ ...item, isInCart: true, isInWishlist: false })))
+      }
+    }
+  }, [isAuthenticated, user?.id])
+
+  const removeFromWishlist = useCallback(async (id: string) => {
+    setWishlistItems(prev => prev.filter(i => i.id !== id))
+    
+    if (isAuthenticated && user?.id) {
+      try {
+        await removeFromFavoritesService(user.id, id)
+      } catch (error: any) {
+        console.error('Error removing from wishlist in Firestore:', error)
+        // Revert local state on error
+        const updatedWishlistItems = await getFavorites(user.id)
+        setWishlistItems(updatedWishlistItems.map(item => ({ ...item, isInCart: false, isInWishlist: true })))
+      }
+    }
+  }, [isAuthenticated, user?.id])
 
   const openCart = () => setShowCart(true)
   const openWishlist = () => setShowWishlist(true)
@@ -98,7 +267,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     closeLoginPopup,
     isInCart,
     isInWishlist
-  }), [cartItems, wishlistItems, showCart, showWishlist, showLoginPopup, loginPopupAction, isInCart, isInWishlist, addToCart, addToWishlist])
+  }), [cartItems, wishlistItems, showCart, showWishlist, showLoginPopup, loginPopupAction, isInCart, isInWishlist, addToCart, addToWishlist, removeFromCart, removeFromWishlist])
 
   return (
     <ShopContext.Provider value={value}>
