@@ -5,7 +5,7 @@ import {
 } from 'firebase/firestore';
 import type { Item } from '@/types';
 import { normalizeListing } from '@/utils/helpers';
-import { dlog } from '@/utils/debug';
+import { isDebug } from '@/utils/debug';
 
 // Firestore listing document structure
 export interface FirestoreListing {
@@ -121,7 +121,9 @@ export async function fetchListings(opts?: {
       return convertListingToItem(normalized);
     });
     
-    dlog('[LISTINGS] Fetched from Firestore', { count: rows.length, opts });
+    if (isDebug()) {
+      console.log('[LISTINGS_PROVIDER] fetched', { count: rows.length, docs: snap.docs.length, opts });
+    }
     
     return rows;
   } catch (error: any) {
@@ -166,7 +168,9 @@ export function subscribeListings(
       });
       onData(rows);
       
-      dlog('[LISTINGS] Snapshot update', { count: rows.length });
+      if (isDebug()) {
+        console.log('[LISTINGS_PROVIDER] snapshot', { count: rows.length, docs: snap.docs.length });
+      }
     }, (error) => {
       if (import.meta.env.DEV) {
         console.error('[LISTINGS] Snapshot error', error);

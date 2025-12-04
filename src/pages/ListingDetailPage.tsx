@@ -141,38 +141,66 @@ const ListingDetailPage: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Image Gallery */}
           <div className="space-y-4">
-            <div className="w-full h-[400px] bg-muted/20 rounded-xl overflow-hidden flex items-center justify-center">
-              {listing.images?.[currentImageIndex] ? (
-                <img
-                  src={listing.images[currentImageIndex]}
-                  alt={listing.title}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="bg-muted/20 rounded-xl w-full h-full" />
-              )}
+            <div className="w-full max-w-[900px]">
+              <div className="relative w-full rounded-xl overflow-hidden bg-muted/20" style={{ aspectRatio: '16 / 9' }}>
+                {(() => {
+                  const listingData = listing as any
+                  const imageUrls = listingData?.imageUrls || listing?.images || []
+                  const cover = imageUrls[currentImageIndex] ?? imageUrls[0] ?? ''
+                  
+                  if (new URLSearchParams(location.search).has('debug')) {
+                    console.log('[LISTING_DETAIL] imageUrls', imageUrls)
+                  }
+                  
+                  if (cover) {
+                    return (
+                      <img
+                        src={cover}
+                        alt={listing?.title ?? 'Listing image'}
+                        className="absolute inset-0 h-full w-full object-cover"
+                        loading="lazy"
+                        referrerPolicy="no-referrer"
+                      />
+                    )
+                  }
+                  return (
+                    <div className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground">
+                      No image
+                    </div>
+                  )
+                })()}
+              </div>
             </div>
             
             {/* Thumbnail Gallery */}
-            {listing.images && listing.images.length > 1 && (
-              <div className="flex space-x-2 overflow-x-auto">
-                {listing.images.map((image, index) => (
-                  <button
-                    key={index}
-                    onClick={() => setCurrentImageIndex(index)}
-                    className={`flex-shrink-0 h-16 w-20 overflow-hidden rounded-lg border border-surface bg-surface ${
-                      currentImageIndex === index ? 'border-primary-600' : ''
-                    }`}
-                  >
-                    <img
-                      src={image}
-                      alt={`${listing.title} ${index + 1}`}
-                      className="w-full h-full object-cover"
-                    />
-                  </button>
-                ))}
-              </div>
-            )}
+            {(() => {
+              const listingData = listing as any
+              const imageUrls = listingData?.imageUrls || listing?.images || []
+              if (imageUrls.length > 1) {
+                return (
+                  <div className="flex space-x-2 overflow-x-auto">
+                    {imageUrls.map((image: string, index: number) => (
+                      <button
+                        key={index}
+                        onClick={() => setCurrentImageIndex(index)}
+                        className={`flex-shrink-0 h-16 w-20 overflow-hidden rounded-lg border border-surface bg-surface ${
+                          currentImageIndex === index ? 'border-primary-600' : ''
+                        }`}
+                      >
+                        <img
+                          src={image}
+                          alt={`${listing?.title} ${index + 1}`}
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                          referrerPolicy="no-referrer"
+                        />
+                      </button>
+                    ))}
+                  </div>
+                )
+              }
+              return null
+            })()}
           </div>
 
           {/* Listing Details */}
