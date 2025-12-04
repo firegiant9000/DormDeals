@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { User, Settings, Heart, ShoppingBag, MessageSquare, Star, Edit3, BarChart3, Users, Crown, Loader2, ShoppingCart } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
@@ -6,8 +6,12 @@ import { useAccessControl } from '../hooks/useAccessControl'
 import ProtectedFeature from '../components/ProtectedFeature'
 import { UserType } from '../types/user'
 import { getUserProfileWithStats, updateUserProfile } from '../services/userService'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
+import { db } from '@/firebase'
+import { collection, query, where, orderBy, getDocs, doc, getDoc } from 'firebase/firestore'
+import { normalizeListing } from '@/utils/helpers'
+import { dlog } from '@/utils/debug'
 
 interface UserProfile {
   id: string
@@ -54,8 +58,6 @@ const Profile = () => {
   const { user } = useAuth()
   const { isAdmin, isPremium, canAccess } = useAccessControl()
   const navigate = useNavigate()
-  const location = useLocation()
-  const prevUserDataIdRef = useRef<string | null>(null)
   
   const [userData, setUserData] = useState<UserProfile | null>(null)
   const [listings, setListings] = useState<Listing[]>([])
@@ -167,9 +169,8 @@ const Profile = () => {
     const fetchListings = async () => {
       // Only fetch if we have a valid Firebase user ID and listings tab is active
       if (activeTab !== 'listings' || !user?.id) {
-        // Clear listings if user is not authenticated or wrong tab
         if (activeTab !== 'listings') {
-          return // Don't clear if just switching tabs
+          return
         }
         setListings([])
         return
@@ -177,39 +178,34 @@ const Profile = () => {
 
       try {
         setIsLoadingListings(true)
-        // Fetch only real listings from Firestore for this user
-        const { getListings } = await import('../services/listingsService');
-        const userListings = await getListings({ sellerId: user.id, active: true })
-        // Convert Item[] to Listing[] format expected by component
-        const convertedListings: Listing[] = userListings.map(item => ({
+        // Query Firestore for user's listings
+        const q = query(
+          collection(db, 'listings'),
+          where('ownerId', '==', user.id),
+          orderBy('createdAt', 'desc')
+        )
+        const snap = await getDocs(q)
+        const items = snap.docs.map(d => normalizeListing(d))
+        const convertedListings: Listing[] = items.map(item => ({
           id: item.id,
           title: item.title,
           price: item.price,
-          status: item.status.toString(),
-          views: item.views,
-          images: item.images,
+          status: item.status || 'active',
+          views: (item as any).views || 0,
+          images: item.imageUrls,
           description: item.description,
           category: item.category
         }))
-        // Only set listings if we got valid data from the API
-        if (Array.isArray(convertedListings)) {
-          setListings(convertedListings)
-        } else {
-          setListings([])
+        setListings(convertedListings)
+        dlog('[MY_LISTINGS]', { count: convertedListings.length })
+        
+        if (convertedListings.length === 0) {
+          // Empty state handled in render
         }
-        // Update ref to track current userData.id
-        if (userData) {
-          prevUserDataIdRef.current = userData.id
-        }
-        // Clear refresh flag if it was set
-        if ((location.state as any)?.refreshListings) {
-          navigate(location.pathname, { replace: true, state: {} })
-        }
-      } catch (error) {
-        console.error('Error fetching listings from database:', error)
-        // Clear listings on error
+      } catch (error: any) {
+        console.error('Error fetching listings:', error)
         setListings([])
-        toast.error('Failed to load listings')
+        toast.error(`Failed to load listings: ${error?.code || 'unknown'}`)
       } finally {
         setIsLoadingListings(false)
       }
@@ -217,7 +213,7 @@ const Profile = () => {
 
     fetchListings()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, user?.id, location.state, navigate, location.pathname])
+  }, [activeTab, user?.id])
 
   // Fetch favorites when favorites tab is active
   useEffect(() => {
@@ -267,40 +263,63 @@ const Profile = () => {
   // Fetch cart items when cart tab is active
   useEffect(() => {
     const fetchCart = async () => {
-      // Only fetch if we have a valid Firebase user ID
-      if (activeTab !== 'cart' || !user?.id) {
-        // Clear cart if user is not authenticated
+      if (!user?.id) {
+        if (activeTab === 'cart') {
+          toast.error('Please sign in')
+        }
         setCartItems([])
+        return
+      }
+
+      if (activeTab !== 'cart') {
         return
       }
 
       try {
         setIsLoadingCart(true)
-        // Fetch only real cart items from Firestore for this user
-        const { getCartItems } = await import('../services/cartService');
-        const userCart = await getCartItems(user.id)
-        // Convert Item[] to Listing[] format expected by component
-        const convertedCart: Listing[] = userCart.map(item => ({
+        // Fetch cart document from Firestore
+        const cartPath = `carts/${user.id}`
+        const cartDoc = await getDoc(doc(db, cartPath))
+        
+        if (!cartDoc.exists()) {
+          setCartItems([])
+          dlog('[CART] path', cartPath, 'items: 0')
+          return
+        }
+
+        const cartData = cartDoc.data()
+        const itemIds = Object.keys(cartData.items || {})
+        dlog('[CART] path', cartPath, 'items:', itemIds.length)
+
+        // Fetch listing details for each cart item
+        const listingPromises = itemIds.map(async (listingId) => {
+          try {
+            const listingDoc = await getDoc(doc(db, `listings/${listingId}`))
+            if (listingDoc.exists()) {
+              return normalizeListing(listingDoc)
+            }
+            return null
+          } catch {
+            return null
+          }
+        })
+
+        const listings = (await Promise.all(listingPromises)).filter(Boolean) as any[]
+        const convertedCart: Listing[] = listings.map(item => ({
           id: item.id,
           title: item.title,
           price: item.price,
-          status: item.status.toString(),
-          views: item.views,
-          images: item.images,
+          status: item.status || 'active',
+          views: item.views || 0,
+          images: item.imageUrls,
           description: item.description,
           category: item.category
         }))
-        // Only set cart items if we got valid data from the API
-        if (Array.isArray(convertedCart)) {
-          setCartItems(convertedCart)
-        } else {
-          setCartItems([])
-        }
-      } catch (error) {
-        console.error('Error fetching cart from database:', error)
-        // Clear cart on error
+        setCartItems(convertedCart)
+      } catch (error: any) {
+        console.error('Error fetching cart:', error)
         setCartItems([])
-        toast.error('Failed to load cart')
+        toast.error(`Cart error [${error?.code || 'unknown'}]`)
       } finally {
         setIsLoadingCart(false)
       }

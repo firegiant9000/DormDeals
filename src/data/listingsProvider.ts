@@ -4,6 +4,8 @@ import {
   getDocs, onSnapshot, QueryConstraint
 } from 'firebase/firestore';
 import type { Item } from '@/types';
+import { normalizeListing } from '@/utils/helpers';
+import { dlog } from '@/utils/debug';
 
 // Firestore listing document structure
 export interface FirestoreListing {
@@ -36,8 +38,8 @@ export interface FirestoreListing {
 const USE_MOCKS = import.meta.env.VITE_USE_MOCKS === 'true';
 
 // Convert Firestore listing to Item format
-function convertListingToItem(listing: FirestoreListing): Item {
-  const images = listing.imageUrls || listing.images || [];
+function convertListingToItem(listing: FirestoreListing | { id: string; imageUrls?: string[]; [key: string]: any }): Item {
+  const images = listing.imageUrls || (listing as any).images || [];
   const createdAt = listing.createdAt?.toDate ? listing.createdAt.toDate() : (listing.createdAt ? new Date(listing.createdAt) : new Date());
   const updatedAt = listing.updatedAt?.toDate ? listing.updatedAt.toDate() : (listing.updatedAt ? new Date(listing.updatedAt) : createdAt);
   const posted = listing.posted || createdAt.toISOString();
@@ -114,11 +116,12 @@ export async function fetchListings(opts?: {
     // (min/max price can be done via composite indexes; skip if index missing)
     const q = query(collection(db, 'listings'), ...(opts?.limitN ? [...qc, limit(opts.limitN)] : qc));
     const snap = await getDocs(q);
-    const rows = snap.docs.map(d => convertListingToItem({ id: d.id, ...(d.data() as any) }));
+    const rows = snap.docs.map(d => {
+      const normalized = normalizeListing(d);
+      return convertListingToItem(normalized);
+    });
     
-    if (import.meta.env.DEV) {
-      console.log('[LISTINGS] Fetched from Firestore', { count: rows.length, opts });
-    }
+    dlog('[LISTINGS] Fetched from Firestore', { count: rows.length, opts });
     
     return rows;
   } catch (error: any) {
@@ -157,12 +160,13 @@ export function subscribeListings(
     }
     
     return onSnapshot(q, (snap) => {
-      const rows = snap.docs.map(d => convertListingToItem({ id: d.id, ...(d.data() as any) }));
+      const rows = snap.docs.map(d => {
+        const normalized = normalizeListing(d);
+        return convertListingToItem(normalized);
+      });
       onData(rows);
       
-      if (import.meta.env.DEV) {
-        console.log('[LISTINGS] Snapshot update', { count: rows.length });
-      }
+      dlog('[LISTINGS] Snapshot update', { count: rows.length });
     }, (error) => {
       if (import.meta.env.DEV) {
         console.error('[LISTINGS] Snapshot error', error);
