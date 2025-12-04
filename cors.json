@@ -1,0 +1,22 @@
+[
+  {
+    "origin": [
+      "https://dormdeals-9cb29.web.app",
+      "https://dormdeals-9cb29.firebaseapp.com",
+      "http://localhost:5173"
+    ],
+    "method": ["GET","HEAD","PUT","POST","DELETE","OPTIONS"],
+    "responseHeader": [
+      "Content-Type",
+      "Origin",
+      "Authorization",
+      "X-Goog-Upload-Command",
+      "X-Goog-Upload-Header-Content-Length",
+      "X-Goog-Upload-Header-Content-Type",
+      "X-Goog-Upload-Protocol",
+      "X-Goog-Upload-File-Name",
+      "x-goog-meta-uid"
+    ],
+    "maxAgeSeconds": 3600
+  }
+]
