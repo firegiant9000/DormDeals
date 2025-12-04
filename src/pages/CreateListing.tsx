@@ -24,8 +24,8 @@ const CreateListing = () => {
   const [debugState, setDebugState] = useState<DebugState>({})
   const [isAllowlisted, setIsAllowlisted] = useState(false)
   
-  // Debug mode detection
-  const debug = typeof window !== 'undefined' && new URLSearchParams(location.search).has('debug')
+  // Debug mode detection (DEV or ?debug=1)
+  const debug = import.meta.env.DEV || (typeof window !== 'undefined' && new URLSearchParams(location.search).has('debug'))
 
   const [formData, setFormData] = useState({
     title: '',
@@ -158,12 +158,19 @@ const CreateListing = () => {
 
       // Debug logging
       if (debug) {
-        console.log('[CREATE_LISTING] payload', payload)
-        console.log('[CREATE_LISTING] file[0]', {
-          name: formData.images[0]?.name,
-          size: formData.images[0]?.size,
-          type: formData.images[0]?.type,
+        console.log('[CREATE_LISTING] payload', {
+          title: formData.title,
+          description: formData.description,
+          price: Number(formData.price),
+          category: formData.category,
+          condition: formData.condition,
+          location: formData.location,
+          images: formData.images?.length,
         })
+        if (formData.images[0]) {
+          const f = formData.images[0]
+          console.log('[CREATE_LISTING] file[0]', { name: f.name, size: f.size, type: f.type })
+        }
       }
 
       const res = await watchdog(createListing(payload), 25000) // 25s UI watchdog
@@ -256,45 +263,45 @@ const CreateListing = () => {
           <div className="max-w-3xl mx-auto rounded-2xl border border-surface bg-surface p-6 shadow">
             <div className="flex items-center justify-between mb-6">
               <h1 className="text-2xl font-semibold text-body">Create Listing</h1>
-              <button
+                      <button
                 className="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-body"
                 onClick={() => navigate(-1)}
-              >
+                      >
                 <X />
-              </button>
+                      </button>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Title */}
-              <div>
-                <label className="block text-sm font-medium text-body mb-2">
+            {/* Title */}
+            <div>
+              <label className="block text-sm font-medium text-body mb-2">
                   Title<span className="text-red-500">*</span>
-                </label>
-                <input
-                  name="title"
-                  value={formData.title}
-                  onChange={handleInputChange}
+              </label>
+              <input
+                name="title"
+                value={formData.title}
+                onChange={handleInputChange}
                   className="dd-input"
-                  placeholder="What are you selling?"
-                />
+                placeholder="What are you selling?"
+              />
                 {validationErrors.title && <p className="text-red-500 text-sm mt-1">{validationErrors.title}</p>}
-              </div>
+            </div>
 
               {/* Price */}
               <div>
                 <label className="block text-sm font-medium text-body mb-2">
                   Price<span className="text-red-500">*</span>
                 </label>
-                <input
+                  <input
                   name="price"
-                  type="number"
+                    type="number"
                   step="0.01"
-                  value={formData.price}
-                  onChange={handleInputChange}
+                    value={formData.price}
+                    onChange={handleInputChange}
                   className="dd-input"
-                  placeholder="0.00"
+                    placeholder="0.00"
                   inputMode="decimal"
-                />
+                  />
                 {validationErrors.price && <p className="text-red-500 text-sm mt-1">{validationErrors.price}</p>}
               </div>
 
@@ -312,13 +319,13 @@ const CreateListing = () => {
                   <option value="Other">Other</option>
                 </select>
                 {validationErrors.category && <p className="text-red-500 text-sm mt-1">{validationErrors.category}</p>}
-              </div>
+            </div>
 
-              {/* Condition */}
-              <div>
-                <label className="block text-sm font-medium text-body mb-2">
+            {/* Condition */}
+            <div>
+              <label className="block text-sm font-medium text-body mb-2">
                   Condition<span className="text-red-500">*</span>
-                </label>
+              </label>
                 <select name="condition" value={formData.condition} onChange={handleInputChange} className="dd-input">
                   <option value="">Select…</option>
                   <option value="New">New</option>
@@ -334,7 +341,7 @@ const CreateListing = () => {
               <div>
                 <label className="block text-sm font-medium text-body mb-2">
                   Photos<span className="text-red-500">*</span>
-                </label>
+                  </label>
                 <input type="file" multiple accept="image/*" onChange={handleImageChange} className="dd-input" />
                 {validationErrors.images && <p className="text-red-500 text-sm mt-1">{validationErrors.images}</p>}
                 <div className="mt-2 flex gap-2 flex-wrap">
@@ -342,47 +349,47 @@ const CreateListing = () => {
                     <div key={i} className="w-20 h-20 bg-gray-100 dark:bg-gray-800 rounded flex items-center justify-center text-xs text-body">
                       <Camera className="mr-1" size={14} /> {i + 1}
                     </div>
-                  ))}
-                </div>
+                ))}
               </div>
+            </div>
 
-              {/* Description */}
-              <div>
-                <label className="block text-sm font-medium text-body mb-2">
+            {/* Description */}
+            <div>
+              <label className="block text-sm font-medium text-body mb-2">
                   Description<span className="text-red-500">*</span>
-                </label>
-                <textarea
-                  name="description"
-                  value={formData.description}
-                  onChange={handleInputChange}
-                  rows={4}
-                  className="dd-input"
+              </label>
+              <textarea
+                name="description"
+                value={formData.description}
+                onChange={handleInputChange}
+                rows={4}
+                className="dd-input"
                   placeholder="Describe your item…"
-                />
+              />
                 {validationErrors.description && <p className="text-red-500 text-sm mt-1">{validationErrors.description}</p>}
-              </div>
+            </div>
 
-              {/* Location */}
-              <div>
+            {/* Location */}
+            <div>
                 <label className="block text-sm font-medium text-body mb-2">Pickup Location</label>
-                <input
-                  name="location"
-                  value={formData.location}
-                  onChange={handleInputChange}
-                  className="dd-input"
+              <input
+                name="location"
+                value={formData.location}
+                onChange={handleInputChange}
+                className="dd-input"
                   placeholder="e.g., UL Campus"
-                />
-              </div>
+              />
+            </div>
 
               {/* Actions */}
               <div className="flex gap-4 pt-4">
                 <button type="submit" className="btn-primary" disabled={isSubmitting}>
                   {isSubmitting ? 'Creating…' : 'List Item'}
-                </button>
+              </button>
                 <button type="button" className="btn-secondary" onClick={handleSaveDraft} disabled={isSubmitting}>
-                  Save Draft
-                </button>
-              </div>
+                Save Draft
+              </button>
+            </div>
 
               {/* Validate-only toggle (allowlisted users only) */}
               {isAllowlisted && (
@@ -402,7 +409,7 @@ const CreateListing = () => {
                   <label htmlFor="validate-only" className="text-body">Validate Only (skip upload+db)</label>
                 </div>
               )}
-            </form>
+          </form>
 
             {/* Debug Panel (DEV only) */}
             {import.meta.env.DEV && debugState.lastStep && (

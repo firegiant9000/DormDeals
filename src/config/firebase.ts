@@ -64,7 +64,10 @@ if (typeof window !== 'undefined') {
 }
 
 export const db = getFirestore(app);
-export const storage = getStorage(app);
+
+// Initialize Storage with explicit bucket if provided
+const BUCKET = import.meta.env.VITE_FIREBASE_STORAGE_BUCKET;
+export const storage = BUCKET ? getStorage(app, BUCKET) : getStorage(app);
 
 // Validate Firebase initialization
 if (typeof window !== 'undefined') {
@@ -87,23 +90,13 @@ if (typeof window !== 'undefined') {
   // PROD-safe debug log when ?debug=1
   const debug = new URLSearchParams(window.location.search).has('debug');
   if (debug) {
-    try {
-      const storageInstance = getStorage(app);
-      const bucket = (storageInstance as any)?.bucket || null;
-      console.log('[FB CONFIG]', {
-        projectId: app.options.projectId,
-        authDomain: app.options.authDomain,
-        storageBucket: (app.options as any).storageBucket,
-        resolvedBucket: bucket,
-      });
-    } catch (e) {
-      console.log('[FB CONFIG]', {
-        projectId: app.options.projectId,
-        authDomain: app.options.authDomain,
-        storageBucket: (app.options as any).storageBucket,
-        resolvedBucket: 'error accessing bucket',
-      });
-    }
+    console.log('[FB CONFIG]', {
+      projectId: app.options.projectId,
+      authDomain: app.options.authDomain,
+      storageBucketOption: (app.options as any).storageBucket,
+      bucketEnv: BUCKET || '(none provided)',
+      usingBucket: BUCKET || (app.options as any).storageBucket || '(SDK default resolution)',
+    });
   }
 }
 
