@@ -83,6 +83,28 @@ if (typeof window !== 'undefined') {
   } else {
     console.log('✅ Firebase initialized successfully');
   }
+
+  // PROD-safe debug log when ?debug=1
+  const debug = new URLSearchParams(window.location.search).has('debug');
+  if (debug) {
+    try {
+      const storageInstance = getStorage(app);
+      const bucket = (storageInstance as any)?.bucket || null;
+      console.log('[FB CONFIG]', {
+        projectId: app.options.projectId,
+        authDomain: app.options.authDomain,
+        storageBucket: (app.options as any).storageBucket,
+        resolvedBucket: bucket,
+      });
+    } catch (e) {
+      console.log('[FB CONFIG]', {
+        projectId: app.options.projectId,
+        authDomain: app.options.authDomain,
+        storageBucket: (app.options as any).storageBucket,
+        resolvedBucket: 'error accessing bucket',
+      });
+    }
+  }
 }
 
 export default app;

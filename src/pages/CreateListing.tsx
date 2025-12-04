@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { X, Camera } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import ProtectedFeature from '@/components/ProtectedFeature'
 import { createListing } from '@/services/listingService'
@@ -18,10 +18,14 @@ type DebugState = {
 
 const CreateListing = () => {
   const navigate = useNavigate()
+  const location = useLocation()
   const { isAuthenticated } = useAuth()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [debugState, setDebugState] = useState<DebugState>({})
   const [isAllowlisted, setIsAllowlisted] = useState(false)
+  
+  // Debug mode detection
+  const debug = typeof window !== 'undefined' && new URLSearchParams(location.search).has('debug')
 
   const [formData, setFormData] = useState({
     title: '',
@@ -126,6 +130,13 @@ const CreateListing = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (isSubmitting) return
+    
+    // Guard for empty images
+    if (formData.images.length === 0) {
+      toast.error('Please upload at least one photo')
+      return
+    }
+    
     if (!validate()) {
       toast.error('Please fix the errors in the form')
       return
@@ -145,10 +156,20 @@ const CreateListing = () => {
         images: formData.images,
       }
 
+      // Debug logging
+      if (debug) {
+        console.log('[CREATE_LISTING] payload', payload)
+        console.log('[CREATE_LISTING] file[0]', {
+          name: formData.images[0]?.name,
+          size: formData.images[0]?.size,
+          type: formData.images[0]?.type,
+        })
+      }
+
       const res = await watchdog(createListing(payload), 25000) // 25s UI watchdog
 
       const dt = Math.round(performance.now() - t0)
-      if (import.meta.env.DEV) console.log('[CREATE_LISTING] done', { res, ms: dt })
+      if (debug || import.meta.env.DEV) console.log('[CREATE_LISTING] done', { res, ms: dt })
 
       if (res.ok) {
         toast.success(`Listing created in ${dt}ms`)
@@ -165,7 +186,7 @@ const CreateListing = () => {
       const code = String(err?.code || 'unknown')
       const msg = err?.message || 'Unknown error'
       const dt = Math.round(performance.now() - t0)
-      if (import.meta.env.DEV) console.error('[CREATE_LISTING] watchdog/error', { code, msg, err })
+      if (debug || import.meta.env.DEV) console.error('[CREATE_LISTING] watchdog/error', { code, msg, err })
       setDebugState({ lastStep: 'watchdog', code, message: msg, ms: dt })
       toast.error(`Create failed [${code}]`)
     } finally {
@@ -375,7 +396,7 @@ const CreateListing = () => {
                       if (v) localStorage.setItem('VITE_LISTING_DEV_VALIDATE_ONLY', 'true')
                       else localStorage.removeItem('VITE_LISTING_DEV_VALIDATE_ONLY')
                       // no toast in prod; keep it quiet
-                      location.reload()
+                      window.location.reload()
                     }}
                   />
                   <label htmlFor="validate-only" className="text-body">Validate Only (skip upload+db)</label>

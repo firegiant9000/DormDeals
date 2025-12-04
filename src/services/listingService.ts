@@ -41,8 +41,12 @@ export interface CreateListingInput {
   images: File[]
 }
 
+function isDebugMode(): boolean {
+  return typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('debug')
+}
+
 function devLog(step: CreateListingStep, info: Record<string, unknown> = {}) {
-  if (import.meta.env.DEV) {
+  if (import.meta.env.DEV || isDebugMode()) {
     console.log('[LISTING]', step, { ...info, ts: Date.now() })
   }
 }
@@ -107,11 +111,27 @@ function getValidateOnlyFlag(): boolean {
 
 export async function createListing(input: CreateListingInput): Promise<CreateListingResult> {
   // Short-circuit validate-only mode (for isolating UI vs. backend) - production-safe with allowlist
-  const DEV_VALIDATE_ONLY = getValidateOnlyFlag()
+  const debug = isDebugMode()
+  const validateOnly = debug && (typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('validateOnly'))
+  const DEV_VALIDATE_ONLY = validateOnly || getValidateOnlyFlag()
   const user = auth.currentUser
+
+  // Debug guard logs
+  if (debug) {
+    console.log('[LISTING] start', {
+      uid: user?.uid || null,
+      imageCount: input.images?.length ?? 0,
+      price: input.price,
+      priceType: typeof input.price,
+      priceIsFinite: Number.isFinite(input.price),
+    })
+  }
 
   devLog('validate', { hasUser: !!user, images: input.images?.length ?? 0 })
   if (!user) {
+    if (debug) {
+      console.warn('[LISTING] auth.currentUser is null')
+    }
     return { ok: false, code: 'unauthenticated', step: 'validate', message: 'User not signed in' }
   }
   if (!input.title?.trim() || !input.category || !input.condition || Number.isNaN(input.price)) {
@@ -149,8 +169,11 @@ export async function createListing(input: CreateListingInput): Promise<CreateLi
 
         try {
           const sref = ref(storage, path)
+          if (debug) {
+            console.log('[LISTING] upload path', { index: i, path })
+          }
           const metadata: UploadMetadata = {
-            contentType: file.type || 'image/jpeg',
+            contentType: file.type || 'application/octet-stream',
             cacheControl: 'public,max-age=3600'
           }
 
@@ -158,11 +181,19 @@ export async function createListing(input: CreateListingInput): Promise<CreateLi
           const snap = await withTimeout(uploadBytes(sref, file, metadata), 10000, `uploadBytes(${i})`)
           const url = await withTimeout(getDownloadURL(snap.ref), 8000, `getDownloadURL(${i})`)
 
+          if (debug) {
+            console.log('[LISTING] downloadURL', { index: i, url })
+          }
           urls.push(url)
         } catch (err: any) {
           const raw = String(err?.code || err?.name || 'unknown')
-          if (import.meta.env.DEV) {
-            console.error('LISTING upload error', { index: i, code: raw, message: err?.message })
+          if (debug || import.meta.env.DEV) {
+            console.error('[LISTING] upload error', {
+              index: i,
+              code: raw,
+              message: err?.message,
+              stack: err?.stack,
+            })
           }
           return { ok: false, code: mapCode(raw), step: 'upload:file', message: err?.message }
         }
@@ -195,8 +226,12 @@ export async function createListing(input: CreateListingInput): Promise<CreateLi
         return { ok: true, id: docRef.id, imageUrls: urls }
       } catch (err: any) {
         const raw = String(err?.code || err?.name || 'unknown')
-        if (import.meta.env.DEV) {
-          console.error('LISTING firestore error', { code: raw, message: err?.message })
+        if (debug || import.meta.env.DEV) {
+          console.error('[LISTING] firestore error', {
+            code: raw,
+            message: err?.message,
+            stack: err?.stack,
+          })
         }
         return { ok: false, code: mapCode(raw), step: 'firestore:start', message: err?.message }
       }
@@ -205,8 +240,12 @@ export async function createListing(input: CreateListingInput): Promise<CreateLi
     return await withTimeout(op, WHOLE_OP_MS, 'createListing-whole-op')
   } catch (err: any) {
     const raw = String(err?.code || err?.name || 'unknown')
-    if (import.meta.env.DEV) {
-      console.error('LISTING fatal', { code: raw, message: err?.message })
+    if (isDebugMode() || import.meta.env.DEV) {
+      console.error('[LISTING] fatal', {
+        code: raw,
+        message: err?.message,
+        stack: err?.stack,
+      })
     }
     return { ok: false, code: mapCode(raw), step: 'validate', message: err?.message }
   }
