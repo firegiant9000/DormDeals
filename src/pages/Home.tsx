@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion'
-import { Link } from 'react-router-dom'
-import { useEffect } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
 import { 
   fadeIn, 
   staggerContainer, 
@@ -28,6 +28,26 @@ import { normalizeListing } from '@/utils/helpers'
 import { dlog } from '@/utils/debug'
 
 const Home = () => {
+  const navigate = useNavigate()
+  const [keywords, setKeywords] = useState('')
+  const [category, setCategory] = useState<string>('all')
+  const [sort, setSort] = useState<'newest' | 'priceLow' | 'priceHigh'>('newest')
+  const [minPrice, setMinPrice] = useState<string>('')
+  const [maxPrice, setMaxPrice] = useState<string>('')
+  const debug = typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('debug')
+  
+  function onSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    const p = new URLSearchParams()
+    if (keywords.trim()) p.set('q', keywords.trim())
+    if (category !== 'all') p.set('cat', category)
+    if (sort) p.set('sort', sort)
+    if (minPrice) p.set('min', minPrice)
+    if (maxPrice) p.set('max', maxPrice)
+    if (debug) console.log('[HOME] submit →', { keywords, category, sort, minPrice, maxPrice })
+    navigate(`/marketplace?${p.toString()}`)
+  }
+  
   // Fetch recent active listings for feed (can be used later for feed section)
   useEffect(() => {
     const fetchFeed = async () => {
@@ -170,24 +190,60 @@ const Home = () => {
         <aside>
           <section className="dd-card bg-surface-3 border-surface rounded-2xl p-4">
             <h3 className="text-lg font-semibold mb-3 text-body">Search</h3>
+            <form onSubmit={onSubmit}>
+              <label className="block text-xs font-medium text-muted mb-1">Keywords</label>
+              <input 
+                className="dd-input mb-3" 
+                placeholder="laptop, desk, textbooks..." 
+                value={keywords}
+                onChange={(e) => setKeywords(e.target.value)}
+              />
 
-            <label className="block text-xs font-medium text-muted mb-1">Keywords</label>
-            <input className="dd-input mb-3" placeholder="laptop, desk, textbooks..." />
+              <label className="block text-xs font-medium text-muted mb-1">Category</label>
+              <select 
+                className="dd-input mb-3"
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+              >
+                <option value="all">All Categories</option>
+                <option value="Electronics">Electronics</option>
+                <option value="Books">Books</option>
+                <option value="Furniture">Furniture</option>
+                <option value="Clothing">Clothing</option>
+                <option value="Other">Other</option>
+              </select>
 
-            <label className="block text-xs font-medium text-muted mb-1">Location</label>
-            <select className="dd-input mb-3">
-              <option>Campus area</option>
-              <option>Off campus</option>
-            </select>
+              <label className="block text-xs font-medium text-muted mb-1">Sort by</label>
+              <select 
+                className="dd-input mb-3"
+                value={sort}
+                onChange={(e) => setSort(e.target.value as 'newest' | 'priceLow' | 'priceHigh')}
+              >
+                <option value="newest">Newest</option>
+                <option value="priceLow">Lowest price</option>
+                <option value="priceHigh">Highest price</option>
+              </select>
 
-            <label className="block text-xs font-medium text-muted mb-1">Sort by</label>
-            <select className="dd-input mb-4">
-              <option>Newest</option>
-              <option>Lowest price</option>
-              <option>Highest price</option>
-            </select>
+              <label className="block text-xs font-medium text-muted mb-1">Min Price</label>
+              <input 
+                type="number"
+                className="dd-input mb-3" 
+                placeholder="0"
+                value={minPrice}
+                onChange={(e) => setMinPrice(e.target.value)}
+              />
 
-            <button className="w-full rounded-xl px-4 py-2 font-semibold text-white bg-blue-600 hover:bg-blue-700 focus:outline-none">Search</button>
+              <label className="block text-xs font-medium text-muted mb-1">Max Price</label>
+              <input 
+                type="number"
+                className="dd-input mb-4" 
+                placeholder="1000"
+                value={maxPrice}
+                onChange={(e) => setMaxPrice(e.target.value)}
+              />
+
+              <button type="submit" className="w-full rounded-xl px-4 py-2 font-semibold text-white bg-blue-600 hover:bg-blue-700 focus:outline-none">Search</button>
+            </form>
           </section>
         </aside>
         <div>

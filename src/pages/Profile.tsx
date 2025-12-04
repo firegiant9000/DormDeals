@@ -9,7 +9,7 @@ import { getUserProfileWithStats, updateUserProfile } from '../services/userServ
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { db } from '@/firebase'
-import { collection, query, where, orderBy, getDocs, doc, getDoc } from 'firebase/firestore'
+import { collection, query, where, orderBy, limit, getDocs, doc, getDoc } from 'firebase/firestore'
 import { normalizeListing } from '@/utils/helpers'
 import { dlog } from '@/utils/debug'
 
@@ -166,8 +166,7 @@ const Profile = () => {
 
   // Fetch listings when listings tab is active or when userData changes
   useEffect(() => {
-    const fetchListings = async () => {
-      // Only fetch if we have a valid Firebase user ID and listings tab is active
+    const loadMyListings = async () => {
       if (activeTab !== 'listings' || !user?.id) {
         if (activeTab !== 'listings') {
           return
@@ -178,13 +177,14 @@ const Profile = () => {
 
       try {
         setIsLoadingListings(true)
-        // Query Firestore for user's listings
-        const q = query(
+        // Try indexed query first
+        const q1 = query(
           collection(db, 'listings'),
           where('ownerId', '==', user.id),
-          orderBy('createdAt', 'desc')
+          orderBy('createdAt', 'desc'),
+          limit(50)
         )
-        const snap = await getDocs(q)
+        const snap = await getDocs(q1)
         const items = snap.docs.map(d => normalizeListing(d))
         const convertedListings: Listing[] = items.map(item => ({
           id: item.id,
@@ -200,18 +200,71 @@ const Profile = () => {
         dlog('[MY_LISTINGS]', { count: convertedListings.length })
         
         if (convertedListings.length === 0) {
-          // Empty state handled in render
+          toast.success('You haven\'t created any listings yet. Create one to get started!')
         }
-      } catch (error: any) {
-        console.error('Error fetching listings:', error)
-        setListings([])
-        toast.error(`Failed to load listings: ${error?.code || 'unknown'}`)
+      } catch (err: any) {
+        const msg = String(err?.message || err)
+        const code = String(err?.code || '')
+        
+        if (code === 'failed-precondition' || /index/i.test(msg)) {
+          // DEV: show index link if present
+          if (typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('debug') && err?.message) {
+            const m = err.message.match(/https:\/\/console\.firebase\.google\.com\/project\/[^\s]+/)
+            if (m) console.warn('[INDEX] Create composite index:', m[0])
+          }
+          
+          // Fallback: no orderBy
+          try {
+            const q2 = query(
+              collection(db, 'listings'),
+              where('ownerId', '==', user.id),
+              limit(50)
+            )
+            const snap2 = await getDocs(q2)
+            const rows = snap2.docs.map(d => normalizeListing(d))
+            // Sort client-side by createdAt desc if present
+            rows.sort((a, b) => {
+              const getMillis = (d: any): number => {
+                if (!d) return 0
+                if (typeof d?.toMillis === 'function') return d.toMillis()
+                if (d instanceof Date) return d.getTime()
+                if (d?.seconds) return d.seconds * 1000
+                return 0
+              }
+              return getMillis(b.createdAt) - getMillis(a.createdAt)
+            })
+            const convertedListings: Listing[] = rows.map(item => ({
+              id: item.id,
+              title: item.title,
+              price: item.price,
+              status: item.status || 'active',
+              views: (item as any).views || 0,
+              images: item.imageUrls,
+              description: item.description,
+              category: item.category
+            }))
+            setListings(convertedListings)
+            dlog('[MY_LISTINGS] fallback', { count: convertedListings.length })
+            
+            if (convertedListings.length === 0) {
+              toast.success('You haven\'t created any listings yet. Create one to get started!')
+            }
+            return
+          } catch (fallbackErr: any) {
+            console.error('Fallback query failed:', fallbackErr)
+            setListings([])
+            toast.error(`Failed to load listings: ${fallbackErr?.code || 'unknown'}`)
+            return
+          }
+        }
+        
+        throw err
       } finally {
         setIsLoadingListings(false)
       }
     }
 
-    fetchListings()
+    loadMyListings()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, user?.id])
 
