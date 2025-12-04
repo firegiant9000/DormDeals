@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion'
 import { Link } from 'react-router-dom'
+import { useEffect } from 'react'
 import { 
   fadeIn, 
   staggerContainer, 
@@ -21,8 +22,31 @@ import {
   TrendingUp,
   Heart
 } from 'lucide-react'
+import { db } from '@/firebase'
+import { collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore'
+import { normalizeListing } from '@/utils/helpers'
+import { dlog } from '@/utils/debug'
 
 const Home = () => {
+  // Fetch recent active listings for feed (can be used later for feed section)
+  useEffect(() => {
+    const fetchFeed = async () => {
+      try {
+        const q = query(
+          collection(db, 'listings'),
+          where('status', '==', 'active'),
+          orderBy('createdAt', 'desc'),
+          limit(6)
+        )
+        const snap = await getDocs(q)
+        const items = snap.docs.map(d => normalizeListing(d))
+        dlog('[HOME_FEED]', { count: items.length })
+      } catch (err: any) {
+        dlog('[HOME_FEED] error', err)
+      }
+    }
+    fetchFeed()
+  }, [])
   const features = [
     {
       icon: ShoppingBag,

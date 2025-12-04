@@ -72,8 +72,9 @@ const ListingDetailPage: React.FC = () => {
   };
 
   const handleContactSeller = () => {
-    // Navigate to chat or contact form
-    navigate('/chat', { state: { seller: listing?.seller, listing } });
+    // Navigate to messages page with seller and listing info
+    const sellerId = listing?.seller?.id || (listing as any)?.ownerId
+    navigate('/messages', { state: { to: sellerId, listingId: listing?.id } });
   };
 
   if (loading) {
@@ -140,16 +141,20 @@ const ListingDetailPage: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Image Gallery */}
           <div className="space-y-4">
-            <div className="aspect-w-16 aspect-h-12 bg-gray-200 rounded-lg overflow-hidden">
-              <img
-                src={listing.images[currentImageIndex] || '/api/placeholder/600/400'}
-                alt={listing.title}
-                className="w-full h-96 object-cover"
-              />
+            <div className="w-full h-[400px] bg-muted/20 rounded-xl overflow-hidden flex items-center justify-center">
+              {listing.images?.[currentImageIndex] ? (
+                <img
+                  src={listing.images[currentImageIndex]}
+                  alt={listing.title}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="bg-muted/20 rounded-xl w-full h-full" />
+              )}
             </div>
             
             {/* Thumbnail Gallery */}
-            {listing.images.length > 1 && (
+            {listing.images && listing.images.length > 1 && (
               <div className="flex space-x-2 overflow-x-auto">
                 {listing.images.map((image, index) => (
                   <button

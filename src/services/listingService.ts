@@ -209,8 +209,9 @@ export async function createListing(input: CreateListingInput): Promise<CreateLi
             category: input.category,
             condition: input.condition,
             description: input.description.trim(),
-            pickupLocation: input.location ?? '',
+            location: input.location ?? '',
             imageUrls: urls,
+            status: 'active',
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
             isHidden: false,
@@ -220,6 +221,15 @@ export async function createListing(input: CreateListingInput): Promise<CreateLi
           'firestore.addDoc(listings)'
         )
         devLog('firestore:done', { id: docRef.id })
+        if (debug) {
+          console.log('[LISTING] write', {
+            id: docRef.id,
+            ownerId: user.uid,
+            count: urls.length,
+            createdAt: 'serverTimestamp',
+            status: 'active'
+          })
+        }
         return { ok: true, id: docRef.id, imageUrls: urls }
       } catch (err: any) {
         const raw = String(err?.code || err?.name || 'unknown')

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { dlog } from '@/utils/debug';
 import { 
   Search, 
   Send, 
@@ -683,6 +684,21 @@ const MessagePage: React.FC = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const processedListingRef = useRef<string | null>(null);
+
+  // Handle Contact Seller navigation (from listing detail page)
+  useEffect(() => {
+    const state = location.state as { to?: string; listingId?: string; seller?: any; listing?: any } | null
+    const searchParams = new URLSearchParams(location.search)
+    const toUid = state?.to || searchParams.get('to')
+    const listingId = state?.listingId || searchParams.get('listing')
+    
+    if (toUid && listingId && processedListingRef.current !== listingId) {
+      dlog('[CONTACT_SELLER] navigate target', { to: toUid, listingId })
+      // Try to fetch listing and start conversation
+      // For now, we'll just log it - you can implement full conversation creation here
+      processedListingRef.current = listingId
+    }
+  }, [location.state, location.search])
 
   // Get item context from navigation state
   const listingFromState = location.state?.listing as Item | null;

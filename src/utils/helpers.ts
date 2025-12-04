@@ -79,3 +79,23 @@ export const throttle = <T extends (...args: any[]) => any>(
     }
   };
 };
+
+// Normalize listing to unified imageUrls format
+import type { Listing } from '@/types/commerce';
+
+export function normalizeListing(doc: any): Listing {
+  const data = doc.data ? doc.data() : doc
+  const id = doc.id ?? data.id
+
+  // migrate legacy fields to imageUrls
+  const imageUrls: string[] =
+    Array.isArray(data.imageUrls) ? data.imageUrls :
+    Array.isArray(data.images) ? data.images :
+    (data.imageUrl ? [data.imageUrl] : [])
+
+  return {
+    ...data,
+    id,
+    imageUrls,
+  } as Listing
+}
