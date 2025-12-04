@@ -1,165 +1,117 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { Grid, List } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { formatCurrency } from '@/utils/helpers'
-import { useShop } from '@/context/ShopContext'
-import type { Item } from '../types'
+import { Item, SortOption } from '@/types'
+import SearchFiltersBar from '@/components/SearchFiltersBar'
 import { fetchListings, subscribeListings } from '@/data/listingsProvider'
 
-const Marketplace: React.FC = () => {
-  const navigate = useNavigate()
-  const { addToCart, addToWishlist, isInCart, isInWishlist } = useShop()
+const getMillis = (d: any): number => {
+  if (!d) return 0
+  if (typeof d?.toMillis === 'function') return d.toMillis()
+  if (d instanceof Date) return d.getTime()
+  return 0
+}
 
-  const [baseItems, setBaseItems] = useState<Item[]>([])
+const Marketplace = () => {
+  const navigate = useNavigate()
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [searchQuery, setSearchQuery] = useState('')
-  const [selectedCategory, setSelectedCategory] = useState('')
+  const [selectedCategory, setSelectedCategory] = useState<string>('')
+  const [sort, setSort] = useState<'newest' | 'priceLow' | 'priceHigh'>('newest')
+  const [baseItems, setBaseItems] = useState<Item[]>([])
 
   useEffect(() => {
     fetchListings({ limitN: 100 })
       .then(setBaseItems)
-      .catch(err => {
-        if (import.meta.env.DEV) console.error('[Marketplace] fetchListings failed', err)
-      })
+      .catch(err => import.meta.env.DEV && console.error('[Marketplace] fetchListings', err))
   }, [])
 
   useEffect(() => {
     const unsubscribe = subscribeListings(
       items => setBaseItems(items),
-      err => {
-        if (import.meta.env.DEV) console.error('[Marketplace] subscribe error', err)
-      }
+      err => import.meta.env.DEV && console.error('[Marketplace] subscribeListings', err)
     )
     return unsubscribe
   }, [])
 
-  const categories = useMemo(() => {
-    const set = new Set<string>()
-    baseItems.forEach(i => set.add(i.category))
-    return Array.from(set).sort()
-  }, [baseItems])
-
   const filteredItems = useMemo(() => {
     let items = [...baseItems]
-
-    if (selectedCategory) items = items.filter(i => i.category === selectedCategory)
-
     if (searchQuery.trim()) {
       const q = searchQuery.trim().toLowerCase()
-      items = items.filter(
-        i =>
-          i.title.toLowerCase().includes(q) ||
-          (i.description ?? '').toLowerCase().includes(q)
-      )
+      items = items.filter(i => i.title.toLowerCase().includes(q) || i.description.toLowerCase().includes(q))
     }
-
-    // Newest first (if timestamps exist)
-    items.sort((a, b) => {
-      const ta = (a as any).createdAt?.toMillis?.() ?? 0
-      const tb = (b as any).createdAt?.toMillis?.() ?? 0
-      return tb - ta
-    })
-
+    if (selectedCategory) {
+      items = items.filter(i => i.category === selectedCategory)
+    }
+    if (sort === 'newest') {
+      items = items.sort((a, b) => getMillis(b.createdAt) - getMillis(a.createdAt))
+    } else if (sort === 'priceLow') {
+      items = items.sort((a, b) => (a.price ?? 0) - (b.price ?? 0))
+    } else if (sort === 'priceHigh') {
+      items = items.sort((a, b) => (b.price ?? 0) - (a.price ?? 0))
+    }
     return items
-  }, [baseItems, searchQuery, selectedCategory])
+  }, [baseItems, searchQuery, selectedCategory, sort])
 
   return (
-    <div className="max-w-6xl mx-auto p-6">
-      <h1 className="text-2xl font-semibold mb-4">Marketplace</h1>
-
-      {/* Filters */}
-      <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-3">
-        <input
-          value={searchQuery}
-          onChange={e => setSearchQuery(e.target.value)}
-          placeholder="Search items…"
-          className="rounded-md border px-3 py-2"
-        />
-        <select
-          value={selectedCategory}
-          onChange={e => setSelectedCategory(e.target.value)}
-          className="rounded-md border px-3 py-2"
-        >
-          <option value="">All categories</option>
-          {categories.map(c => (
-            <option key={c} value={c}>
-              {c}
-            </option>
-          ))}
-        </select>
-        <button
-          className="rounded-md border px-3 py-2"
-          onClick={() => {
-            setSearchQuery('')
-            setSelectedCategory('')
-          }}
-        >
-          Reset filters
-        </button>
+    <div className="container mx-auto px-4 py-8">
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-semibold">Marketplace</h1>
+        <div className="flex gap-2">
+          <button
+            className={`btn-secondary ${viewMode === 'grid' ? 'ring-1 ring-offset-1' : ''}`}
+            onClick={() => setViewMode('grid')}
+            aria-label="Grid view"
+          >
+            <Grid size={16} />
+          </button>
+          <button
+            className={`btn-secondary ${viewMode === 'list' ? 'ring-1 ring-offset-1' : ''}`}
+            onClick={() => setViewMode('list')}
+            aria-label="List view"
+          >
+            <List size={16} />
+          </button>
+        </div>
       </div>
 
-      {/* Grid */}
-      {filteredItems.length === 0 ? (
-        <div className="text-center text-gray-600 py-16">No items match your filters.</div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {filteredItems.map(item => {
-            const imgSrc =
-              (item as any).image ||
-              (item as any).imageUrl ||
-              (item as any).thumbnail ||
-              (item as any).imageUrls?.[0]
+      <SearchFiltersBar
+        query={searchQuery}
+        setQuery={setSearchQuery}
+        category={selectedCategory}
+        setCategory={setSelectedCategory}
+        condition=""
+        setCondition={() => {}}
+        pickupMethod=""
+        setPickupMethod={() => {}}
+        sortBy={sort === 'newest' ? SortOption.NEWEST : sort === 'priceLow' ? SortOption.PRICE_LOW_TO_HIGH : SortOption.PRICE_HIGH_TO_LOW}
+        setSortBy={(v) => {
+          if (v === SortOption.NEWEST) setSort('newest')
+          else if (v === SortOption.PRICE_LOW_TO_HIGH) setSort('priceLow')
+          else if (v === SortOption.PRICE_HIGH_TO_LOW) setSort('priceHigh')
+        }}
+        minPrice=""
+        setMinPrice={() => {}}
+        maxPrice=""
+        setMaxPrice={() => {}}
+      />
 
-            return (
-              <div
-                key={item.id}
-                className="rounded-xl border overflow-hidden bg-white shadow-sm flex flex-col"
-              >
-                <div
-                  className="aspect-video bg-gray-100 cursor-pointer"
-                  onClick={() => navigate(`/listing/${item.id}`)}
-                  title={item.title}
-                >
-                  {imgSrc && (
-                    <img
-                      src={imgSrc}
-                      alt={item.title}
-                      className="w-full h-full object-cover"
-                    />
-                  )}
-                </div>
+      <div className={viewMode === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6' : 'space-y-4 mt-6'}>
+        {filteredItems.map(item => (
+          <div key={item.id} className="bg-white rounded-xl shadow p-4">
+            <div className="aspect-video bg-gray-100 rounded mb-3" />
+            <div className="font-medium">{item.title}</div>
+            <div className="text-sm text-gray-500">{formatCurrency(item.price ?? 0)}</div>
+            <button className="btn-primary mt-3" onClick={() => navigate(`/listing/${item.id}`)}>
+              View
+            </button>
+          </div>
+        ))}
+      </div>
 
-                <div className="p-4 flex-1 flex flex-col">
-                  <div className="font-medium line-clamp-1">{item.title}</div>
-                  <div className="text-gray-600 text-sm line-clamp-2 mb-2">
-                    {item.description}
-                  </div>
-                  <div className="mt-auto flex items-center justify-between">
-                    <div className="text-lg font-semibold">
-                      {formatCurrency(Number(item.price) || 0)}
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        className="rounded-md border px-3 py-1 text-sm"
-                        onClick={() => addToWishlist(item)}
-                        disabled={isInWishlist(item.id)}
-                        title={isInWishlist(item.id) ? 'In wishlist' : 'Add to wishlist'}
-                      >
-                        {isInWishlist(item.id) ? 'Wishlisted' : 'Wishlist'}
-                      </button>
-                      <button
-                        className="rounded-md border px-3 py-1 text-sm"
-                        onClick={() => addToCart(item)}
-                        disabled={isInCart(item.id)}
-                        title={isInCart(item.id) ? 'In cart' : 'Add to cart'}
-                      >
-                        {isInCart(item.id) ? 'In cart' : 'Add to cart'}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )
-          })}
-        </div>
+      {filteredItems.length === 0 && (
+        <div className="mt-10 text-center text-gray-500">No items match your filters.</div>
       )}
     </div>
   )
