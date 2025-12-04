@@ -21,6 +21,9 @@ const CreateListing = () => {
   const { isAuthenticated } = useAuth()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [debugState, setDebugState] = useState<DebugState>({})
+  const [devValidateOnly, setDevValidateOnly] = useState(
+    String(import.meta.env.VITE_LISTING_DEV_VALIDATE_ONLY || localStorage.getItem('VITE_LISTING_DEV_VALIDATE_ONLY') || 'false') === 'true'
+  )
 
   const [formData, setFormData] = useState({
     title: '',
@@ -105,8 +108,19 @@ const CreateListing = () => {
     return Object.keys(errors).length === 0
   }
 
+  const watchdog = <T,>(p: Promise<T>, ms: number) =>
+    new Promise<T>((resolve, reject) => {
+      const t = setTimeout(() => {
+        const e: any = new Error('deadline-exceeded (UI watchdog)')
+        e.code = 'deadline-exceeded'
+        reject(e)
+      }, ms)
+      p.then((v) => { clearTimeout(t); resolve(v) }, (e) => { clearTimeout(t); reject(e) })
+    })
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (isSubmitting) return
     if (!validate()) {
       toast.error('Please fix the errors in the form')
       return
@@ -116,17 +130,14 @@ const CreateListing = () => {
     const t0 = performance.now()
 
     try {
-      if (import.meta.env.DEV) {
-        console.log('[CREATE_LISTING] submit:start', {
-          title: formData.title,
-          price: formData.price,
-          category: formData.category,
-          condition: formData.condition,
-          imageCount: formData.images.length,
-        })
+      // Flip on-the-fly validate-only mode via env mirror in localStorage
+      if (devValidateOnly) {
+        localStorage.setItem('VITE_LISTING_DEV_VALIDATE_ONLY', 'true')
+      } else {
+        localStorage.removeItem('VITE_LISTING_DEV_VALIDATE_ONLY')
       }
 
-      const res = await createListing({
+      const payload = {
         title: formData.title.trim(),
         description: formData.description.trim(),
         price: Number(formData.price),
@@ -134,35 +145,31 @@ const CreateListing = () => {
         condition: formData.condition,
         location: formData.location?.trim(),
         images: formData.images,
-      })
+      }
 
-      const ms = Math.round(performance.now() - t0)
+      const res = await watchdog(createListing(payload), 25000) // 25s UI watchdog
+
+      const dt = Math.round(performance.now() - t0)
+      if (import.meta.env.DEV) console.log('[CREATE_LISTING] done', { res, ms: dt })
 
       if (res.ok) {
-        if (import.meta.env.DEV) {
-          console.log('[CREATE_LISTING] submit:success', { id: res.id, ms })
-        }
-        toast.success('Listing created!')
+        toast.success(`Listing created in ${dt}ms`)
         // Clear draft on success
         try {
           localStorage.removeItem('dd-create-draft')
         } catch {}
         navigate(`/listing/${res.id}`)
       } else {
-        if (import.meta.env.DEV) {
-          console.error('[CREATE_LISTING] submit:fail', { res, ms })
-          if (res.message) console.error('[CREATE_LISTING] error message:', res.message)
-        }
-        setDebugState({ lastStep: res.step, code: res.code, message: res.message, ms })
+        setDebugState({ lastStep: res.step, code: res.code, message: res.message, ms: dt })
         toast.error(`Create failed [${res.code}] ${res.step}`)
       }
     } catch (err: any) {
-      const ms = Math.round(performance.now() - t0)
-      if (import.meta.env.DEV) {
-        console.error('[CREATE_LISTING] submit:exception', err)
-      }
-      setDebugState({ lastStep: 'exception', code: 'unknown', message: err?.message, ms })
-      toast.error('Create failed [unknown] validate')
+      const code = String(err?.code || 'unknown')
+      const msg = err?.message || 'Unknown error'
+      const dt = Math.round(performance.now() - t0)
+      if (import.meta.env.DEV) console.error('[CREATE_LISTING] watchdog/error', { code, msg, err })
+      setDebugState({ lastStep: 'watchdog', code, message: msg, ms: dt })
+      toast.error(`Create failed [${code}]`)
     } finally {
       setIsSubmitting(false)
     }
@@ -357,6 +364,25 @@ const CreateListing = () => {
                   Save Draft
                 </button>
               </div>
+
+              {/* DEV-only toggle */}
+              {import.meta.env.DEV && (
+                <div className="mt-2 text-xs text-muted-foreground flex items-center gap-2">
+                  <input
+                    id="dev-validate-only"
+                    type="checkbox"
+                    checked={devValidateOnly}
+                    onChange={(e) => {
+                      const v = e.target.checked
+                      setDevValidateOnly(v)
+                      if (v) localStorage.setItem('VITE_LISTING_DEV_VALIDATE_ONLY', 'true')
+                      else localStorage.removeItem('VITE_LISTING_DEV_VALIDATE_ONLY')
+                      toast(`Dev validate-only ${v ? 'ON' : 'OFF'}; reload to apply`)
+                    }}
+                  />
+                  <label htmlFor="dev-validate-only" className="text-body">DEV: Validate Only (skip Storage/Firestore)</label>
+                </div>
+              )}
             </form>
 
             {/* Debug Panel (DEV only) */}
