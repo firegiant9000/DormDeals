@@ -91,9 +91,23 @@ function withTimeout<T>(p: Promise<T>, ms: number, label: string): Promise<T> {
   })
 }
 
+function getValidateOnlyFlag(): boolean {
+  // LocalStorage or ?validateOnly=1
+  const ls = (typeof localStorage !== 'undefined' && localStorage.getItem('VITE_LISTING_DEV_VALIDATE_ONLY')) || 'false'
+  const qp = (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('validateOnly')) || '0'
+  const requested = (ls === 'true') || (qp === '1')
+
+  // Allowlist (comma-separated UIDs in env); only allow if current user matches
+  const allow = String(import.meta.env.VITE_VALIDATE_ONLY_ALLOWLIST || '').split(',').map(s => s.trim()).filter(Boolean)
+  const uid = (auth && auth.currentUser && auth.currentUser.uid) || ''
+  const isAllowed = allow.length === 0 ? false : allow.includes(uid)
+
+  return requested && isAllowed
+}
+
 export async function createListing(input: CreateListingInput): Promise<CreateListingResult> {
-  // Short-circuit dev validate-only mode (for isolating UI vs. backend)
-  const DEV_VALIDATE_ONLY = String(import.meta.env.VITE_LISTING_DEV_VALIDATE_ONLY || 'false') === 'true'
+  // Short-circuit validate-only mode (for isolating UI vs. backend) - production-safe with allowlist
+  const DEV_VALIDATE_ONLY = getValidateOnlyFlag()
   const user = auth.currentUser
 
   devLog('validate', { hasUser: !!user, images: input.images?.length ?? 0 })

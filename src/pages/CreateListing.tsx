@@ -21,9 +21,7 @@ const CreateListing = () => {
   const { isAuthenticated } = useAuth()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [debugState, setDebugState] = useState<DebugState>({})
-  const [devValidateOnly, setDevValidateOnly] = useState(
-    String(import.meta.env.VITE_LISTING_DEV_VALIDATE_ONLY || localStorage.getItem('VITE_LISTING_DEV_VALIDATE_ONLY') || 'false') === 'true'
-  )
+  const [isAllowlisted, setIsAllowlisted] = useState(false)
 
   const [formData, setFormData] = useState({
     title: '',
@@ -36,6 +34,13 @@ const CreateListing = () => {
   })
 
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
+
+  // Check if user is allowlisted for validate-only mode
+  useEffect(() => {
+    const allow = String(import.meta.env.VITE_VALIDATE_ONLY_ALLOWLIST || '').split(',').map(s => s.trim()).filter(Boolean)
+    const uid = (auth && auth.currentUser && auth.currentUser.uid) || ''
+    setIsAllowlisted(allow.includes(uid))
+  }, [isAuthenticated])
 
   // DEV env check on mount
   useEffect(() => {
@@ -130,13 +135,6 @@ const CreateListing = () => {
     const t0 = performance.now()
 
     try {
-      // Flip on-the-fly validate-only mode via env mirror in localStorage
-      if (devValidateOnly) {
-        localStorage.setItem('VITE_LISTING_DEV_VALIDATE_ONLY', 'true')
-      } else {
-        localStorage.removeItem('VITE_LISTING_DEV_VALIDATE_ONLY')
-      }
-
       const payload = {
         title: formData.title.trim(),
         description: formData.description.trim(),
@@ -365,22 +363,22 @@ const CreateListing = () => {
                 </button>
               </div>
 
-              {/* DEV-only toggle */}
-              {import.meta.env.DEV && (
+              {/* Validate-only toggle (allowlisted users only) */}
+              {isAllowlisted && (
                 <div className="mt-2 text-xs text-muted-foreground flex items-center gap-2">
                   <input
-                    id="dev-validate-only"
+                    id="validate-only"
                     type="checkbox"
-                    checked={devValidateOnly}
+                    checked={String(localStorage.getItem('VITE_LISTING_DEV_VALIDATE_ONLY') || 'false') === 'true'}
                     onChange={(e) => {
                       const v = e.target.checked
-                      setDevValidateOnly(v)
                       if (v) localStorage.setItem('VITE_LISTING_DEV_VALIDATE_ONLY', 'true')
                       else localStorage.removeItem('VITE_LISTING_DEV_VALIDATE_ONLY')
-                      toast(`Dev validate-only ${v ? 'ON' : 'OFF'}; reload to apply`)
+                      // no toast in prod; keep it quiet
+                      location.reload()
                     }}
                   />
-                  <label htmlFor="dev-validate-only" className="text-body">DEV: Validate Only (skip Storage/Firestore)</label>
+                  <label htmlFor="validate-only" className="text-body">Validate Only (skip upload+db)</label>
                 </div>
               )}
             </form>
