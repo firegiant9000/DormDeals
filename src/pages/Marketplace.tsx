@@ -5,36 +5,37 @@ import { formatCurrency } from '@/utils/helpers'
 import { Item, SortOption } from '@/types'
 import SearchFiltersBar from '@/components/SearchFiltersBar'
 import { fetchListings, subscribeListings } from '@/data/listingsProvider'
-import { isDebug } from '@/utils/debug'
 
 const Marketplace = () => {
   const navigate = useNavigate()
   const location = useLocation()
+  const DEBUG = new URLSearchParams(location.search).has('debug')
+  const dlog = (...a: any[]) => { if (DEBUG) console.log('[MARKET]', ...a); }
+  
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [baseItems, setBaseItems] = useState<Item[]>([])
-  
-  // Read URL params on mount
-  useEffect(() => {
-    const params = new URLSearchParams(location.search)
-    const q = params.get('q') || ''
-    const cat = params.get('cat') || ''
-    const sortParam = params.get('sort') || 'newest'
-    const min = params.get('min') || ''
-    const max = params.get('max') || ''
-    
-    setSearchQuery(q)
-    setSelectedCategory(cat)
-    setSort(sortParam as 'newest' | 'priceLow' | 'priceHigh')
-    setMinPrice(min)
-    setMaxPrice(max)
-  }, [location.search])
-  
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<string>('')
   const [selectedCondition, setSelectedCondition] = useState<string>('')
   const [minPrice, setMinPrice] = useState<string>('')
   const [maxPrice, setMaxPrice] = useState<string>('')
   const [sort, setSort] = useState<'newest' | 'priceLow' | 'priceHigh'>('newest')
+  
+  // Read URL params on mount
+  useEffect(() => {
+    const qs = new URLSearchParams(location.search)
+    const Q = qs.get('q') ?? ''
+    const CAT = qs.get('cat') ?? 'all'
+    const SORT = (qs.get('sort') ?? 'newest') as 'newest' | 'priceLow' | 'priceHigh'
+    const MIN = qs.get('min') ?? ''
+    const MAX = qs.get('max') ?? ''
+    setSearchQuery(Q)
+    setSelectedCategory(CAT)
+    setSort(SORT)
+    setMinPrice(MIN)
+    setMaxPrice(MAX)
+    dlog('query params → state', { Q, CAT, SORT, MIN, MAX })
+  }, [])
 
   useEffect(() => {
     fetchListings({ limitN: 100 })
@@ -51,43 +52,34 @@ const Marketplace = () => {
   }, [])
 
   const filteredItems = useMemo(() => {
+    const minN = Number.isFinite(Number(minPrice)) && minPrice !== '' ? Number(minPrice) : undefined
+    const maxN = Number.isFinite(Number(maxPrice)) && maxPrice !== '' ? Number(maxPrice) : undefined
+    
     let items = [...baseItems]
     
-    // Search filter
     if (searchQuery.trim()) {
       const q = searchQuery.trim().toLowerCase()
-      items = items.filter(i => i.title.toLowerCase().includes(q) || i.description.toLowerCase().includes(q))
+      items = items.filter(i =>
+        (i.title ?? '').toLowerCase().includes(q) ||
+        (i.description ?? '').toLowerCase().includes(q)
+      )
     }
     
-    // Category filter
-    if (selectedCategory && selectedCategory !== 'All Categories' && selectedCategory !== 'all') {
-      items = items.filter(i => i.category === selectedCategory)
+    if (selectedCategory && selectedCategory !== 'all') {
+      items = items.filter(i => (i.category ?? '').toLowerCase() === selectedCategory.toLowerCase())
     }
-    
-    // Condition filter
-    if (selectedCondition && selectedCondition !== 'Any Condition') {
-      items = items.filter(i => i.condition === selectedCondition)
-    }
-    
-    // Price filters - safe number parsing
-    const minN = Number.isFinite(Number(minPrice)) ? Number(minPrice) : undefined
-    const maxN = Number.isFinite(Number(maxPrice)) ? Number(maxPrice) : undefined
     
     items = items.filter(i => {
-      const price = Number(i.price)
-      if (!Number.isFinite(price)) return false
-      if (minN !== undefined && price < minN) return false
-      if (maxN !== undefined && price > maxN) return false
+      const p = Number(i.price)
+      if (!Number.isFinite(p)) return false
+      if (minN !== undefined && p < minN) return false
+      if (maxN !== undefined && p > maxN) return false
       return true
     })
     
-    // Sort
-    if (sort === 'priceLow') {
-      items.sort((a, b) => Number(a.price) - Number(b.price))
-    } else if (sort === 'priceHigh') {
-      items.sort((a, b) => Number(b.price) - Number(a.price))
-    } else {
-      // newest
+    if (sort === 'priceLow') items.sort((a, b) => Number(a.price) - Number(b.price))
+    else if (sort === 'priceHigh') items.sort((a, b) => Number(b.price) - Number(a.price))
+    else {
       items.sort((a, b) => {
         const getMillis = (d: any): number => {
           if (!d) return 0
@@ -100,19 +92,9 @@ const Marketplace = () => {
       })
     }
     
-    if (isDebug()) {
-      console.log('[MARKET] filters', { 
-        q: searchQuery, 
-        category: selectedCategory, 
-        sort, 
-        minPrice, 
-        maxPrice, 
-        baseCount: baseItems.length, 
-        afterCount: items.length 
-      })
-    }
+    dlog('filter result', { base: baseItems.length, after: items.length, minN, maxN, sort })
     return items
-  }, [baseItems, searchQuery, selectedCategory, selectedCondition, minPrice, maxPrice, sort])
+  }, [baseItems, searchQuery, selectedCategory, minPrice, maxPrice, sort])
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -159,7 +141,8 @@ const Marketplace = () => {
 
       <div className={viewMode === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6' : 'space-y-4 mt-6'}>
         {filteredItems.map(item => {
-          const img = item.images?.[0] || (item as any).imageUrls?.[0]
+          const listing = item as any
+          const img = listing.imageUrls?.[0]
           return (
             <div key={item.id} className="bg-white rounded-xl shadow p-4">
               <div className="aspect-video bg-gray-100 rounded mb-3 overflow-hidden">
@@ -185,7 +168,7 @@ const Marketplace = () => {
         })}
       </div>
 
-      {filteredItems.length === 0 && baseItems.length > 0 && (
+      {filteredItems.length === 0 && (
         <div className="mt-10 text-center text-gray-500">
           <p>No items match your filters.</p>
           <button 
@@ -203,10 +186,6 @@ const Marketplace = () => {
             Reset Filters
           </button>
         </div>
-      )}
-      
-      {filteredItems.length === 0 && baseItems.length === 0 && (
-        <div className="mt-10 text-center text-gray-500">No listings available yet.</div>
       )}
     </div>
   )

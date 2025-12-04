@@ -21,8 +21,18 @@ const ListingDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   
+  const DEBUG = new URLSearchParams(location.search).has('debug');
+  const dlog = (...a: any[]) => { if (DEBUG) console.log('[LISTING_DETAIL]', ...a); };
+  
   // Get listing data from location state or fetch from API
   const [listing, setListing] = useState<Item | null>(location.state?.listing || null);
+  
+  useEffect(() => {
+    if (listing) {
+      const listingData = listing as any
+      dlog('imageUrls', listingData?.imageUrls);
+    }
+  }, [listing]);
   const [loading, setLoading] = useState(!listing);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const { addToCart, addToWishlist, removeFromCart, removeFromWishlist, openCart, openWishlist, isInCart, isInWishlist } = useShop();
@@ -148,10 +158,6 @@ const ListingDetailPage: React.FC = () => {
                   const imageUrls = listingData?.imageUrls || listing?.images || []
                   const cover = imageUrls[currentImageIndex] ?? imageUrls[0] ?? ''
                   
-                  if (new URLSearchParams(location.search).has('debug')) {
-                    console.log('[LISTING_DETAIL] imageUrls', imageUrls)
-                  }
-                  
                   if (cover) {
                     return (
                       <img
@@ -160,6 +166,7 @@ const ListingDetailPage: React.FC = () => {
                         className="absolute inset-0 h-full w-full object-cover"
                         loading="lazy"
                         referrerPolicy="no-referrer"
+                        onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
                       />
                     )
                   }
