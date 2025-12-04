@@ -133,7 +133,7 @@ export async function createListing(input: CreateListingInput): Promise<CreateLi
 
           // 10s timeout per file (tune if needed)
           const snap = await withTimeout(uploadBytes(sref, file, metadata), 10000, `uploadBytes(${i})`)
-          const url = await withTimeout(getDownloadURL(sref), 8000, `getDownloadURL(${i})`)
+          const url = await withTimeout(getDownloadURL(snap.ref), 8000, `getDownloadURL(${i})`)
 
           urls.push(url)
         } catch (err: any) {
