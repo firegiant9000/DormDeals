@@ -111,16 +111,16 @@ function getValidateOnlyFlag(): boolean {
 
 export async function createListing(input: CreateListingInput): Promise<CreateListingResult> {
   // Short-circuit validate-only mode (for isolating UI vs. backend) - production-safe with allowlist
-  const debug = isDebugMode()
+  const debug = import.meta.env.DEV || (typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('debug'))
   const validateOnly = debug && (typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('validateOnly'))
   const DEV_VALIDATE_ONLY = validateOnly || getValidateOnlyFlag()
   const user = auth.currentUser
 
-  // Debug guard logs
+  // Pre-flight bucket sanity check
   if (debug) {
     console.log('[LISTING] start', {
       uid: user?.uid || null,
-      imageCount: input.images?.length ?? 0,
+      imageCount: input.images?.length || 0,
       price: input.price,
       priceType: typeof input.price,
       priceIsFinite: Number.isFinite(input.price),
@@ -158,24 +158,20 @@ export async function createListing(input: CreateListingInput): Promise<CreateLi
       // Upload images with per-file timeouts & metadata
       devLog('upload:start')
       const urls: string[] = []
-      const baseTs = Date.now()
 
       for (let i = 0; i < (input.images?.length ?? 0); i++) {
         const file = input.images[i]
-        const nameSafe = (file?.name || `img_${i}`).replace(/[^\w.\-]/g, '_')
-        const unique = `${baseTs}_${i}`
-        const path = `listings/${user.uid}/${unique}_${nameSafe}`
+        const uniqueId = `${Date.now()}_${i}_${Math.floor(performance.now() * 1000)}`
+        const filename = file.name || `image_${i}.jpg`
+        const path = `listings/${user.uid}/${uniqueId}_${filename}` // never empty
+        if (debug) console.log('[LISTING] path', path)
         devLog('upload:file', { index: i, name: file?.name, size: file?.size, type: file?.type, path })
 
         try {
           const sref = ref(storage, path)
-          if (debug) {
-            console.log('[LISTING] upload path', { index: i, path })
-          }
-          const metadata: UploadMetadata = {
-            contentType: file.type || 'application/octet-stream',
-            cacheControl: 'public,max-age=3600'
-          }
+
+          // uploadBytes will infer metadata from File, but on some browsers type can be ''
+          const metadata = file.type ? ({ contentType: file.type } as UploadMetadata) : undefined
 
           // 10s timeout per file (tune if needed)
           const snap = await withTimeout(uploadBytes(sref, file, metadata), 10000, `uploadBytes(${i})`)
@@ -187,15 +183,16 @@ export async function createListing(input: CreateListingInput): Promise<CreateLi
           urls.push(url)
         } catch (err: any) {
           const raw = String(err?.code || err?.name || 'unknown')
-          if (debug || import.meta.env.DEV) {
-            console.error('[LISTING] upload error', {
-              index: i,
-              code: raw,
+          if (debug) {
+            console.error('[CREATE_LISTING ERROR]', {
+              rawCode: err?.code,
+              name: err?.name,
               message: err?.message,
               stack: err?.stack,
             })
           }
-          return { ok: false, code: mapCode(raw), step: 'upload:file', message: err?.message }
+          const step = (raw === 'storage/invalid-argument' || raw === 'invalid-argument') ? 'upload:file' : 'upload:file'
+          return { ok: false, code: mapCode(raw), step, message: err?.message }
         }
       }
 
