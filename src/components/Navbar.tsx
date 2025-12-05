@@ -10,7 +10,7 @@ import { useAccessControl } from '../hooks/useAccessControl'
 const Navbar = () => {
   const location = useLocation()
   const { theme, toggle } = useTheme()
-  const { openCart, openWishlist } = useShop()
+  const { openCart, openWishlist, cartCount, wishlistCount } = useShop()
   const { isAuthenticated, logout } = useAuth()
   const { isAdmin, isPremium, canAccess } = useAccessControl()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
@@ -52,7 +52,7 @@ const Navbar = () => {
       transition={{ duration: 0.5 }}
       className="bg-surface-2 border-b border-surface sticky top-0 z-50"
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="container mx-auto px-4">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2">
@@ -101,11 +101,21 @@ const Navbar = () => {
             
             {/* Cart, Wishlist, Chat */}
             <div className="flex items-center gap-3">
-              <button onClick={openCart} className="px-3 py-2 rounded-lg border border-surface hover:bg-surface-2">
+              <button onClick={openCart} className="relative px-3 py-2 rounded-lg border border-surface hover:bg-surface-2">
                 <ShoppingCart className="w-4 h-4" />
+                {cartCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-primary-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                    {cartCount > 9 ? '9+' : cartCount}
+                  </span>
+                )}
               </button>
-              <button onClick={openWishlist} className="px-3 py-2 rounded-lg border border-surface hover:bg-surface-2">
+              <button onClick={openWishlist} className="relative px-3 py-2 rounded-lg border border-surface hover:bg-surface-2">
                 <Heart className="w-4 h-4" />
+                {wishlistCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                    {wishlistCount > 9 ? '9+' : wishlistCount}
+                  </span>
+                )}
               </button>
               <Link to="/chat" className="px-3 py-2 rounded-lg border border-surface hover:bg-surface-2">
                 <MessageCircle className="w-4 h-4" />
@@ -246,14 +256,19 @@ const Navbar = () => {
                   <div className="grid grid-cols-3 gap-2">
                     <button
                       onClick={() => { openCart(); setIsMobileMenuOpen(false); }}
-                      className="flex items-center justify-center gap-2 px-3 py-2 border border-surface rounded-lg hover:bg-surface-2"
+                      className="relative flex items-center justify-center gap-2 px-3 py-2 border border-surface rounded-lg hover:bg-surface-2"
                     >
                       <ShoppingCart className="w-4 h-4" />
                       <span className="text-sm">Cart</span>
+                      {cartCount > 0 && (
+                        <span className="absolute -top-1 -right-1 bg-primary-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                          {cartCount > 9 ? '9+' : cartCount}
+                        </span>
+                      )}
                     </button>
                     <button
                       onClick={() => { openWishlist(); setIsMobileMenuOpen(false); }}
-                      className="flex items-center justify-center gap-2 px-3 py-2 border border-surface rounded-lg hover:bg-surface-2"
+                      className="relative flex items-center justify-center gap-2 px-3 py-2 border border-surface rounded-lg hover:bg-surface-2"
                     >
                       <Heart className="w-4 h-4" />
                       <span className="text-sm">Wishlist</span>

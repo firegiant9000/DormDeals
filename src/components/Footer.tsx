@@ -51,7 +51,7 @@ const Footer = () => {
 
           {/* Copyright */}
           <div className="text-sm text-gray-400">
-            &copy; 2024 DormDeals. Made with ❤️ for UL students.
+            &copy; 2025 DormDeals. Made by UL students for UL students.
           </div>
         </div>
       </div>

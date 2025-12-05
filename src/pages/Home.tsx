@@ -1,480 +1,359 @@
-import { motion } from 'framer-motion'
-import { Link, useNavigate } from 'react-router-dom'
-import { useEffect, useState } from 'react'
-import { 
-  fadeIn, 
-  staggerContainer, 
-  staggerItem, 
-  heroTitle, 
-  heroSubtitle, 
-  heroButton,
-  getAnimationVariants
-} from '../utils/animations'
-import { 
-  ArrowRight, 
-  ShoppingBag, 
-  DollarSign, 
-  Users, 
-  Shield, 
-  Search, 
-  MessageCircle, 
-  CreditCard,
-  TrendingUp,
-  Heart
-} from 'lucide-react'
-import { db } from '@/firebase'
-import { collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore'
-import { normalizeListing } from '@/utils/helpers'
-import { useLocation } from 'react-router-dom'
+import { useEffect, useMemo, useState } from 'react'
+import { Grid, List, Star } from 'lucide-react'
+import { useNavigate, useLocation } from 'react-router-dom'
+import { Item, SortOption } from '@/types'
+import SearchFiltersBar from '@/components/SearchFiltersBar'
+import { fetchMarketplace } from '@/data/listingsProvider'
+import { getListings } from '@/services/listingsService'
+import { formatCurrency, formatRelativeTime } from '@/utils/helpers'
 
 const Home = () => {
-  const location = useLocation()
   const navigate = useNavigate()
+  const location = useLocation()
   const DEBUG = new URLSearchParams(location.search).has('debug')
   const dlog = (...a: any[]) => { if (DEBUG) console.log('[HOME]', ...a); }
   
-  const [keywords, setKeywords] = useState('')
-  const [category, setCategory] = useState('all')
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+  const [baseItems, setBaseItems] = useState<Item[]>([])
+  const [featuredItems, setFeaturedItems] = useState<Item[]>([])
+  const [featuredItem, setFeaturedItem] = useState<Item | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [selectedCategory, setSelectedCategory] = useState<string>('')
+  const [selectedCondition, setSelectedCondition] = useState<string>('')
+  const [pickup, setPickup] = useState<'any' | 'pickup' | 'delivery' | 'both'>('any')
+  const [minPrice, setMinPrice] = useState<string>('')
+  const [maxPrice, setMaxPrice] = useState<string>('')
   const [sort, setSort] = useState<'newest' | 'priceLow' | 'priceHigh'>('newest')
-  const [minPrice, setMinPrice] = useState('')
-  const [maxPrice, setMaxPrice] = useState('')
   
-  function onSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    const p = new URLSearchParams()
-    if (keywords.trim()) p.set('q', keywords.trim())
-    if (category !== 'all') p.set('cat', category)
-    if (sort) p.set('sort', sort)
-    if (minPrice) p.set('min', minPrice)
-    if (maxPrice) p.set('max', maxPrice)
-    dlog('submit → /marketplace', Object.fromEntries(p.entries()))
-    navigate(`/marketplace?${p.toString()}`)
-  }
-  
-  // Fetch recent active listings for feed (can be used later for feed section)
+  // Fetch featured item (single featured item for hero section)
   useEffect(() => {
-    const fetchFeed = async () => {
+    const fetchFeatured = async () => {
       try {
-        const q = query(
-          collection(db, 'listings'),
-          where('status', '==', 'active'),
-          orderBy('createdAt', 'desc'),
-          limit(6)
-        )
-        const snap = await getDocs(q)
-        const items = snap.docs.map(d => normalizeListing({ id: d.id, ...d.data() } as any))
-        dlog('[HOME_FEED]', { count: items.length })
+        const featured = await getListings({ featured: true, active: true, limitCount: 1 })
+        if (featured.length > 0) {
+          setFeaturedItem(featured[0])
+          dlog('[HOME] Featured item loaded', featured[0])
+        }
       } catch (err: any) {
-        dlog('[HOME_FEED] error', err)
+        dlog('[HOME] Error fetching featured item', err)
       }
     }
-    fetchFeed()
+    fetchFeatured()
   }, [])
-  const features = [
-    {
-      icon: ShoppingBag,
-      title: 'Easy Marketplace',
-      description: 'Browse and discover items from fellow UL students with our intuitive marketplace interface.'
-    },
-    {
-      icon: DollarSign,
-      title: 'Affordable Prices',
-      description: 'Save money by buying used items or make extra cash by selling what you no longer need.'
-    },
-    {
-      icon: Users,
-      title: 'Trusted Community',
-      description: 'Connect with verified UL students in a safe and secure campus environment.'
-    },
-    {
-      icon: Shield,
-      title: 'Safe Transactions',
-      description: 'Secure payment processing and user verification for complete peace of mind.'
-    },
-    {
-      icon: Search,
-      title: 'Smart Search',
-      description: 'Find exactly what you need with our advanced filtering and search capabilities.'
-    },
-    {
-      icon: Heart,
-      title: 'Sustainable Living',
-      description: 'Reduce waste and promote sustainability by giving items a second life.'
-    }
-  ]
 
-  const howItWorks = [
-    {
-      step: 1,
-      icon: Search,
-      title: 'Browse & Search',
-      description: 'Explore our marketplace to find items you need or discover something new.'
-    },
-    {
-      step: 2,
-      icon: MessageCircle,
-      title: 'Connect & Chat',
-      description: 'Connect with fellow students to ask questions and arrange meetups.'
-    },
-    {
-      step: 3,
-      icon: CreditCard,
-      title: 'Secure Payment',
-      description: 'Complete your transaction safely with our secure payment system.'
+  // Fetch all featured items
+  useEffect(() => {
+    const fetchFeaturedItems = async () => {
+      try {
+        const featured = await getListings({ featured: true, active: true })
+        setFeaturedItems(featured)
+        dlog('[HOME] Featured items loaded', featured.length)
+      } catch (err: any) {
+        dlog('[HOME] Error fetching featured items', err)
+      }
     }
-  ]
+    fetchFeaturedItems()
+  }, [])
+
+  // Read URL params on mount
+  useEffect(() => {
+    const qs = new URLSearchParams(location.search)
+    const Q = qs.get('q') ?? ''
+    const CAT = qs.get('cat') ?? 'all'
+    const SORT = (qs.get('sort') ?? 'newest') as 'newest' | 'priceLow' | 'priceHigh'
+    const MIN = qs.get('min') ?? ''
+    const MAX = qs.get('max') ?? ''
+    setSearchQuery(Q)
+    setSelectedCategory(CAT)
+    setSort(SORT)
+    setMinPrice(MIN)
+    setMaxPrice(MAX)
+    dlog('query params → state', { Q, CAT, SORT, MIN, MAX })
+  }, [])
+
+  useEffect(() => {
+    fetchMarketplace({ 
+      category: selectedCategory !== 'all' ? selectedCategory : undefined,
+      condition: selectedCondition !== 'Any Condition' ? selectedCondition : undefined,
+      sort 
+    })
+      .then(result => {
+        setBaseItems(result.items as any)
+      })
+      .catch((err: any) => import.meta.env.DEV && console.error('[Home] fetchMarketplace', err))
+  }, [selectedCategory, selectedCondition, sort])
+
+  const filteredItems = useMemo(() => {
+    let results = [...baseItems]
+    
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase()
+      results = results.filter(l =>
+        (l.title ?? '').toLowerCase().includes(q) ||
+        (l.description ?? '').toLowerCase().includes(q)
+      )
+    }
+    
+    if (selectedCategory && selectedCategory !== 'all') {
+      results = results.filter(l => (l.category ?? '').toLowerCase() === selectedCategory.toLowerCase())
+    }
+    
+    // price filters (numbers!)
+    if (minPrice !== '') results = results.filter(l => l.price >= Number(minPrice))
+    if (maxPrice !== '') results = results.filter(l => l.price <= Number(maxPrice))
+    
+    // pickup filter
+    if (pickup !== 'any') {
+      results = results.filter(l => {
+        const m = ((l as any).pickupMethod ?? 'pickup')
+        if (pickup === 'both') return m === 'both'
+        return m === pickup
+      })
+    }
+    
+    // sorting
+    if (sort === 'priceLow') results.sort((a, b) => a.price - b.price)
+    else if (sort === 'priceHigh') results.sort((a, b) => b.price - a.price)
+    else if (sort === 'newest') {
+      results.sort((a, b) => ((b.createdAt as any)?.seconds ?? 0) - ((a.createdAt as any)?.seconds ?? 0))
+    }
+    
+    // Filter result logged in debug mode if needed
+    return results
+  }, [baseItems, searchQuery, selectedCategory, pickup, minPrice, maxPrice, sort])
 
   return (
-    <div className="min-h-screen">
-      {/* Hero Section */}
-      <motion.section 
-        className="relative bg-gradient-to-br from-primary-600 via-primary-700 to-primary-800 text-white py-24 overflow-hidden"
-        initial="hidden"
-        animate="visible"
-        variants={getAnimationVariants(fadeIn)}
-      >
-        {/* Background decoration */}
-        <div className="absolute inset-0 bg-gradient-to-r from-primary-600/20 to-transparent"></div>
-        <div className="absolute top-0 right-0 w-96 h-96 bg-white/5 rounded-full -translate-y-48 translate-x-48"></div>
-        <div className="absolute bottom-0 left-0 w-80 h-80 bg-white/5 rounded-full translate-y-40 -translate-x-40"></div>
-        
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <motion.h1
-              variants={getAnimationVariants(heroTitle)}
-              className="text-5xl md:text-7xl font-bold mb-8 leading-tight"
-            >
-              Your Campus
-              <span className="block text-primary-200">Marketplace</span>
-            </motion.h1>
-            <motion.p
-              variants={getAnimationVariants(heroSubtitle)}
-              className="text-xl md:text-2xl mb-12 max-w-4xl mx-auto text-primary-100 leading-relaxed"
-            >
-              The ultimate marketplace for UL students to buy, sell, and rent items within their campus community. 
-              Save money, make money, and build connections.
-            </motion.p>
-            <motion.div
-              variants={getAnimationVariants(heroButton)}
-              className="flex flex-col sm:flex-row gap-6 justify-center"
-            >
-              <motion.div
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                transition={{ duration: 0.2 }}
-              >
-                <Link
-                  to="/marketplace"
-                  className="bg-white text-primary-600 hover:bg-gray-100 font-semibold py-4 px-10 rounded-xl transition-all duration-300 flex items-center justify-center text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-1"
-                >
-                  Get Started
-                  <ArrowRight className="ml-2 w-5 h-5" />
-                </Link>
-              </motion.div>
-              <motion.div
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                transition={{ duration: 0.2 }}
-              >
-                <Link
-                  to="/about"
-                  className="border-2 border-white text-white hover:bg-white hover:text-primary-600 font-semibold py-4 px-10 rounded-xl transition-all duration-300 text-lg"
-                >
-                  Learn More
-                </Link>
-              </motion.div>
-            </motion.div>
-          </div>
-        </div>
-      </motion.section>
-
-      {/* Search and Content Section */}
-      <div className="mx-auto max-w-6xl px-4 py-6 grid grid-cols-1 gap-8 lg:grid-cols-[280px_1fr]">
-        <aside>
-          <section className="dd-card bg-surface-3 border-surface rounded-2xl p-4">
-            <h3 className="text-lg font-semibold mb-3 text-body">Search</h3>
-            <form onSubmit={onSubmit}>
-              <label className="block text-xs font-medium text-muted mb-1">Keywords</label>
-              <input 
-                className="dd-input mb-3" 
-                placeholder="laptop, desk, textbooks..." 
-                value={keywords}
-                onChange={(e) => setKeywords(e.target.value)}
-              />
-
-              <label className="block text-xs font-medium text-muted mb-1">Category</label>
-              <select 
-                className="dd-input mb-3"
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-              >
-                <option value="all">All Categories</option>
-                <option value="Electronics">Electronics</option>
-                <option value="Books">Books</option>
-                <option value="Furniture">Furniture</option>
-                <option value="Clothing">Clothing</option>
-                <option value="Other">Other</option>
-              </select>
-
-              <label className="block text-xs font-medium text-muted mb-1">Sort by</label>
-              <select 
-                className="dd-input mb-3"
-                value={sort}
-                onChange={(e) => setSort(e.target.value as 'newest' | 'priceLow' | 'priceHigh')}
-              >
-                <option value="newest">Newest</option>
-                <option value="priceLow">Lowest price</option>
-                <option value="priceHigh">Highest price</option>
-              </select>
-
-              <label className="block text-xs font-medium text-muted mb-1">Min Price</label>
-              <input 
-                type="number"
-                className="dd-input mb-3" 
-                placeholder="0"
-                value={minPrice}
-                onChange={(e) => setMinPrice(e.target.value)}
-              />
-
-              <label className="block text-xs font-medium text-muted mb-1">Max Price</label>
-              <input 
-                type="number"
-                className="dd-input mb-4" 
-                placeholder="1000"
-                value={maxPrice}
-                onChange={(e) => setMaxPrice(e.target.value)}
-              />
-
-              <button type="submit" className="w-full rounded-xl px-4 py-2 font-semibold text-white bg-blue-600 hover:bg-blue-700 focus:outline-none">Search</button>
-            </form>
-          </section>
-        </aside>
-        <div>
-          {/* Featured Items Section */}
-          <section className="mb-12">
-            <div className="text-center mb-8">
-              <h2 className="text-3xl font-bold text-body mb-4">Featured Items</h2>
-              <p className="text-muted">Discover great deals from fellow UL students</p>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {/* Placeholder for featured items */}
-              <div className="dd-card bg-surface border-surface p-6 text-center">
-                <div className="w-16 h-16 bg-surface-2 rounded-lg mx-auto mb-4 flex items-center justify-center">
-                  <span className="text-muted">📱</span>
-                </div>
-                <h3 className="font-semibold text-body mb-2">Electronics</h3>
-                <p className="text-muted text-sm">Laptops, phones, and more</p>
-              </div>
-              <div className="dd-card bg-surface border-surface p-6 text-center">
-                <div className="w-16 h-16 bg-surface-2 rounded-lg mx-auto mb-4 flex items-center justify-center">
-                  <span className="text-muted">📚</span>
-                </div>
-                <h3 className="font-semibold text-body mb-2">Textbooks</h3>
-                <p className="text-muted text-sm">Save on course materials</p>
-              </div>
-              <div className="dd-card bg-surface border-surface p-6 text-center">
-                <div className="w-16 h-16 bg-surface-2 rounded-lg mx-auto mb-4 flex items-center justify-center">
-                  <span className="text-muted">🪑</span>
-                </div>
-                <h3 className="font-semibold text-body mb-2">Furniture</h3>
-                <p className="text-muted text-sm">Dorm essentials</p>
-              </div>
-            </div>
-          </section>
+    <div>
+      {/* Small Hero Section */}
+      <div className="bg-gradient-to-br from-primary-600 via-primary-700 to-primary-800 text-white py-12">
+        <div className="container mx-auto px-4">
+          <h1 className="text-3xl md:text-4xl font-bold text-center mb-3">
+            Find Your Perfect Dorm Items
+          </h1>
+          <p className="text-lg md:text-xl text-primary-100 text-center">
+            Browse items from fellow UL students and discover great deals on campus
+          </p>
         </div>
       </div>
 
-      {/* Features Section */}
-      <section className="py-24 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            viewport={{ once: true }}
-            className="text-center mb-20"
-          >
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-              Why Choose DormDeals?
-            </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-              We&apos;re built specifically for UL students, making campus life more affordable, sustainable, and connected.
-            </p>
-          </motion.div>
-
-          <motion.div 
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
-            variants={getAnimationVariants(staggerContainer)}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-          >
-            {features.map((feature, _index) => {
-              const Icon = feature.icon
-              return (
-                <motion.div
-                  key={feature.title}
-                  variants={getAnimationVariants(staggerItem)}
-                  className="group text-center p-8 rounded-2xl hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-white to-gray-50 border border-gray-100 hover:border-primary-200"
-                  whileHover={{ 
-                    scale: 1.02, 
-                    y: -4,
-                    transition: { duration: 0.2 }
+      {/* Featured Item Card */}
+      {featuredItem && (
+        <div className="container mx-auto px-4 py-6">
+          <div className="bg-gradient-to-r from-primary-50 to-primary-100 rounded-2xl p-6 border-2 border-primary-200 shadow-lg">
+            <div className="flex items-center gap-2 mb-4">
+              <Star className="w-5 h-5 text-primary-600 fill-primary-600" />
+              <h2 className="text-xl font-bold text-primary-900">Featured Item</h2>
+            </div>
+            <div 
+              className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer flex flex-col md:flex-row"
+              onClick={() => navigate(`/listing/${featuredItem.id}`)}
+            >
+              <div className="md:w-1/3 h-64 md:h-auto bg-gray-200 overflow-hidden">
+                <img
+                  src={featuredItem.images?.[0] || featuredItem.imageUrls?.[0] || '/api/placeholder/400/300'}
+                  alt={featuredItem.title}
+                  className="w-full h-full object-cover"
+                  loading="lazy"
+                  referrerPolicy="no-referrer"
+                  onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).style.visibility = 'hidden'
+                  }}
+                />
+              </div>
+              <div className="md:w-2/3 p-6 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-start justify-between mb-3">
+                    <h3 className="text-2xl font-bold text-gray-900 pr-4">{featuredItem.title}</h3>
+                    <span className="text-3xl font-bold text-primary-600 whitespace-nowrap">
+                      {formatCurrency(featuredItem.price)}
+                    </span>
+                  </div>
+                  <p className="text-gray-600 mb-4 line-clamp-3">{featuredItem.description}</p>
+                  <div className="flex items-center gap-4 text-sm text-gray-500 mb-4">
+                    <span className="bg-primary-100 text-primary-700 px-3 py-1 rounded-full font-medium">
+                      {featuredItem.category}
+                    </span>
+                    <span>{formatRelativeTime(featuredItem.posted)}</span>
+                  </div>
+                </div>
+                <button 
+                  className="btn-primary w-full md:w-auto self-start"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    navigate(`/listing/${featuredItem.id}`)
                   }}
                 >
-                  <div className="w-20 h-20 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg">
-                    <Icon className="w-10 h-10 text-white" />
-                  </div>
-                  <h3 className="text-2xl font-bold text-gray-900 mb-4">
-                    {feature.title}
-                  </h3>
-                  <p className="text-gray-600 leading-relaxed">
-                    {feature.description}
-                  </p>
-                </motion.div>
-              )
-            })}
-          </motion.div>
+                  View Details
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
-      </section>
+      )}
 
-      {/* How It Works Section */}
-      <section className="py-24 bg-gradient-to-br from-gray-50 to-gray-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            viewport={{ once: true }}
-            className="text-center mb-20"
-          >
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-              How It Works
-            </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Getting started is simple. Follow these three easy steps to join our community.
-            </p>
-          </motion.div>
+      <div className="container mx-auto px-4 py-8">
+        {/* Header with view mode toggle */}
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-semibold">Search Items</h2>
+          <div className="flex gap-2">
+            <button
+              className={`btn-secondary ${viewMode === 'grid' ? 'ring-1 ring-offset-1' : ''}`}
+              onClick={() => setViewMode('grid')}
+              aria-label="Grid view"
+            >
+              <Grid size={16} />
+            </button>
+            <button
+              className={`btn-secondary ${viewMode === 'list' ? 'ring-1 ring-offset-1' : ''}`}
+              onClick={() => setViewMode('list')}
+              aria-label="List view"
+            >
+              <List size={16} />
+            </button>
+          </div>
+        </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
-            {howItWorks.map((step, _index) => {
-              const Icon = step.icon
-              return (
-                <motion.div
-                  key={step.step}
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: _index * 0.2 }}
-                  viewport={{ once: true }}
-                  className="relative text-center"
-                >
-                  {/* Connection line for desktop */}
-                  {_index < howItWorks.length - 1 && (
-                    <div className="hidden md:block absolute top-16 left-1/2 w-full h-0.5 bg-gradient-to-r from-primary-300 to-primary-200 transform translate-x-1/2"></div>
-                  )}
-                  
-                  <div className="relative z-10">
-                    <div className="w-32 h-32 bg-white rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg border-4 border-primary-100">
-                      <div className="w-16 h-16 bg-gradient-to-br from-primary-500 to-primary-600 rounded-full flex items-center justify-center">
-                        <Icon className="w-8 h-8 text-white" />
+        <SearchFiltersBar
+          query={searchQuery}
+          setQuery={setSearchQuery}
+          category={selectedCategory}
+          setCategory={setSelectedCategory}
+          condition={selectedCondition}
+          setCondition={setSelectedCondition}
+          pickupMethod={pickup}
+          setPickupMethod={(v) => setPickup(v as 'any' | 'pickup' | 'delivery' | 'both')}
+          sortBy={sort === 'newest' ? SortOption.NEWEST : sort === 'priceLow' ? SortOption.PRICE_LOW_TO_HIGH : SortOption.PRICE_HIGH_TO_LOW}
+          setSortBy={(v) => {
+            if (v === SortOption.NEWEST) setSort('newest')
+            else if (v === SortOption.PRICE_LOW_TO_HIGH) setSort('priceLow')
+            else if (v === SortOption.PRICE_HIGH_TO_LOW) setSort('priceHigh')
+          }}
+          minPrice={minPrice}
+          setMinPrice={setMinPrice}
+          maxPrice={maxPrice}
+          setMaxPrice={setMaxPrice}
+        />
+
+        {/* Featured Items Section */}
+        {featuredItems.length > 0 && (
+          <div className="mt-8 mb-8">
+            <div className="flex items-center gap-2 mb-4">
+              <Star className="w-5 h-5 text-primary-600 fill-primary-600" />
+              <h3 className="text-xl font-semibold">Featured Items</h3>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {featuredItems.map((listing: any) => {
+                const cover = listing.imageUrls?.[0] || listing.images?.[0]
+                return (
+                  <div 
+                    key={listing.id} 
+                    className="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow border-2 border-primary-200 overflow-hidden cursor-pointer"
+                    onClick={() => navigate(`/listing/${listing.id}`)}
+                  >
+                    <div className="relative">
+                      <div className="aspect-video bg-gray-100 overflow-hidden">
+                        {cover ? (
+                          <img 
+                            src={cover} 
+                            alt={listing.title} 
+                            className="w-full h-full object-cover" 
+                            loading="lazy" 
+                            referrerPolicy="no-referrer"
+                            onError={(e)=>{ (e.currentTarget as HTMLImageElement).style.visibility='hidden';}}
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-sm text-gray-400">No image</div>
+                        )}
+                      </div>
+                      <div className="absolute top-2 right-2 bg-primary-600 text-white px-2 py-1 rounded-lg flex items-center gap-1 text-xs font-semibold">
+                        <Star className="w-3 h-3 fill-white" />
+                        Featured
                       </div>
                     </div>
-                    <div className="absolute -top-2 -right-2 w-8 h-8 bg-primary-600 text-white rounded-full flex items-center justify-center font-bold text-sm">
-                      {step.step}
+                    <div className="p-4">
+                      <h4 className="font-semibold text-lg text-gray-900 mb-2 line-clamp-2">{listing.title}</h4>
+                      <p className="text-sm text-gray-600 mb-3 line-clamp-2">{listing.description}</p>
+                      <div className="flex items-center gap-2 mb-3 flex-wrap">
+                        <span className="bg-primary-100 text-primary-700 px-2 py-1 rounded text-xs font-medium">
+                          {listing.category}
+                        </span>
+                        <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs font-medium">
+                          {listing.condition}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xl font-bold text-primary-600">{formatCurrency(listing.price)}</span>
+                        <button 
+                          className="btn-primary"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            navigate(`/listing/${listing.id}`)
+                          }}
+                        >
+                          View
+                        </button>
+                      </div>
                     </div>
-                    <h3 className="text-2xl font-bold text-gray-900 mb-4">
-                      {step.title}
-                    </h3>
-                    <p className="text-gray-600 leading-relaxed">
-                      {step.description}
-                    </p>
                   </div>
-                </motion.div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Search Results Section */}
+        <div className="mt-8">
+          <h3 className="text-xl font-semibold mb-4">Search Results</h3>
+          <div className={viewMode === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6' : 'space-y-4'}>
+            {filteredItems.map((listing: any) => {
+              const cover = listing.imageUrls?.[0] || listing.images?.[0]
+              return (
+                <div key={listing.id} className="bg-white rounded-xl shadow p-4">
+                  <div className="aspect-video bg-gray-100 rounded mb-3 overflow-hidden">
+                    {cover ? (
+                      <img 
+                        src={cover} 
+                        alt={listing.title} 
+                        className="h-full w-full object-cover rounded-xl" 
+                        loading="lazy" 
+                        referrerPolicy="no-referrer"
+                        onError={(e)=>{ (e.currentTarget as HTMLImageElement).style.visibility='hidden';}}
+                      />
+                    ) : (
+                      <div className="text-sm text-muted-foreground">No image</div>
+                    )}
+                  </div>
+                  <div className="font-medium">{listing.title}</div>
+                  <div className="text-sm text-gray-500">{formatCurrency(listing.price)}</div>
+                  <button className="btn-primary mt-3" onClick={() => navigate(`/listing/${listing.id}`)}>
+                    View
+                  </button>
+                </div>
               )
             })}
           </div>
-        </div>
-      </section>
 
-      {/* Stats Section */}
-      <section className="py-20 bg-primary-600 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 text-center">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.6 }}
-              viewport={{ once: true }}
-            >
-              <div className="text-4xl font-bold mb-2">500+</div>
-              <div className="text-primary-200">Active Students</div>
-            </motion.div>
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.6, delay: 0.1 }}
-              viewport={{ once: true }}
-            >
-              <div className="text-4xl font-bold mb-2">1,200+</div>
-              <div className="text-primary-200">Items Listed</div>
-            </motion.div>
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              viewport={{ once: true }}
-            >
-              <div className="text-4xl font-bold mb-2">$15K+</div>
-              <div className="text-primary-200">Money Saved</div>
-            </motion.div>
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.6, delay: 0.3 }}
-              viewport={{ once: true }}
-            >
-              <div className="text-4xl font-bold mb-2">4.9★</div>
-              <div className="text-primary-200">User Rating</div>
-            </motion.div>
-          </div>
-        </div>
-      </section>
-
-      {/* Final CTA Section */}
-      <section className="py-24 bg-white">
-        <div className="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true }}
-          >
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-              Ready to Transform Your Campus Life?
-            </h2>
-            <p className="text-xl text-gray-600 mb-12 leading-relaxed">
-              Join hundreds of UL students who are already buying, selling, and saving money with DormDeals. 
-              Start your journey today!
-            </p>
-            <div className="flex flex-col sm:flex-row gap-6 justify-center">
-              <Link
-                to="/marketplace"
-                className="bg-primary-600 hover:bg-primary-700 text-white font-semibold py-4 px-10 rounded-xl transition-all duration-300 text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-1 inline-flex items-center justify-center"
+          {filteredItems.length === 0 && (
+            <div className="mt-10 text-center text-gray-500">
+              <p>No items match your filters.</p>
+              <button 
+                onClick={() => {
+                  setSearchQuery('')
+                  setSelectedCategory('')
+                  setSelectedCondition('')
+                  setMinPrice('')
+                  setMaxPrice('')
+                  setSort('newest')
+                  navigate('/')
+                }}
+                className="mt-4 btn-secondary"
               >
-                Explore Marketplace
-                <ArrowRight className="ml-2 w-5 h-5" />
-              </Link>
-              <Link
-                to="/create-listing"
-                className="border-2 border-primary-600 text-primary-600 hover:bg-primary-600 hover:text-white font-semibold py-4 px-10 rounded-xl transition-all duration-300 text-lg inline-flex items-center justify-center"
-              >
-                Start Selling
-                <TrendingUp className="ml-2 w-5 h-5" />
-              </Link>
+                Reset Filters
+              </button>
             </div>
-          </motion.div>
+          )}
         </div>
-      </section>
+      </div>
     </div>
   )
 }
