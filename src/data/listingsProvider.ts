@@ -1,6 +1,8 @@
-import { collection, query, where, orderBy, getDocs, startAfter } from 'firebase/firestore';
+import { collection, query, where, orderBy, startAfter } from 'firebase/firestore';
 import { db } from '@/firebase';
 import { normalizeListing } from '@/utils/helpers';
+import { traceQuery } from '@/utils/traceQuery';
+import { dlog } from '@/utils/debug';
 import type { Listing } from '@/types/commerce';
 
 export async function fetchMarketplace({ 
@@ -34,8 +36,9 @@ export async function fetchMarketplace({
 
   if (pageToken) q = query(q, startAfter(pageToken));
 
-  const snap = await getDocs(q);
-  const items = snap.docs.map(d => normalizeListing({ id: d.id, ...d.data() } as any));
+  const snap = await traceQuery('MARKETPLACE', q);
+  const items = snap.docs.map((d: any) => normalizeListing({ id: d.id, ...d.data() }));
+  dlog('[MARKETPLACE] items', items);
   return { items, nextPageToken: snap.docs[snap.docs.length - 1] ?? null };
 }
 

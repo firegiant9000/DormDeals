@@ -83,25 +83,23 @@ export const throttle = <T extends (...args: any[]) => any>(
 // Normalize listing to unified imageUrls format
 import type { Listing } from '@/types/commerce';
 
-export function normalizeListing<T extends Partial<Listing>>(raw: T): Listing {
-  const imageUrls = Array.isArray(raw.imageUrls) && raw.imageUrls.length
-    ? raw.imageUrls
-    : Array.isArray(raw.images) && raw.images.length
-      ? raw.images
-      : raw.imageUrl ? [raw.imageUrl] : [];
+export function normalizeListing(raw: any): Listing {
+  const legacyArray = Array.isArray(raw.images) ? raw.images : [];
+  const legacySingle = raw.imageUrl ? [raw.imageUrl] : [];
+  const imageUrls = Array.isArray(raw.imageUrls) ? raw.imageUrls : [...legacyArray, ...legacySingle];
 
   return {
-    id: (raw as any).id ?? '',
+    id: raw.id,
     title: raw.title ?? '',
     description: raw.description ?? '',
     price: Number(raw.price ?? 0),
-    category: raw.category ?? 'Other',
-    condition: raw.condition ?? 'Good',
+    category: raw.category ?? '',
+    condition: raw.condition ?? '',
     ownerId: raw.ownerId ?? '',
-    status: (raw.status as any) ?? 'active',
-    createdAt: (raw.createdAt as any) ?? null,
+    status: raw.status ?? 'active',
+    createdAt: raw.createdAt ?? null,
     imageUrls,
     images: raw.images,
-    imageUrl: raw.imageUrl
+    imageUrl: raw.imageUrl,
   };
 }

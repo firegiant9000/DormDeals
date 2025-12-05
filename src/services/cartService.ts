@@ -1,15 +1,21 @@
 import { db, auth } from '@/firebase';
-import { collection, doc, getDocs, getDoc, deleteDoc, setDoc, serverTimestamp, query, where, documentId } from 'firebase/firestore';
+import { collection, doc, getDoc, deleteDoc, setDoc, serverTimestamp, query, where, documentId } from 'firebase/firestore';
 import { normalizeListing } from '@/utils/helpers';
+import { traceQuery } from '@/utils/traceQuery';
+import { dlog } from '@/utils/debug';
 import type { Listing } from '@/types/commerce';
 
 export async function fetchCart(): Promise<Listing[]> {
   const uid = auth.currentUser?.uid;
-  if (!uid) return [];
+  if (!uid) {
+    dlog('[CART] no uid');
+    return [];
+  }
   
+  dlog('[CART PATH]', `users/${uid}/cart`);
   const itemsRef = collection(db, 'users', uid, 'cart');
-  const snap = await getDocs(itemsRef);
-  const listingIds = snap.docs.map(d => (d.data() as any).listingId || d.id).filter(Boolean);
+  const snap = await traceQuery('CART', query(itemsRef));
+  const listingIds = snap.docs.map((d: any) => (d.data() as any).listingId || d.id).filter(Boolean);
   if (!listingIds.length) return [];
   
   // Batch fetch with 'in' query (max 10 per batch)
@@ -22,9 +28,9 @@ export async function fetchCart(): Promise<Listing[]> {
   for (const chunk of chunks) {
     try {
       const q = query(collection(db, 'listings'), where(documentId(), 'in', chunk));
-      const listingSnap = await getDocs(q);
-      listingSnap.forEach(doc => {
-        out.push(normalizeListing({ id: doc.id, ...doc.data() } as any));
+      const listingSnap = await traceQuery('CART_LISTINGS', q);
+      listingSnap.forEach((doc: any) => {
+        out.push(normalizeListing({ id: doc.id, ...doc.data() }));
       });
     } catch (e) {
       // Fallback to individual fetches if 'in' query fails
@@ -32,7 +38,7 @@ export async function fetchCart(): Promise<Listing[]> {
         try {
           const listingDoc = await getDoc(doc(db, 'listings', listingId));
           if (listingDoc.exists()) {
-            out.push(normalizeListing({ id: listingDoc.id, ...listingDoc.data() } as any));
+            out.push(normalizeListing({ id: listingDoc.id, ...listingDoc.data() }));
           }
         } catch {
           // Skip if listing doesn't exist
@@ -40,6 +46,7 @@ export async function fetchCart(): Promise<Listing[]> {
       }
     }
   }
+  dlog('[CART] items', out);
   return out;
 }
 
@@ -48,7 +55,7 @@ export async function addToCart(listingId: string): Promise<void> {
   if (!uid) throw new Error('Not authenticated');
   
   await setDoc(doc(db, 'users', uid, 'cart', listingId), {
-    listingId,
+        listingId,
     addedAt: serverTimestamp()
   });
 }

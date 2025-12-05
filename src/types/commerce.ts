@@ -38,8 +38,6 @@ export interface CommerceResultErr {
 export type CommerceResult = CommerceResultOk | CommerceResultErr;
 
 // Unified Listing type with imageUrls
-import { Timestamp } from 'firebase/firestore';
-
 export type Listing = {
   id: string;
   title: string;
@@ -48,10 +46,11 @@ export type Listing = {
   category: string;
   condition: string;
   ownerId: string;
-  status: 'active' | 'sold' | 'draft';
-  createdAt: Timestamp | null;
-  imageUrls: string[];                 // canonical
-  /** @deprecated */ images?: string[]; 
-  /** @deprecated */ imageUrl?: string;
+  status: 'active' | 'sold' | 'archived';
+  createdAt?: any; // Firestore timestamp
+  imageUrls: string[]; // canonical
+  // legacy fields (do not use directly)
+  images?: any;      // deprecated
+  imageUrl?: string; // deprecated
 };
 

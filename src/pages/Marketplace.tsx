@@ -4,6 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { Item, SortOption } from '@/types'
 import SearchFiltersBar from '@/components/SearchFiltersBar'
 import { fetchMarketplace } from '@/data/listingsProvider'
+import { dlog } from '@/utils/debug'
 
 const Marketplace = () => {
   const navigate = useNavigate()
@@ -108,9 +109,9 @@ const Marketplace = () => {
             <List size={16} />
           </button>
         </div>
-      </div>
+        </div>
 
-      <SearchFiltersBar
+          <SearchFiltersBar
         query={searchQuery}
         setQuery={setSearchQuery}
         category={selectedCategory}
@@ -125,11 +126,11 @@ const Marketplace = () => {
           else if (v === SortOption.PRICE_LOW_TO_HIGH) setSort('priceLow')
           else if (v === SortOption.PRICE_HIGH_TO_LOW) setSort('priceHigh')
         }}
-        minPrice={minPrice}
-        setMinPrice={setMinPrice}
-        maxPrice={maxPrice}
-        setMaxPrice={setMaxPrice}
-      />
+            minPrice={minPrice}
+            setMinPrice={setMinPrice}
+            maxPrice={maxPrice}
+            setMaxPrice={setMaxPrice}
+          />
 
       <div className={viewMode === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6' : 'space-y-4 mt-6'}>
         {filteredItems.map((listing: any) => {
@@ -154,11 +155,11 @@ const Marketplace = () => {
               <div className="text-sm text-gray-500">{listing.price.toFixed(2)}</div>
               <button className="btn-primary mt-3" onClick={() => navigate(`/listing/${listing.id}`)}>
                 View
-              </button>
-            </div>
+            </button>
+          </div>
           )
         })}
-      </div>
+        </div>
 
       {filteredItems.length === 0 && (
         <div className="mt-10 text-center text-gray-500">
@@ -176,9 +177,9 @@ const Marketplace = () => {
             className="mt-4 btn-secondary"
           >
             Reset Filters
-          </button>
-        </div>
-      )}
+                    </button>
+            </div>
+          )}
     </div>
   )
 }

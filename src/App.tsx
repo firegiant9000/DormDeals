@@ -20,6 +20,7 @@ const MessagePage = lazy(() => import('@/pages/MessagePage'));
 const LoginPage = lazy(() => import('@/pages/LoginPage'));
 const RegisterPage = lazy(() => import('@/pages/RegisterPage'));
 const PremiumPage = lazy(() => import('@/pages/PremiumPage'));
+const DebugPage = lazy(() => import('@/pages/DebugPage'));
 const NotFoundPage = lazy(() => import('@/pages/NotFoundPage'));
 
 function App() {
@@ -46,6 +47,7 @@ function App() {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/premium" element={<PremiumPage />} />
+            <Route path="/debug" element={<DebugPage />} />
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </Suspense>

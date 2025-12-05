@@ -9,12 +9,14 @@ import { getUserProfileWithStats, updateUserProfile } from '../services/userServ
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { db } from '@/firebase'
-import { collection, query, where, orderBy, getDocs } from 'firebase/firestore'
-import { normalizeListing } from '@/utils/normalizers'
+import { collection, query, where, orderBy } from 'firebase/firestore'
+import { normalizeListing } from '@/utils/helpers'
 import { fetchFavorites } from '@/services/favoriteService'
 import { fetchCart, removeFromCart } from '@/services/cartService'
 import { deleteListing } from '@/services/listingService'
 import { dlog } from '@/utils/debug'
+import { traceQuery } from '@/utils/traceQuery'
+import { auth } from '@/firebase'
 
 interface UserProfile {
   id: string
@@ -176,10 +178,12 @@ const Profile = () => {
       try {
         setIsLoadingListings(true)
         const uid = (user as any)?.uid || user?.id
+        dlog('[AUTH UID]', uid)
         const qRef = query(collection(db, 'listings'), where('ownerId', '==', uid), orderBy('createdAt', 'desc'))
-        const qs = await getDocs(qRef)
-        const rows = qs.docs.map(d => normalizeListing({ id: d.id, ...d.data() } as any))
-        const convertedListings: Listing[] = rows.map(item => ({
+        const qs = await traceQuery('MY_LISTINGS', qRef)
+        const rows = qs.docs.map((d: any) => normalizeListing({ id: d.id, ...d.data() }))
+        dlog('[MY_LISTINGS] items', rows)
+        const convertedListings: Listing[] = rows.map((item: any) => ({
           id: item.id,
           title: item.title,
           price: item.price,
@@ -235,6 +239,8 @@ const Profile = () => {
   useEffect(() => {
     if (activeTab !== 'cart') return
 
+    const uid = auth.currentUser?.uid
+    dlog('[CART PATH]', `users/${uid}/cart`)
     setIsLoadingCart(true)
     fetchCart()
       .then(items => {

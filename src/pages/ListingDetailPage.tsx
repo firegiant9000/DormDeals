@@ -17,6 +17,7 @@ import { useShop } from '@/context/ShopContext';
 import { useAuth } from '@/context/AuthContext';
 import { formatCurrency, formatRelativeTime } from '../utils/helpers';
 import { deleteListing } from '@/services/listingService';
+import { dlog } from '@/utils/debug';
 import toast from 'react-hot-toast';
 
 const ListingDetailPage: React.FC = () => {
@@ -32,8 +33,9 @@ const ListingDetailPage: React.FC = () => {
   
   useEffect(() => {
     if (listing) {
-      const listingData = listing as any
-      dlog('imageUrls', listingData?.imageUrls);
+      dlog('[DETAIL] listing', listing);
+      const cover = (listing as any)?.imageUrls?.[0];
+      dlog('[DETAIL] cover', cover);
     }
   }, [listing]);
   const [loading, setLoading] = useState(!listing);

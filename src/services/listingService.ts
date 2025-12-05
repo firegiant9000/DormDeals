@@ -2,6 +2,7 @@ import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'fire
 import { collection, doc, serverTimestamp, setDoc, deleteDoc, getDoc } from 'firebase/firestore';
 import { auth, db } from '@/firebase';
 import { normalizeListing } from '@/utils/helpers';
+import { dlog } from '@/utils/debug';
 import type { Listing } from '@/types/commerce';
 
 const storage = getStorage();
@@ -13,16 +14,12 @@ export async function createListing(input: {
   const user = auth.currentUser;
   if (!user) throw new Error('not-authenticated');
 
-  const debug = typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('debug');
-
   // Upload images under listings/<uid>/<listingId>/fileName
   // 1) create doc id first (draft)
   const listRef = doc(collection(db, 'listings'));
   const listingId = listRef.id;
 
-  if (debug) {
-    console.log('[LISTING] upload:start', { listingId, imageCount: input.images.length });
-  }
+  dlog('[CREATE] upload:start', { listingId, imageCount: input.images.length });
 
   const uploadedUrls: string[] = [];
   for (let i = 0; i < (input.images?.length ?? 0); i++) {
@@ -33,14 +30,10 @@ export async function createListing(input: {
     const url = await getDownloadURL(fileRef);
     uploadedUrls.push(url);
     
-    if (debug) {
-      console.log('[LISTING] upload:file', { index: i, url });
-    }
+    dlog('[CREATE] upload:file', { index: i, url });
   }
 
-  if (debug) {
-    console.log('[LISTING] upload:done', { count: uploadedUrls.length, urls: uploadedUrls });
-  }
+  dlog('[CREATE] uploaded urls', uploadedUrls);
 
   const payload = {
     title: input.title,
@@ -51,19 +44,12 @@ export async function createListing(input: {
     ownerId: user.uid,
     status: 'active' as const,
     createdAt: serverTimestamp(),
-    imageUrls: uploadedUrls
+    imageUrls: uploadedUrls // <— canonical
   };
 
-  await setDoc(listRef, payload);
+  await setDoc(doc(db, 'listings', listingId), payload);
   
-  if (debug) {
-    console.log('[LISTING] write', {
-      id: listingId,
-      ownerId: user.uid,
-      count: uploadedUrls.length,
-      firstUrl: uploadedUrls[0] || null
-    });
-  }
+  dlog('[LISTING] write', { id: listingId });
 
   return normalizeListing({ id: listingId, ...payload, createdAt: null } as any);
 }

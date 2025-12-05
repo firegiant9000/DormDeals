@@ -1,13 +1,10 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
-    // Images stored under listings/{uid}/{listingId}/{file}
-    match /listings/{uid}/{listingId}/{fileName} {
-      allow read: if true;
-      allow write: if request.auth != null
-                   && request.auth.uid == uid
-                   && request.resource.contentType.matches('image/.*');
-      allow delete: if request.auth != null && request.auth.uid == uid;
+    match /listings/{ownerId}/{listingId}/{fileName} {
+      allow read: if true; // public images
+      allow write: if request.auth != null && request.auth.uid == ownerId;
+      allow delete: if request.auth != null && request.auth.uid == ownerId;
     }
   }
 }
