@@ -9,9 +9,12 @@ import { getUserProfileWithStats, updateUserProfile } from '../services/userServ
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { db } from '@/firebase'
-import { collection, query, where, orderBy, limit, getDocs, doc, getDoc } from 'firebase/firestore'
-import { normalizeListing } from '@/utils/helpers'
-import { useLocation } from 'react-router-dom'
+import { collection, query, where, getDocs } from 'firebase/firestore'
+import { normalizeListing } from '@/utils/normalizers'
+import { fetchFavorites } from '@/services/favoriteService'
+import { fetchCart, removeFromCart } from '@/services/cartService'
+import { deleteListing } from '@/services/listingService'
+import { dlog } from '@/utils/debug'
 
 interface UserProfile {
   id: string
@@ -58,9 +61,6 @@ const Profile = () => {
   const { user } = useAuth()
   const { isAdmin, isPremium, canAccess } = useAccessControl()
   const navigate = useNavigate()
-  const location = useLocation()
-  const DEBUG = new URLSearchParams(location.search).has('debug')
-  const dlog = (...a: any[]) => { if (DEBUG) console.log('[PROFILE]', ...a); }
   
   const [userData, setUserData] = useState<UserProfile | null>(null)
   const [listings, setListings] = useState<Listing[]>([])
@@ -169,21 +169,16 @@ const Profile = () => {
 
   // Fetch listings when listings tab is active or when userData changes
   useEffect(() => {
-    const loadMyListings = async () => {
-      const uid = (user as any)?.uid || user?.id
-      if (!uid) return
-      if (activeTab !== 'listings') return
+    if (!user?.id) return
+    if (activeTab !== 'listings') return
 
+    (async () => {
       try {
         setIsLoadingListings(true)
-        const q1 = query(
-          collection(db, 'listings'),
-          where('ownerId', '==', uid),
-          orderBy('createdAt', 'desc'),
-          limit(50)
-        )
-        const snap = await getDocs(q1)
-        const rows = snap.docs.map(d => normalizeListing({ id: d.id, ...(d.data() as any) }))
+        const qRef = query(collection(db, 'listings'), where('ownerId', '==', user.id))
+        const qs = await getDocs(qRef)
+        const rows = qs.docs.map(d => normalizeListing({ id: d.id, ...d.data() } as any))
+        rows.sort((a, b) => ((b.createdAt as any)?.seconds ?? 0) - ((a.createdAt as any)?.seconds ?? 0))
         const convertedListings: Listing[] = rows.map(item => ({
           id: item.id,
           title: item.title,
@@ -195,176 +190,78 @@ const Profile = () => {
           category: item.category
         }))
         setListings(convertedListings)
-        dlog('loaded (indexed)', convertedListings.length)
-      } catch (err: any) {
-        const code = String(err?.code || '')
-        const msg = String(err?.message || '')
-        
-        if (code === 'failed-precondition' || /create index/i.test(msg)) {
-          if (DEBUG) {
-            const m = msg.match(/https:\/\/console\.firebase\.google\.com\/project\/[^\s]+/)
-            if (m) console.warn('[INDEX LINK]', m[0])
-          }
-          
-          // Retry without orderBy; sort client-side
-          try {
-            const q2 = query(
-              collection(db, 'listings'),
-              where('ownerId', '==', uid),
-              limit(50)
-            )
-            const snap2 = await getDocs(q2)
-            const rows2 = snap2.docs.map(d => normalizeListing({ id: d.id, ...(d.data() as any) }))
-            rows2.sort((a, b) => {
-              const getMillis = (d: any): number => {
-                if (!d) return 0
-                if (typeof d?.toMillis === 'function') return d.toMillis()
-                if (d instanceof Date) return d.getTime()
-                if (d?.seconds) return d.seconds * 1000
-                return 0
-              }
-              return getMillis(b.createdAt) - getMillis(a.createdAt)
-            })
-            const convertedListings: Listing[] = rows2.map(item => ({
-              id: item.id,
-              title: item.title,
-              price: item.price,
-              status: item.status || 'active',
-              views: (item as any).views || 0,
-              images: item.imageUrls,
-              description: item.description,
-              category: item.category
-            }))
-            setListings(convertedListings)
-            dlog('loaded (fallback)', convertedListings.length)
-          } catch (fallbackErr: any) {
-            console.error(err)
-            setListings([])
-          }
-        } else {
-          console.error(err)
-          setListings([])
-        }
+        dlog('My Listings loaded', convertedListings.length)
+      } catch (e: any) {
+        console.error(e)
+        toast.error(`Failed to load listings: ${e.code ?? 'error'}`)
+        setListings([])
       } finally {
         setIsLoadingListings(false)
       }
-    }
-
-    loadMyListings()
+    })()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, user?.id, user])
+  }, [activeTab, user?.id])
 
   // Fetch favorites when favorites tab is active
   useEffect(() => {
-    const fetchFavorites = async () => {
-      // Only fetch if we have a valid Firebase user ID
-      if (activeTab !== 'favorites' || !user?.id) {
-        // Clear favorites if user is not authenticated
-        setFavorites([])
-        return
-      }
+    const uid = (user as any)?.uid || user?.id
+    if (!uid) return
+    if (activeTab !== 'favorites') return
 
-      try {
-        setIsLoadingFavorites(true)
-        // Fetch only real favorites from Firestore for this user
-        const { getFavorites } = await import('../services/favoritesService');
-        const userFavorites = await getFavorites(user.id)
-        // Convert Item[] to Listing[] format expected by component
-        const convertedFavorites: Listing[] = userFavorites.map(item => ({
-          id: item.id,
-          title: item.title,
-          price: item.price,
-          status: item.status.toString(),
-          views: item.views,
-          images: item.images,
-          description: item.description,
-          category: item.category
-        }))
-        // Only set favorites if we got valid data from the API
-        if (Array.isArray(convertedFavorites)) {
-          setFavorites(convertedFavorites)
-        } else {
-          setFavorites([])
-        }
-      } catch (error) {
-        console.error('Error fetching favorites from database:', error)
-        // Clear favorites on error
-        setFavorites([])
-        toast.error('Failed to load favorites')
-      } finally {
-        setIsLoadingFavorites(false)
-      }
-    }
-
-    fetchFavorites()
-  }, [activeTab, user?.id])
-
-  // Fetch cart items when cart tab is active
-  useEffect(() => {
-    const fetchCart = async () => {
-      if (!user?.id) {
-        if (activeTab === 'cart') {
-          toast.error('Please sign in')
-        }
-        setCartItems([])
-        return
-      }
-
-      if (activeTab !== 'cart') {
-        return
-      }
-
-      try {
-        setIsLoadingCart(true)
-        // Fetch cart document from Firestore
-        const cartPath = `carts/${user.id}`
-        const cartDoc = await getDoc(doc(db, cartPath))
-        
-        if (!cartDoc.exists()) {
-          setCartItems([])
-          dlog('[CART] path', cartPath, 'items: 0')
-          return
-        }
-
-        const cartData = cartDoc.data()
-        const itemIds = Object.keys(cartData.items || {})
-        dlog('[CART] path', cartPath, 'items:', itemIds.length)
-
-        // Fetch listing details for each cart item
-        const listingPromises = itemIds.map(async (listingId) => {
-          try {
-            const listingDoc = await getDoc(doc(db, `listings/${listingId}`))
-            if (listingDoc.exists()) {
-              return normalizeListing(listingDoc)
-            }
-            return null
-          } catch {
-            return null
-          }
-        })
-
-        const listings = (await Promise.all(listingPromises)).filter(Boolean) as any[]
-        const convertedCart: Listing[] = listings.map(item => ({
+    setIsLoadingFavorites(true)
+    fetchFavorites(uid)
+      .then(items => {
+        const convertedFavorites: Listing[] = items.map(item => ({
           id: item.id,
           title: item.title,
           price: item.price,
           status: item.status || 'active',
-          views: item.views || 0,
+          views: (item as any).views || 0,
+          images: item.imageUrls,
+          description: item.description,
+          category: item.category
+        }))
+        setFavorites(convertedFavorites)
+        dlog('Favorites loaded', convertedFavorites.length)
+      })
+      .catch((e) => {
+        console.error(e)
+        toast.error('Failed to load favorites')
+        setFavorites([])
+      })
+      .finally(() => setIsLoadingFavorites(false))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, user?.id])
+
+  // Fetch cart items when cart tab is active
+  useEffect(() => {
+    const uid = (user as any)?.uid || user?.id
+    if (!uid) return
+    if (activeTab !== 'cart') return
+
+    setIsLoadingCart(true)
+    fetchCart(uid)
+      .then(items => {
+        const convertedCart: Listing[] = items.map(item => ({
+          id: item.id,
+          title: item.title,
+          price: item.price,
+          status: item.status || 'active',
+          views: (item as any).views || 0,
           images: item.imageUrls,
           description: item.description,
           category: item.category
         }))
         setCartItems(convertedCart)
-      } catch (error: any) {
-        console.error('Error fetching cart:', error)
+        dlog('Cart loaded', convertedCart.length)
+      })
+      .catch((e) => {
+        console.error(e)
+        toast.error(`Cart error [${e?.code || 'unknown'}]`)
         setCartItems([])
-        toast.error(`Cart error [${error?.code || 'unknown'}]`)
-      } finally {
-        setIsLoadingCart(false)
-      }
-    }
-
-    fetchCart()
+      })
+      .finally(() => setIsLoadingCart(false))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, user?.id])
 
   // Fallback user data
@@ -587,19 +484,22 @@ const Profile = () => {
                         onClick={() => navigate(`/listing/${listing.id}`)}
                       >
                         <div className="h-32 bg-gray-200 flex items-center justify-center overflow-hidden">
-                          {listing.images && listing.images.length > 0 ? (
-                            <img 
-                              src={listing.images[0]} 
-                              alt={listing.title}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <span className="text-gray-400">No Image</span>
-                          )}
+                          {(() => {
+                            const cover = (listing as any).imageUrls?.[0] || listing.images?.[0]
+                            return cover ? (
+                              <img 
+                                src={cover} 
+                                alt={listing.title}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="skeleton h-40 w-full" />
+                            )
+                          })()}
                         </div>
                         <div className="p-4">
                           <h3 className="font-semibold text-gray-900 mb-1">{listing.title}</h3>
-                          <p className="text-lg font-bold text-primary-600 mb-2">${listing.price}</p>
+                          <p className="text-lg font-bold text-primary-600 mb-2">${Number(listing.price).toFixed(2)}</p>
                           <div className="flex justify-between items-center text-sm text-gray-500">
                             <span className={`px-2 py-1 rounded text-xs ${
                               listing.status === 'Active' 
@@ -612,6 +512,29 @@ const Profile = () => {
                             </span>
                             <span>{listing.views || 0} views</span>
                           </div>
+                          {(() => {
+                            const uid = (user as any)?.uid || user?.id
+                            const isOwner = uid && (listing as any).ownerId === uid
+                            return isOwner ? (
+                              <button
+                                onClick={async (e) => {
+                                  e.stopPropagation()
+                                  if (confirm('Delete this listing? This cannot be undone.')) {
+                                    try {
+                                      await deleteListing(listing.id, uid)
+                                      toast.success('Listing deleted')
+                                      setListings(prev => prev.filter(x => x.id !== listing.id))
+                                    } catch (e: any) {
+                                      toast.error(e.message ?? 'Failed to delete listing')
+                                    }
+                                  }
+                                }}
+                                className="mt-2 btn-secondary text-red-600 hover:bg-red-50"
+                              >
+                                Delete
+                              </button>
+                            ) : null
+                          })()}
                         </div>
                       </motion.div>
                     ))}
@@ -641,28 +564,32 @@ const Profile = () => {
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {cartItems.map((listing) => (
+                    {cartItems.map((listing) => {
+                      const uid = (user as any)?.uid || user?.id
+                      return (
                       <motion.div
                         key={listing.id}
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="dd-card bg-surface border-surface overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
-                        onClick={() => navigate(`/listing/${listing.id}`)}
+                        className="dd-card bg-surface border-surface overflow-hidden hover:shadow-md transition-shadow"
                       >
                         <div className="h-32 bg-gray-200 flex items-center justify-center overflow-hidden">
-                          {listing.images && listing.images.length > 0 ? (
-                            <img 
-                              src={listing.images[0]} 
-                              alt={listing.title}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <span className="text-gray-400">No Image</span>
-                          )}
+                          {(() => {
+                            const cover = (listing as any).imageUrls?.[0] || listing.images?.[0]
+                            return cover ? (
+                              <img 
+                                src={cover} 
+                                alt={listing.title}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="skeleton h-40 w-full" />
+                            )
+                          })()}
                         </div>
                         <div className="p-4">
                           <h3 className="font-semibold text-gray-900 mb-1">{listing.title}</h3>
-                          <p className="text-lg font-bold text-primary-600 mb-2">${listing.price}</p>
+                          <p className="text-lg font-bold text-primary-600 mb-2">${Number(listing.price).toFixed(2)}</p>
                           <div className="flex justify-between items-center text-sm text-gray-500">
                             <span className={`px-2 py-1 rounded text-xs ${
                               listing.status === 'Active' 
@@ -675,9 +602,25 @@ const Profile = () => {
                             </span>
                             <span>{listing.views || 0} views</span>
                           </div>
+                          <button
+                            onClick={async (e) => {
+                              e.stopPropagation()
+                              try {
+                                await removeFromCart(uid, listing.id)
+                                setCartItems(prev => prev.filter(x => x.id !== listing.id))
+                                toast.success('Removed from cart')
+                              } catch (e: any) {
+                                toast.error('Failed to remove from cart')
+                              }
+                            }}
+                            className="mt-2 btn-secondary"
+                          >
+                            Remove
+                          </button>
                         </div>
                       </motion.div>
-                    ))}
+                      )
+                    })}
                   </div>
                 )}
               </>
@@ -713,19 +656,22 @@ const Profile = () => {
                         onClick={() => navigate(`/listing/${listing.id}`)}
                       >
                         <div className="h-32 bg-gray-200 flex items-center justify-center overflow-hidden">
-                          {listing.images && listing.images.length > 0 ? (
-                            <img 
-                              src={listing.images[0]} 
-                              alt={listing.title}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <span className="text-gray-400">No Image</span>
-                          )}
+                          {(() => {
+                            const cover = (listing as any).imageUrls?.[0] || listing.images?.[0]
+                            return cover ? (
+                              <img 
+                                src={cover} 
+                                alt={listing.title}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="skeleton h-40 w-full" />
+                            )
+                          })()}
                         </div>
                         <div className="p-4">
                           <h3 className="font-semibold text-gray-900 mb-1">{listing.title}</h3>
-                          <p className="text-lg font-bold text-primary-600 mb-2">${listing.price}</p>
+                          <p className="text-lg font-bold text-primary-600 mb-2">${Number(listing.price).toFixed(2)}</p>
                           <div className="flex justify-between items-center text-sm text-gray-500">
                             <span className={`px-2 py-1 rounded text-xs ${
                               listing.status === 'Active' 

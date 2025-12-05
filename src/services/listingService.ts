@@ -1,6 +1,6 @@
 import { db, storage, auth } from '@/firebase'
-import { addDoc, collection, serverTimestamp } from 'firebase/firestore'
-import { ref, uploadBytes, getDownloadURL, UploadMetadata } from 'firebase/storage'
+import { addDoc, collection, serverTimestamp, doc, getDoc, deleteDoc } from 'firebase/firestore'
+import { ref, uploadBytes, getDownloadURL, UploadMetadata, deleteObject } from 'firebase/storage'
 
 type CreateListingStep =
   | 'validate'
@@ -256,4 +256,24 @@ export async function createListing(input: CreateListingInput): Promise<CreateLi
     }
     return { ok: false, code: mapCode(raw), step: 'validate', message: err?.message }
   }
+}
+
+export async function deleteListing(listingId: string, requesterUid: string) {
+  const dref = doc(db, 'listings', listingId);
+  const snap = await getDoc(dref);
+  if (!snap.exists()) throw new Error('Listing does not exist');
+  const data = snap.data() as any;
+  if (data.ownerId !== requesterUid) throw new Error('Forbidden');
+
+  const imageUrls: string[] = Array.isArray(data.imageUrls) ? data.imageUrls : [];
+
+  // best-effort delete storage files
+  await Promise.allSettled(imageUrls.map(url => {
+    try {
+      const r = ref(storage, url);
+      return deleteObject(r);
+    } catch { return Promise.resolve(); }
+  }));
+
+  await deleteDoc(dref);
 }

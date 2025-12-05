@@ -9,11 +9,14 @@ import {
   Calendar,
   User,
   MessageCircle,
-  Share2
+  Share2,
+  Trash2
 } from 'lucide-react';
 import { Item } from '../types';
 import { useShop } from '@/context/ShopContext';
+import { useAuth } from '@/context/AuthContext';
 import { formatCurrency, formatRelativeTime } from '../utils/helpers';
+import { deleteListing } from '@/services/listingService';
 import toast from 'react-hot-toast';
 
 const ListingDetailPage: React.FC = () => {
@@ -36,6 +39,8 @@ const ListingDetailPage: React.FC = () => {
   const [loading, setLoading] = useState(!listing);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const { addToCart, addToWishlist, removeFromCart, removeFromWishlist, openCart, openWishlist, isInCart, isInWishlist } = useShop();
+  const authContext = useAuth();
+  const user = authContext?.user || null;
 
   // Scroll to top when component mounts
   useEffect(() => {
@@ -294,6 +299,25 @@ const ListingDetailPage: React.FC = () => {
                 <MessageCircle className="w-5 h-5" />
                 <span>Contact Seller</span>
               </button>
+              {user && (listing as any)?.ownerId === (user as any)?.uid && (
+                <button
+                  onClick={async () => {
+                    if (confirm('Delete this listing? This cannot be undone.')) {
+                      try {
+                        await deleteListing(listing.id, (user as any).uid)
+                        toast.success('Listing deleted')
+                        navigate('/profile?tab=listings')
+                      } catch (e: any) {
+                        toast.error(e.message ?? 'Failed to delete listing')
+                      }
+                    }
+                  }}
+                  className="mt-3 inline-flex w-full items-center justify-center rounded-xl px-4 py-2 font-semibold text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                >
+                  <Trash2 className="w-5 h-5" />
+                  <span>Delete listing</span>
+                </button>
+              )}
             </div>
 
             {/* Listing Details */}
