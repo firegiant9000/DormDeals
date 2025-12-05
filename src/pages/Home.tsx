@@ -150,7 +150,7 @@ const Home = () => {
             >
               <div className="md:w-1/3 h-64 md:h-auto bg-gray-200 overflow-hidden">
                 <img
-                  src={featuredItem.images?.[0] || featuredItem.imageUrls?.[0] || '/api/placeholder/400/300'}
+                  src={featuredItem.images?.[0] || '/api/placeholder/400/300'}
                   alt={featuredItem.title}
                   className="w-full h-full object-cover"
                   loading="lazy"
@@ -243,7 +243,7 @@ const Home = () => {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {featuredItems.map((listing: any) => {
-                const cover = listing.imageUrls?.[0] || listing.images?.[0]
+                const cover = listing.images?.[0]
                 return (
                   <div 
                     key={listing.id} 

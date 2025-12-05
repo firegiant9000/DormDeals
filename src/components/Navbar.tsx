@@ -54,38 +54,40 @@ const Navbar = () => {
     >
       <div className="container mx-auto px-4">
         <div className="flex justify-between items-center h-16">
-          {/* Logo */}
-          <Link to="/" className="flex items-center space-x-2">
-            <div className="w-10 h-10 bg-primary-600 rounded-lg relative flex items-center justify-center">
-              <ShoppingBag className="w-6 h-6 text-white" />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <GraduationCap className="w-4 h-4 text-white" />
+          {/* Logo and Navigation Items */}
+          <div className="flex items-center space-x-6">
+            <Link to="/" className="flex items-center space-x-2">
+              <div className="w-10 h-10 bg-primary-600 rounded-lg relative flex items-center justify-center">
+                <ShoppingBag className="w-6 h-6 text-white" />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <GraduationCap className="w-4 h-4 text-white" />
+                </div>
               </div>
-            </div>
-            <span className="text-xl font-bold text-primary-600">DormDeals</span>
-          </Link>
+              <span className="text-xl font-bold text-primary-600">DormDeals</span>
+            </Link>
 
-          {/* Desktop Navigation Items */}
-          <div className="hidden lg:flex items-center space-x-6">
-            {navItems.slice(0, 4).map((item) => {
-              const Icon = item.icon
-              const isActive = location.pathname === item.path
-              
-              return (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                    isActive
-                      ? 'text-primary-600 bg-primary-50'
-                      : 'text-gray-600 hover:text-primary-600 hover:bg-gray-50'
-                  }`}
-                >
-                  <Icon className="w-4 h-4" />
-                  <span>{item.label}</span>
-                </Link>
-              )
-            })}
+            {/* Desktop Navigation Items */}
+            <div className="hidden lg:flex items-center space-x-6">
+              {navItems.slice(0, 4).map((item) => {
+                const Icon = item.icon
+                const isActive = location.pathname === item.path
+                
+                return (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                      isActive
+                        ? 'text-primary-600 bg-primary-50'
+                        : 'text-gray-600 hover:text-primary-600 hover:bg-gray-50'
+                    }`}
+                  >
+                    <Icon className="w-4 h-4" />
+                    <span>{item.label}</span>
+                  </Link>
+                )
+              })}
+            </div>
           </div>
 
           {/* Desktop User Menu */}
@@ -290,7 +292,7 @@ const Navbar = () => {
                         onClick={() => setIsMobileMenuOpen(false)}
                       >
                         <Plus className="w-5 h-5" />
-                        <span>Create Listing</span>
+                        <span>Sell</span>
                       </Link>
                       {!isPremium() && (
                         <Link
@@ -299,7 +301,7 @@ const Navbar = () => {
                           onClick={() => setIsMobileMenuOpen(false)}
                         >
                           <Crown className="w-5 h-5" />
-                          <span>Upgrade to Premium</span>
+                          <span>Upgrade</span>
                         </Link>
                       )}
                     </>
