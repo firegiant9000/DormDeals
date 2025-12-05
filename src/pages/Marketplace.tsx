@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Grid, List } from 'lucide-react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { formatCurrency } from '@/utils/helpers'
 import { Item, SortOption } from '@/types'
 import SearchFiltersBar from '@/components/SearchFiltersBar'
 import { fetchListings, subscribeListings } from '@/data/listingsProvider'
+import { normalizeListing } from '@/utils/normalizers'
 
 const Marketplace = () => {
   const navigate = useNavigate()
@@ -17,6 +17,7 @@ const Marketplace = () => {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<string>('')
   const [selectedCondition, setSelectedCondition] = useState<string>('')
+  const [pickup, setPickup] = useState<'any' | 'pickup' | 'delivery' | 'both'>('any')
   const [minPrice, setMinPrice] = useState<string>('')
   const [maxPrice, setMaxPrice] = useState<string>('')
   const [sort, setSort] = useState<'newest' | 'priceLow' | 'priceHigh'>('newest')
@@ -39,62 +40,62 @@ const Marketplace = () => {
 
   useEffect(() => {
     fetchListings({ limitN: 100 })
-      .then(setBaseItems)
+      .then(items => {
+        const normalized = items.map(item => normalizeListing(item as any))
+        setBaseItems(normalized as any)
+      })
       .catch(err => import.meta.env.DEV && console.error('[Marketplace] fetchListings', err))
   }, [])
 
   useEffect(() => {
     const unsubscribe = subscribeListings(
-      items => setBaseItems(items),
+      items => {
+        const normalized = items.map(item => normalizeListing(item as any))
+        setBaseItems(normalized as any)
+      },
       err => import.meta.env.DEV && console.error('[Marketplace] subscribeListings', err)
     )
     return unsubscribe
   }, [])
 
   const filteredItems = useMemo(() => {
-    const minN = Number.isFinite(Number(minPrice)) && minPrice !== '' ? Number(minPrice) : undefined
-    const maxN = Number.isFinite(Number(maxPrice)) && maxPrice !== '' ? Number(maxPrice) : undefined
-    
-    let items = [...baseItems]
+    let results = baseItems.map(item => normalizeListing(item as any))
     
     if (searchQuery.trim()) {
       const q = searchQuery.trim().toLowerCase()
-      items = items.filter(i =>
-        (i.title ?? '').toLowerCase().includes(q) ||
-        (i.description ?? '').toLowerCase().includes(q)
+      results = results.filter(l =>
+        (l.title ?? '').toLowerCase().includes(q) ||
+        (l.description ?? '').toLowerCase().includes(q)
       )
     }
     
     if (selectedCategory && selectedCategory !== 'all') {
-      items = items.filter(i => (i.category ?? '').toLowerCase() === selectedCategory.toLowerCase())
+      results = results.filter(l => (l.category ?? '').toLowerCase() === selectedCategory.toLowerCase())
     }
     
-    items = items.filter(i => {
-      const p = Number(i.price)
-      if (!Number.isFinite(p)) return false
-      if (minN !== undefined && p < minN) return false
-      if (maxN !== undefined && p > maxN) return false
-      return true
-    })
+    // price filters (numbers!)
+    if (minPrice !== '') results = results.filter(l => l.price >= Number(minPrice))
+    if (maxPrice !== '') results = results.filter(l => l.price <= Number(maxPrice))
     
-    if (sort === 'priceLow') items.sort((a, b) => Number(a.price) - Number(b.price))
-    else if (sort === 'priceHigh') items.sort((a, b) => Number(b.price) - Number(a.price))
-    else {
-      items.sort((a, b) => {
-        const getMillis = (d: any): number => {
-          if (!d) return 0
-          if (typeof d?.toMillis === 'function') return d.toMillis()
-          if (d instanceof Date) return d.getTime()
-          if (d?.seconds) return d.seconds * 1000
-          return 0
-        }
-        return getMillis(b.createdAt) - getMillis(a.createdAt)
+    // pickup filter
+    if (pickup !== 'any') {
+      results = results.filter(l => {
+        const m = ((l as any).pickupMethod ?? 'pickup')
+        if (pickup === 'both') return m === 'both'
+        return m === pickup
       })
     }
     
-    dlog('filter result', { base: baseItems.length, after: items.length, minN, maxN, sort })
-    return items
-  }, [baseItems, searchQuery, selectedCategory, minPrice, maxPrice, sort])
+    // sorting
+    if (sort === 'priceLow') results.sort((a, b) => a.price - b.price)
+    else if (sort === 'priceHigh') results.sort((a, b) => b.price - a.price)
+    else if (sort === 'newest') {
+      results.sort((a, b) => ((b.createdAt as any)?.seconds ?? 0) - ((a.createdAt as any)?.seconds ?? 0))
+    }
+    
+    // Filter result logged in debug mode if needed
+    return results
+  }, [baseItems, searchQuery, selectedCategory, pickup, minPrice, maxPrice, sort])
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -125,8 +126,8 @@ const Marketplace = () => {
         setCategory={setSelectedCategory}
         condition={selectedCondition}
         setCondition={setSelectedCondition}
-        pickupMethod=""
-        setPickupMethod={() => {}}
+        pickupMethod={pickup}
+        setPickupMethod={(v) => setPickup(v as 'any' | 'pickup' | 'delivery' | 'both')}
         sortBy={sort === 'newest' ? SortOption.NEWEST : sort === 'priceLow' ? SortOption.PRICE_LOW_TO_HIGH : SortOption.PRICE_HIGH_TO_LOW}
         setSortBy={(v) => {
           if (v === SortOption.NEWEST) setSort('newest')
@@ -140,27 +141,26 @@ const Marketplace = () => {
       />
 
       <div className={viewMode === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6' : 'space-y-4 mt-6'}>
-        {filteredItems.map(item => {
-          const listing = item as any
-          const img = listing.imageUrls?.[0]
+        {filteredItems.map(listing => {
+          const cover = listing.imageUrls?.[0]
           return (
-            <div key={item.id} className="bg-white rounded-xl shadow p-4">
+            <div key={listing.id} className="bg-white rounded-xl shadow p-4">
               <div className="aspect-video bg-gray-100 rounded mb-3 overflow-hidden">
-                {img ? (
+                {cover ? (
                   <img 
-                    src={img} 
-                    alt={item.title} 
+                    src={cover} 
+                    alt={listing.title} 
                     className="h-full w-full object-cover" 
                     loading="lazy" 
                     referrerPolicy="no-referrer" 
                   />
                 ) : (
-                  <div className="h-full w-full bg-muted/20" />
+                  <div className="skeleton h-48 w-full" />
                 )}
               </div>
-              <div className="font-medium">{item.title}</div>
-              <div className="text-sm text-gray-500">{formatCurrency(item.price ?? 0)}</div>
-              <button className="btn-primary mt-3" onClick={() => navigate(`/listing/${item.id}`)}>
+              <div className="font-medium">{listing.title}</div>
+              <div className="text-sm text-gray-500">${listing.price.toFixed(2)}</div>
+              <button className="btn-primary mt-3" onClick={() => navigate(`/listing/${listing.id}`)}>
                 View
               </button>
             </div>
