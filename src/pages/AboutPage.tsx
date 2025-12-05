@@ -1,31 +1,25 @@
 import { motion } from 'framer-motion'
 import { Users, Shield, Heart, Target, Award, Globe } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import { useAuth } from '@/context/AuthContext'
 
 const AboutPage = () => {
+  const navigate = useNavigate()
+  const { isAuthenticated } = useAuth()
+
+  const handleStartSelling = (e: React.MouseEvent) => {
+    e.preventDefault()
+    if (isAuthenticated) {
+      navigate('/create-listing')
+    } else {
+      navigate('/login')
+    }
+  }
   const stats = [
     { label: 'Active Students', value: '1,200+' },
     { label: 'Items Listed', value: '5,000+' },
     { label: 'Successful Transactions', value: '3,500+' },
     { label: 'Money Saved', value: '$50K+' }
-  ]
-
-  const team = [
-    {
-      name: 'Alex Johnson',
-      role: 'Founder & CEO',
-      description: 'Computer Science student passionate about sustainability and community building.'
-    },
-    {
-      name: 'Sarah Chen',
-      role: 'CTO',
-      description: 'Software Engineering student focused on creating seamless user experiences.'
-    },
-    {
-      name: 'Mike Rodriguez',
-      role: 'Head of Community',
-      description: 'Business student dedicated to building trust and safety within our platform.'
-    }
   ]
 
   const values = [
@@ -71,7 +65,7 @@ const AboutPage = () => {
               transition={{ duration: 0.8, delay: 0.2 }}
               className="text-xl md:text-2xl mb-8 max-w-3xl mx-auto text-primary-100"
             >
-              Connecting UL students to buy, sell, and rent items within their campus community.
+              Connecting UL students to buy, and sell items within their campus community.
             </motion.p>
           </div>
         </div>
@@ -94,7 +88,7 @@ const AboutPage = () => {
             </motion.div>
             <p className="text-xl text-muted max-w-4xl mx-auto leading-relaxed">
               DormDeals was born from a simple idea: college students shouldn&apos;t have to pay full price for everything. 
-              We&apos;re building a sustainable marketplace where UL students can buy, sell, and rent items from each other, 
+              We&apos;re building a sustainable marketplace where UL students can buy and sell items from each other, 
               making campus life more affordable while reducing waste and building community connections.
             </p>
           </div>
@@ -164,44 +158,7 @@ const AboutPage = () => {
         </div>
       </section>
 
-      {/* Team Section */}
-      <section className="py-20 bg-surface-2">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-body mb-4">
-              Meet Our Team
-            </h2>
-            <p className="text-xl text-muted max-w-2xl mx-auto">
-              UL students building the future of campus marketplaces.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {team.map((member, index) => (
-              <motion.div
-                key={member.name}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: index * 0.1 }}
-                className="dd-card bg-surface border-surface p-6 shadow-sm hover:shadow-md transition-shadow"
-              >
-                <div className="w-20 h-20 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Users className="w-10 h-10 text-primary-600" />
-                </div>
-                <h3 className="text-xl font-semibold text-body mb-1">
-                  {member.name}
-                </h3>
-                <p className="text-primary-600 font-medium mb-3">
-                  {member.role}
-                </p>
-                <p className="text-muted">
-                  {member.description}
-                </p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
+  
 
       {/* CTA Section */}
       <section className="py-20 bg-primary-600 text-white">
@@ -225,12 +182,12 @@ const AboutPage = () => {
               >
                 Start Shopping
               </Link>
-              <Link
-                to="/create-listing"
+              <button
+                onClick={handleStartSelling}
                 className="border-2 border-white text-white hover:bg-white hover:text-primary-600 font-semibold py-3 px-8 rounded-lg transition-colors duration-200"
               >
                 Start Selling
-              </Link>
+              </button>
             </div>
           </motion.div>
         </div>

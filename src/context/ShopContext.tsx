@@ -21,6 +21,8 @@ import { fetchListings } from '@/data/listingsProvider';
 type ShopContextValue = {
   cartItems: Item[];
   wishlistItems: Item[];
+  cartCount: number;
+  wishlistCount: number;
   showCart: boolean;
   showWishlist: boolean;
   isInCart: (id: string) => boolean;
@@ -45,7 +47,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [showWishlist, setShowWishlist] = useState(false);
 
   // Real-time state via hooks
-  const { isInCart: isInCartHook, isInWishlist: isInWishlistHook, cart, wishlist } = useCartWishlist();
+  const { isInCart: isInCartHook, isInWishlist: isInWishlistHook, cart, wishlist, cartCount, wishlistCount } = useCartWishlist();
 
   // We need full Item[] for IDs we track in cart/wishlist
   const [allListings, setAllListings] = useState<Item[]>([]);
@@ -135,13 +137,22 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     [isAuthenticated]
   );
 
-  const openCart = () => setShowCart(true);
-  const openWishlist = () => setShowWishlist(true);
+  const openCart = useCallback(() => {
+    setShowWishlist(false);
+    setShowCart(true);
+  }, []);
+
+  const openWishlist = useCallback(() => {
+    setShowCart(false);
+    setShowWishlist(true);
+  }, []);
 
   const value: ShopContextValue = useMemo(
     () => ({
       cartItems,
       wishlistItems,
+      cartCount,
+      wishlistCount,
       showCart,
       showWishlist,
       isInCart,
@@ -158,6 +169,8 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     [
       cartItems,
       wishlistItems,
+      cartCount,
+      wishlistCount,
       showCart,
       showWishlist,
       isInCart,
@@ -178,9 +191,15 @@ export const useShop = () => {
   return ctx;
 };
 
-// Kept for compatibility if your layout renders these drawers
+// Cart and Wishlist Drawers
+import CartDrawer from '@/components/CartDrawer';
+import WishlistDrawer from '@/components/WishlistDrawer';
+
 export const ShopDrawers: React.FC = () => {
-  // Implement your cart/wishlist drawers here if needed,
-  // or keep as a no-op to satisfy existing imports.
-  return null;
+  return (
+    <>
+      <CartDrawer />
+      <WishlistDrawer />
+    </>
+  );
 };
