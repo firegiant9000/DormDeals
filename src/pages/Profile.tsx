@@ -9,7 +9,7 @@ import { getUserProfileWithStats, updateUserProfile } from '../services/userServ
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { db } from '@/firebase'
-import { collection, query, where, getDocs } from 'firebase/firestore'
+import { collection, query, where, orderBy, getDocs } from 'firebase/firestore'
 import { normalizeListing } from '@/utils/normalizers'
 import { fetchFavorites } from '@/services/favoriteService'
 import { fetchCart, removeFromCart } from '@/services/cartService'
@@ -175,10 +175,10 @@ const Profile = () => {
     (async () => {
       try {
         setIsLoadingListings(true)
-        const qRef = query(collection(db, 'listings'), where('ownerId', '==', user.id))
+        const uid = (user as any)?.uid || user?.id
+        const qRef = query(collection(db, 'listings'), where('ownerId', '==', uid), orderBy('createdAt', 'desc'))
         const qs = await getDocs(qRef)
         const rows = qs.docs.map(d => normalizeListing({ id: d.id, ...d.data() } as any))
-        rows.sort((a, b) => ((b.createdAt as any)?.seconds ?? 0) - ((a.createdAt as any)?.seconds ?? 0))
         const convertedListings: Listing[] = rows.map(item => ({
           id: item.id,
           title: item.title,
@@ -517,7 +517,7 @@ const Profile = () => {
                                   e.stopPropagation()
                                   if (confirm('Delete this listing? This cannot be undone.')) {
                                     try {
-                                      await deleteListing(listing.id, uid)
+                                      await deleteListing(listing.id)
                                       toast.success('Listing deleted')
                                       setListings(prev => prev.filter(x => x.id !== listing.id))
                                     } catch (e: any) {

@@ -1,6 +1,7 @@
 import { db, auth } from '@/firebase';
-import { collection, getDocs, doc, getDoc, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
-import { normalizeListing, Listing } from '@/utils/helpers';
+import { collection, getDocs, doc, getDoc, setDoc, deleteDoc, serverTimestamp, query, where, documentId } from 'firebase/firestore';
+import { normalizeListing } from '@/utils/helpers';
+import type { Listing } from '@/types/commerce';
 
 export async function fetchFavorites(): Promise<Listing[]> {
   const uid = auth.currentUser?.uid;
@@ -12,16 +13,32 @@ export async function fetchFavorites(): Promise<Listing[]> {
   const ids = snap.docs.map(d => d.id);
   if (!ids.length) return [];
 
-  // Read listings by ids
+  // Batch fetch with 'in' query (max 10 per batch)
   const out: Listing[] = [];
-  for (const listingId of ids) {
+  const chunks = [];
+  for (let i = 0; i < ids.length; i += 10) {
+    chunks.push(ids.slice(i, i + 10));
+  }
+  
+  for (const chunk of chunks) {
     try {
-      const listingDoc = await getDoc(doc(db, 'listings', listingId));
-      if (listingDoc.exists()) {
-        out.push(normalizeListing(listingDoc.data(), listingDoc.id));
-      }
+      const q = query(collection(db, 'listings'), where(documentId(), 'in', chunk));
+      const listingSnap = await getDocs(q);
+      listingSnap.forEach(doc => {
+        out.push(normalizeListing({ id: doc.id, ...doc.data() } as any));
+      });
     } catch (e) {
-      // Skip if listing doesn't exist
+      // Fallback to individual fetches if 'in' query fails
+      for (const listingId of chunk) {
+        try {
+          const listingDoc = await getDoc(doc(db, 'listings', listingId));
+          if (listingDoc.exists()) {
+            out.push(normalizeListing({ id: listingDoc.id, ...listingDoc.data() } as any));
+          }
+        } catch {
+          // Skip if listing doesn't exist
+        }
+      }
     }
   }
   // newest first

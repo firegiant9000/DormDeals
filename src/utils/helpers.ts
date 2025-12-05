@@ -81,34 +81,27 @@ export const throttle = <T extends (...args: any[]) => any>(
 };
 
 // Normalize listing to unified imageUrls format
-export type Listing = {
-  id: string;
-  ownerId: string;
-  title: string;
-  description?: string;
-  price: number;
-  category: string;
-  condition: string;
-  status: 'active'|'sold'|'hidden';
-  imageUrls: string[];
-  createdAt?: any;
-};
+import type { Listing } from '@/types/commerce';
 
-export function normalizeListing(d: any, id: string): Listing {
-  const price = Number(d?.price ?? 0);
-  const imageUrls: string[] = Array.isArray(d?.imageUrls) ? d.imageUrls
-    : d?.images ? d.images : d?.imageUrl ? [d.imageUrl] : [];
+export function normalizeListing<T extends Partial<Listing>>(raw: T): Listing {
+  const imageUrls = Array.isArray(raw.imageUrls) && raw.imageUrls.length
+    ? raw.imageUrls
+    : Array.isArray(raw.images) && raw.images.length
+      ? raw.images
+      : raw.imageUrl ? [raw.imageUrl] : [];
 
   return {
-    id,
-    ownerId: String(d?.ownerId ?? ''),
-    title: String(d?.title ?? ''),
-    description: d?.description ?? '',
-    price: Number.isFinite(price) ? price : 0,
-    category: String(d?.category ?? ''),
-    condition: String(d?.condition ?? ''),
-    status: (d?.status ?? 'active') as 'active'|'sold'|'hidden',
+    id: (raw as any).id ?? '',
+    title: raw.title ?? '',
+    description: raw.description ?? '',
+    price: Number(raw.price ?? 0),
+    category: raw.category ?? 'Other',
+    condition: raw.condition ?? 'Good',
+    ownerId: raw.ownerId ?? '',
+    status: (raw.status as any) ?? 'active',
+    createdAt: (raw.createdAt as any) ?? null,
     imageUrls,
-    createdAt: d?.createdAt
+    images: raw.images,
+    imageUrl: raw.imageUrl
   };
 }

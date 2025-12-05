@@ -16,9 +16,7 @@ import { Item } from '../types';
 import { useShop } from '@/context/ShopContext';
 import { useAuth } from '@/context/AuthContext';
 import { formatCurrency, formatRelativeTime } from '../utils/helpers';
-import { doc, deleteDoc } from 'firebase/firestore';
-import { db, storage } from '@/firebase';
-import { ref, deleteObject } from 'firebase/storage';
+import { deleteListing } from '@/services/listingService';
 import toast from 'react-hot-toast';
 
 const ListingDetailPage: React.FC = () => {
@@ -161,16 +159,13 @@ const ListingDetailPage: React.FC = () => {
             <div className="w-full max-w-[900px]">
               <div className="relative w-full rounded-xl overflow-hidden bg-muted/20" style={{ aspectRatio: '16 / 9' }}>
                 {(() => {
-                  const listingData = listing as any
-                  const imageUrls = listingData?.imageUrls || listing?.images || []
-                  const cover = imageUrls[currentImageIndex] ?? imageUrls[0] ?? ''
-                  
-                  if (cover) {
+                  const src = (listing as any)?.imageUrls?.[0]
+                  if (src) {
                     return (
                       <img
-                        src={cover}
+                        src={src}
                         alt={listing?.title ?? 'Listing image'}
-                        className="absolute inset-0 h-full w-full object-cover"
+                        className="h-full w-full object-cover rounded-xl"
                         loading="lazy"
                         referrerPolicy="no-referrer"
                         onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
@@ -178,9 +173,7 @@ const ListingDetailPage: React.FC = () => {
                     )
                   }
                   return (
-                    <div className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground">
-                      No image
-                    </div>
+                    <div className="text-sm text-muted-foreground">No image</div>
                   )
                 })()}
               </div>
@@ -301,36 +294,20 @@ const ListingDetailPage: React.FC = () => {
                 <MessageCircle className="w-5 h-5" />
                 <span>Contact Seller</span>
               </button>
-              {user && (listing as any)?.ownerId === (user as any)?.uid && (
+              {user && (listing as any)?.ownerId === (user as any)?.uid ? (
                 <button
                   onClick={async () => {
-                    const uid = (user as any)?.uid
-                    if (!uid || uid !== (listing as any)?.ownerId) {
-                      toast.error('Forbidden')
-                      return
-                    }
                     if (confirm('Delete this listing? This cannot be undone.')) {
                       try {
-                        await deleteDoc(doc(db, 'listings', listing.id))
-                        // Best-effort delete storage files
-                        const imageUrls = (listing as any)?.imageUrls || []
-                        await Promise.allSettled(imageUrls.map((url: string) => {
-                          try {
-                            // Extract path from downloadURL if needed
-                            const urlObj = new URL(url)
-                            const path = decodeURIComponent(urlObj.pathname.split('/o/')[1]?.split('?')[0] || '')
-                            if (path) {
-                              return deleteObject(ref(storage, path))
-                            }
-                            return Promise.resolve()
-                          } catch {
-                            return Promise.resolve()
-                          }
-                        }))
+                        await deleteListing(listing.id)
                         toast.success('Listing deleted')
                         navigate('/profile')
                       } catch (e: any) {
-                        toast.error(`Delete failed: ${e.code || e.message}`)
+                        if (e.message === 'permission-denied') {
+                          toast.error('Only the owner can delete this listing.')
+                        } else {
+                          toast.error(`Delete failed: ${e.code || e.message}`)
+                        }
                       }
                     }
                   }}
@@ -339,7 +316,7 @@ const ListingDetailPage: React.FC = () => {
                   <Trash2 className="w-5 h-5" />
                   <span>Delete listing</span>
                 </button>
-              )}
+              ) : null}
             </div>
 
             {/* Listing Details */}

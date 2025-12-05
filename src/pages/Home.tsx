@@ -62,7 +62,7 @@ const Home = () => {
           limit(6)
         )
         const snap = await getDocs(q)
-        const items = snap.docs.map(d => normalizeListing(d.data(), d.id))
+        const items = snap.docs.map(d => normalizeListing({ id: d.id, ...d.data() } as any))
         dlog('[HOME_FEED]', { count: items.length })
       } catch (err: any) {
         dlog('[HOME_FEED] error', err)
