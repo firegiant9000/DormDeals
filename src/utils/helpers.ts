@@ -81,26 +81,34 @@ export const throttle = <T extends (...args: any[]) => any>(
 };
 
 // Normalize listing to unified imageUrls format
-import type { Listing } from '@/types/commerce';
+export type Listing = {
+  id: string;
+  ownerId: string;
+  title: string;
+  description?: string;
+  price: number;
+  category: string;
+  condition: string;
+  status: 'active'|'sold'|'hidden';
+  imageUrls: string[];
+  createdAt?: any;
+};
 
-export function normalizeListing(raw: any): Listing {
-  const imageUrls: string[] =
-    Array.isArray(raw.imageUrls) ? raw.imageUrls :
-    Array.isArray(raw.images) ? raw.images :
-    (raw.imageUrl ? [raw.imageUrl] : [])
+export function normalizeListing(d: any, id: string): Listing {
+  const price = Number(d?.price ?? 0);
+  const imageUrls: string[] = Array.isArray(d?.imageUrls) ? d.imageUrls
+    : d?.images ? d.images : d?.imageUrl ? [d.imageUrl] : [];
 
   return {
-    id: raw.id,
-    title: raw.title ?? '',
-    description: raw.description ?? '',
-    price: Number(raw.price ?? 0),
-    category: raw.category ?? 'Other',
-    condition: raw.condition ?? 'Good',
-    ownerId: raw.ownerId ?? raw.userId ?? '',
-    status: raw.status ?? 'active',
-    createdAt: raw.createdAt ?? (raw.created_at ?? null),
+    id,
+    ownerId: String(d?.ownerId ?? ''),
+    title: String(d?.title ?? ''),
+    description: d?.description ?? '',
+    price: Number.isFinite(price) ? price : 0,
+    category: String(d?.category ?? ''),
+    condition: String(d?.condition ?? ''),
+    status: (d?.status ?? 'active') as 'active'|'sold'|'hidden',
     imageUrls,
-    // keep other fields:
-    ...raw,
-  } as Listing
+    createdAt: d?.createdAt
+  };
 }

@@ -150,16 +150,17 @@ const Marketplace = () => {
                   <img 
                     src={cover} 
                     alt={listing.title} 
-                    className="h-full w-full object-cover" 
+                    className="w-full h-56 object-cover rounded-xl" 
                     loading="lazy" 
-                    referrerPolicy="no-referrer" 
+                    referrerPolicy="no-referrer"
+                    onError={(e)=>{ (e.currentTarget as HTMLImageElement).style.visibility='hidden';}}
                   />
                 ) : (
                   <div className="skeleton h-48 w-full" />
                 )}
               </div>
               <div className="font-medium">{listing.title}</div>
-              <div className="text-sm text-gray-500">${listing.price.toFixed(2)}</div>
+              <div className="text-sm text-gray-500">{listing.price.toFixed(2)}</div>
               <button className="btn-primary mt-3" onClick={() => navigate(`/listing/${listing.id}`)}>
                 View
               </button>

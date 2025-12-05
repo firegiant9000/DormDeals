@@ -110,14 +110,14 @@ export async function fetchListings(opts?: {
   }
 
   try {
-    const qc: QueryConstraint[] = [orderBy('createdAt', 'desc')];
+    const qc: QueryConstraint[] = [where('status', '==', 'active'), orderBy('createdAt', 'desc')];
     if (opts?.category) qc.push(where('category', '==', opts.category));
     if (opts?.featuredOnly) qc.push(where('isFeatured', '==', true));
     // (min/max price can be done via composite indexes; skip if index missing)
     const q = query(collection(db, 'listings'), ...(opts?.limitN ? [...qc, limit(opts.limitN)] : qc));
     const snap = await getDocs(q);
     const rows = snap.docs.map(d => {
-      const normalized = normalizeListing(d);
+      const normalized = normalizeListing(d.data(), d.id);
       return convertListingToItem(normalized);
     });
     
@@ -152,7 +152,7 @@ export function subscribeListings(
   }
 
   try {
-    const qc: QueryConstraint[] = [orderBy('createdAt', 'desc')];
+    const qc: QueryConstraint[] = [where('status', '==', 'active'), orderBy('createdAt', 'desc')];
     if (opts?.category) qc.push(where('category', '==', opts.category));
     if (opts?.featuredOnly) qc.push(where('isFeatured', '==', true));
     const q = query(collection(db, 'listings'), ...qc);
@@ -163,7 +163,7 @@ export function subscribeListings(
     
     return onSnapshot(q, (snap) => {
       const rows = snap.docs.map(d => {
-        const normalized = normalizeListing(d);
+        const normalized = normalizeListing(d.data(), d.id);
         return convertListingToItem(normalized);
       });
       onData(rows);

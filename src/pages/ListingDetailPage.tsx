@@ -16,7 +16,9 @@ import { Item } from '../types';
 import { useShop } from '@/context/ShopContext';
 import { useAuth } from '@/context/AuthContext';
 import { formatCurrency, formatRelativeTime } from '../utils/helpers';
-import { deleteListing } from '@/services/listingService';
+import { doc, deleteDoc } from 'firebase/firestore';
+import { db, storage } from '@/firebase';
+import { ref, deleteObject } from 'firebase/storage';
 import toast from 'react-hot-toast';
 
 const ListingDetailPage: React.FC = () => {
@@ -302,13 +304,33 @@ const ListingDetailPage: React.FC = () => {
               {user && (listing as any)?.ownerId === (user as any)?.uid && (
                 <button
                   onClick={async () => {
+                    const uid = (user as any)?.uid
+                    if (!uid || uid !== (listing as any)?.ownerId) {
+                      toast.error('Forbidden')
+                      return
+                    }
                     if (confirm('Delete this listing? This cannot be undone.')) {
                       try {
-                        await deleteListing(listing.id, (user as any).uid)
+                        await deleteDoc(doc(db, 'listings', listing.id))
+                        // Best-effort delete storage files
+                        const imageUrls = (listing as any)?.imageUrls || []
+                        await Promise.allSettled(imageUrls.map((url: string) => {
+                          try {
+                            // Extract path from downloadURL if needed
+                            const urlObj = new URL(url)
+                            const path = decodeURIComponent(urlObj.pathname.split('/o/')[1]?.split('?')[0] || '')
+                            if (path) {
+                              return deleteObject(ref(storage, path))
+                            }
+                            return Promise.resolve()
+                          } catch {
+                            return Promise.resolve()
+                          }
+                        }))
                         toast.success('Listing deleted')
-                        navigate('/profile?tab=listings')
+                        navigate('/profile')
                       } catch (e: any) {
-                        toast.error(e.message ?? 'Failed to delete listing')
+                        toast.error(`Delete failed: ${e.code || e.message}`)
                       }
                     }
                   }}
