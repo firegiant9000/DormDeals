@@ -1,80 +1,40 @@
 rules_version = '2';
+
 service cloud.firestore {
-  match /databases/{db}/documents {
 
-    // Helpers
-    function isAuthenticated() {
-      return request.auth != null;
-    }
-    function isOwnerFieldValidOnCreate() {
-      // Accept either ownerId or sellerId matching the auth uid
-      return (
-        (request.resource.data.ownerId != null && request.resource.data.ownerId == request.auth.uid) ||
-        (request.resource.data.sellerId != null && request.resource.data.sellerId == request.auth.uid)
-      );
-    }
-    function isOwnerOfResource() {
-      // Accept either ownerId or sellerId on the existing doc
-      return isAuthenticated() &&
-        (
-          (resource.data.ownerId != null && resource.data.ownerId == request.auth.uid) ||
-          (resource.data.sellerId != null && resource.data.sellerId == request.auth.uid)
-        );
-    }
+  match /databases/{database}/documents {
 
-    // ---- Listings (public read; owner/seller can write) ----
-    match /listings/{id} {
-      allow read: if true;
+    function authed() { return request.auth != null; }
+    function isOwnerOf(doc) { return authed() && request.auth.uid == doc.data.ownerId; }
+    function isPathOwner(uid) { return authed() && request.auth.uid == uid; }
 
-      // Basic schema checks (relaxed so both apps work)
-      allow create: if isAuthenticated()
-        && isOwnerFieldValidOnCreate()
-        && request.resource.data.title is string
-        && request.resource.data.price is number
-        && request.resource.data.category is string
-        && request.resource.data.condition is string
-        && request.resource.data.description is string
-        && request.resource.data.imageUrls is list;
+    // Public listings (readable by everyone), write by owner only
+    match /listings/{listingId} {
+      allow get, list : if true;
+      allow create: if authed() && request.resource.data.ownerId == request.auth.uid;
+      allow update, delete: if isOwnerOf(resource);
 
-      allow update, delete: if isOwnerOfResource();
+      // Required fields & types
+      allow create, update: if
+        request.resource.data.keys().hasAll(['ownerId','title','price','category','condition','status','createdAt','imageUrls']) &&
+        request.resource.data.price is number &&
+        request.resource.data.imageUrls is list &&
+        request.resource.data.status in ['active','sold','hidden'];
     }
 
-    // ---- Your cart/wishlist layout ----
-    match /carts/{uid} {
-      allow read, write: if isAuthenticated() && request.auth.uid == uid;
-    }
-    match /wishlists/{uid} {
-      allow read, write: if isAuthenticated() && request.auth.uid == uid;
+    // Per-user cart
+    match /users/{uid}/cart/{itemId} {
+      allow read, write: if isPathOwner(uid);
     }
 
-    // ---- Their cart/favorites layout (back-compat) ----
-    // Only allow user to access docs where userId == their uid
-    match /cart/{cartId} {
-      allow read, write: if isAuthenticated()
-        && (
-          (resource == null || resource.data.userId == request.auth.uid) &&
-          (request.resource == null || request.resource.data.userId == request.auth.uid)
-        );
-    }
-    match /favorites/{favoriteId} {
-      allow read, write: if isAuthenticated()
-        && (
-          (resource == null || resource.data.userId == request.auth.uid) &&
-          (request.resource == null || request.resource.data.userId == request.auth.uid)
-        );
+    // Per-user favorites
+    match /users/{uid}/favorites/{listingId} {
+      allow read, write: if isPathOwner(uid);
     }
 
-    // ---- Users ----
-    // Public read (their rule), with self-only writes
-    match /users/{userId} {
-      allow read: if true;
-      allow create: if isAuthenticated() && (
-        // support either id in the payload or the doc id equal to auth uid
-        (request.resource.data.id != null && request.resource.data.id == request.auth.uid) ||
-        (userId == request.auth.uid)
-      );
-      allow update, delete: if isAuthenticated() && userId == request.auth.uid;
+    // Messages (optional — keep narrow)
+    match /users/{uid}/threads/{threadId} {
+      allow read, write: if isPathOwner(uid);
     }
   }
 }
-

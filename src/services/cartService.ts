@@ -1,10 +1,12 @@
-import { db } from '@/firebase';
-import { collection, doc, getDocs, getDoc, deleteDoc } from 'firebase/firestore';
-import { normalizeListing } from '@/utils/normalizers';
-import { Listing } from '@/types/commerce';
+import { db, auth } from '@/firebase';
+import { collection, doc, getDocs, getDoc, deleteDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { normalizeListing, Listing } from '@/utils/helpers';
 
-export async function fetchCart(userId: string): Promise<Listing[]> {
-  const itemsRef = collection(db, 'users', userId, 'cart');
+export async function fetchCart(): Promise<Listing[]> {
+  const uid = auth.currentUser?.uid;
+  if (!uid) return [];
+  
+  const itemsRef = collection(db, 'users', uid, 'cart');
   const snap = await getDocs(itemsRef);
   const listingIds = snap.docs.map(d => (d.data() as any).listingId || d.id).filter(Boolean);
   if (!listingIds.length) return [];
@@ -13,7 +15,7 @@ export async function fetchCart(userId: string): Promise<Listing[]> {
     try {
       const listingDoc = await getDoc(doc(db, 'listings', listingId));
       if (listingDoc.exists()) {
-        out.push(normalizeListing({ id: listingDoc.id, ...listingDoc.data() } as any));
+        out.push(normalizeListing(listingDoc.data(), listingDoc.id));
       }
     } catch (e) {
       // Skip if listing doesn't exist
@@ -22,8 +24,19 @@ export async function fetchCart(userId: string): Promise<Listing[]> {
   return out;
 }
 
-export async function removeFromCart(userId: string, listingId: string): Promise<void> {
-  const col = collection(db, 'users', userId, 'cart');
-  // we stored cart items with docId == listingId (if not, adjust: query then delete)
-  await deleteDoc(doc(col, listingId));
+export async function addToCart(listingId: string): Promise<void> {
+  const uid = auth.currentUser?.uid;
+  if (!uid) throw new Error('Not authenticated');
+  
+  await setDoc(doc(db, 'users', uid, 'cart', listingId), {
+    listingId,
+    addedAt: serverTimestamp()
+  });
+}
+
+export async function removeFromCart(listingId: string): Promise<void> {
+  const uid = auth.currentUser?.uid;
+  if (!uid) throw new Error('Not authenticated');
+  
+  await deleteDoc(doc(db, 'users', uid, 'cart', listingId));
 }

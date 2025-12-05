@@ -204,12 +204,10 @@ const Profile = () => {
 
   // Fetch favorites when favorites tab is active
   useEffect(() => {
-    const uid = (user as any)?.uid || user?.id
-    if (!uid) return
     if (activeTab !== 'favorites') return
 
     setIsLoadingFavorites(true)
-    fetchFavorites(uid)
+    fetchFavorites()
       .then(items => {
         const convertedFavorites: Listing[] = items.map(item => ({
           id: item.id,
@@ -235,12 +233,10 @@ const Profile = () => {
 
   // Fetch cart items when cart tab is active
   useEffect(() => {
-    const uid = (user as any)?.uid || user?.id
-    if (!uid) return
     if (activeTab !== 'cart') return
 
     setIsLoadingCart(true)
-    fetchCart(uid)
+    fetchCart()
       .then(items => {
         const convertedCart: Listing[] = items.map(item => ({
           id: item.id,
@@ -565,7 +561,6 @@ const Profile = () => {
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {cartItems.map((listing) => {
-                      const uid = (user as any)?.uid || user?.id
                       return (
                       <motion.div
                         key={listing.id}
@@ -606,7 +601,7 @@ const Profile = () => {
                             onClick={async (e) => {
                               e.stopPropagation()
                               try {
-                                await removeFromCart(uid, listing.id)
+                                await removeFromCart(listing.id)
                                 setCartItems(prev => prev.filter(x => x.id !== listing.id))
                                 toast.success('Removed from cart')
                               } catch (e: any) {

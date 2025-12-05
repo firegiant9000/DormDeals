@@ -201,21 +201,22 @@ export async function createListing(input: CreateListingInput): Promise<CreateLi
       // Firestore write (guarded)
       try {
         devLog('firestore:start')
+        
+        // Ensure price is a number
+        const price = Number(input.price);
+        if (!Number.isFinite(price)) throw new Error('Invalid price');
+        
         const docRef = await withTimeout(
           addDoc(collection(db, 'listings'), {
             ownerId: user.uid,
             title: input.title.trim(),
-            price: input.price,
+            description: input.description?.trim() ?? '',
+            price,
             category: input.category,
             condition: input.condition,
-            description: input.description.trim(),
-            location: input.location ?? '',
             imageUrls: urls,
             status: 'active',
-            createdAt: serverTimestamp(),
-            updatedAt: serverTimestamp(),
-            isHidden: false,
-            isFeatured: false,
+            createdAt: serverTimestamp()
           }),
           10000,
           'firestore.addDoc(listings)'
