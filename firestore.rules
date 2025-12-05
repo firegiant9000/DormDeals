@@ -1,40 +1,29 @@
 rules_version = '2';
-
 service cloud.firestore {
-
   match /databases/{database}/documents {
 
-    function authed() { return request.auth != null; }
-    function isOwnerOf(doc) { return authed() && request.auth.uid == doc.data.ownerId; }
-    function isPathOwner(uid) { return authed() && request.auth.uid == uid; }
-
-    // Public listings (readable by everyone), write by owner only
+    // Public listings
     match /listings/{listingId} {
-      allow get, list : if true;
-      allow create: if authed() && request.resource.data.ownerId == request.auth.uid;
-      allow update, delete: if isOwnerOf(resource);
+      allow read: if true;
 
-      // Required fields & types
-      allow create, update: if
-        request.resource.data.keys().hasAll(['ownerId','title','price','category','condition','status','createdAt','imageUrls']) &&
-        request.resource.data.price is number &&
-        request.resource.data.imageUrls is list &&
-        request.resource.data.status in ['active','sold','hidden'];
+      allow create: if request.auth != null
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.status in ['active', 'draft']
+        && request.resource.data.createdAt is timestamp;
+
+      // only owner can update/delete
+      allow update, delete: if request.auth != null
+        && resource.data.ownerId == request.auth.uid;
     }
 
     // Per-user cart
     match /users/{uid}/cart/{itemId} {
-      allow read, write: if isPathOwner(uid);
+      allow read, write: if request.auth != null && uid == request.auth.uid;
     }
 
-    // Per-user favorites
+    // Per-user favorites (wishlists)
     match /users/{uid}/favorites/{listingId} {
-      allow read, write: if isPathOwner(uid);
-    }
-
-    // Messages (optional — keep narrow)
-    match /users/{uid}/threads/{threadId} {
-      allow read, write: if isPathOwner(uid);
+      allow read, write: if request.auth != null && uid == request.auth.uid;
     }
   }
 }

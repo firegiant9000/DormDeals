@@ -3,8 +3,7 @@ import { Grid, List } from 'lucide-react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { Item, SortOption } from '@/types'
 import SearchFiltersBar from '@/components/SearchFiltersBar'
-import { fetchListings, subscribeListings } from '@/data/listingsProvider'
-import { normalizeListing } from '@/utils/normalizers'
+import { fetchMarketplace } from '@/data/listingsProvider'
 
 const Marketplace = () => {
   const navigate = useNavigate()
@@ -39,27 +38,19 @@ const Marketplace = () => {
   }, [])
 
   useEffect(() => {
-    fetchListings({ limitN: 100 })
-      .then(items => {
-        const normalized = items.map(item => normalizeListing(item as any))
-        setBaseItems(normalized as any)
+    fetchMarketplace({ 
+      category: selectedCategory !== 'all' ? selectedCategory : undefined,
+      condition: selectedCondition !== 'Any Condition' ? selectedCondition : undefined,
+      sort 
+    })
+      .then(result => {
+        setBaseItems(result.items as any)
       })
-      .catch(err => import.meta.env.DEV && console.error('[Marketplace] fetchListings', err))
-  }, [])
-
-  useEffect(() => {
-    const unsubscribe = subscribeListings(
-      items => {
-        const normalized = items.map(item => normalizeListing(item as any))
-        setBaseItems(normalized as any)
-      },
-      err => import.meta.env.DEV && console.error('[Marketplace] subscribeListings', err)
-    )
-    return unsubscribe
-  }, [])
+      .catch((err: any) => import.meta.env.DEV && console.error('[Marketplace] fetchMarketplace', err))
+  }, [selectedCategory, selectedCondition, sort])
 
   const filteredItems = useMemo(() => {
-    let results = baseItems.map(item => normalizeListing(item as any))
+    let results = [...baseItems]
     
     if (searchQuery.trim()) {
       const q = searchQuery.trim().toLowerCase()
@@ -141,7 +132,7 @@ const Marketplace = () => {
       />
 
       <div className={viewMode === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6' : 'space-y-4 mt-6'}>
-        {filteredItems.map(listing => {
+        {filteredItems.map((listing: any) => {
           const cover = listing.imageUrls?.[0]
           return (
             <div key={listing.id} className="bg-white rounded-xl shadow p-4">
@@ -150,13 +141,13 @@ const Marketplace = () => {
                   <img 
                     src={cover} 
                     alt={listing.title} 
-                    className="w-full h-56 object-cover rounded-xl" 
+                    className="h-full w-full object-cover rounded-xl" 
                     loading="lazy" 
                     referrerPolicy="no-referrer"
                     onError={(e)=>{ (e.currentTarget as HTMLImageElement).style.visibility='hidden';}}
                   />
                 ) : (
-                  <div className="skeleton h-48 w-full" />
+                  <div className="text-sm text-muted-foreground">No image</div>
                 )}
               </div>
               <div className="font-medium">{listing.title}</div>

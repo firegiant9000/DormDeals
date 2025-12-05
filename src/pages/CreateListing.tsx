@@ -173,22 +173,17 @@ const CreateListing = () => {
         }
       }
 
-      const res = await watchdog(createListing(payload), 25000) // 25s UI watchdog
+      const listing = await watchdog(createListing(payload), 25000) // 25s UI watchdog
 
       const dt = Math.round(performance.now() - t0)
-      if (debug || import.meta.env.DEV) console.log('[CREATE_LISTING] done', { res, ms: dt })
+      if (debug || import.meta.env.DEV) console.log('[CREATE_LISTING] done', { listing, ms: dt })
 
-      if (res.ok) {
-        toast.success(`Listing created in ${dt}ms`)
-        // Clear draft on success
-        try {
-          localStorage.removeItem('dd-create-draft')
-        } catch {}
-        navigate(`/listing/${res.id}`)
-      } else {
-        setDebugState({ lastStep: res.step, code: res.code, message: res.message, ms: dt })
-        toast.error(`Create failed [${res.code}] ${res.step}`)
-      }
+      toast.success(`Listing created in ${dt}ms`)
+      // Clear draft on success
+      try {
+        localStorage.removeItem('dd-create-draft')
+      } catch {}
+      navigate(`/listing/${listing.id}`)
     } catch (err: any) {
       const code = String(err?.code || 'unknown')
       const msg = err?.message || 'Unknown error'
