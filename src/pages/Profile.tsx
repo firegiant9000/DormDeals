@@ -14,7 +14,6 @@ import { normalizeListing } from '@/utils/normalizers'
 import { fetchFavorites } from '@/services/favoriteService'
 import { fetchCart, removeFromCart } from '@/services/cartService'
 import { deleteListing } from '@/services/listingService'
-import { dlog } from '@/utils/debug'
 
 interface UserProfile {
   id: string
@@ -176,24 +175,88 @@ const Profile = () => {
       try {
         setIsLoadingListings(true)
         const uid = (user as any)?.uid || user?.id
-        const qRef = query(collection(db, 'listings'), where('ownerId', '==', uid), orderBy('createdAt', 'desc'))
-        const qs = await getDocs(qRef)
-        const rows = qs.docs.map(d => normalizeListing({ id: d.id, ...d.data() } as any))
+        
+        // Try querying with ownerId first (new listings use this)
+        let qs
+        try {
+          // Try with orderBy first
+          const qRef = query(
+            collection(db, 'listings'), 
+            where('ownerId', '==', uid),
+            orderBy('createdAt', 'desc')
+          )
+          qs = await getDocs(qRef)
+        } catch (orderByError: any) {
+          // If orderBy fails (missing index or field), try without it
+          console.warn('OrderBy failed, fetching without orderBy:', orderByError)
+          const qRef = query(
+            collection(db, 'listings'), 
+            where('ownerId', '==', uid)
+          )
+          qs = await getDocs(qRef)
+        }
+        
+        // Also try sellerId for backward compatibility
+        let sellerQs: any = null
+        try {
+          const sellerQRef = query(
+            collection(db, 'listings'), 
+            where('sellerId', '==', uid)
+          )
+          sellerQs = await getDocs(sellerQRef)
+        } catch (sellerError) {
+          // Ignore if sellerId query fails
+          console.warn('sellerId query failed:', sellerError)
+        }
+        
+        // Combine results from both queries
+        const allDocs = new Map()
+        if (qs) {
+          qs.docs.forEach((doc: any) => {
+            allDocs.set(doc.id, doc)
+          })
+        }
+        if (sellerQs) {
+          sellerQs.docs.forEach((doc: any) => {
+            if (!allDocs.has(doc.id)) {
+              allDocs.set(doc.id, doc)
+            }
+          })
+        }
+        
+        // Convert to listings
+        const rows = Array.from(allDocs.values()).map(d => normalizeListing({ id: d.id, ...d.data() } as any))
+        
+        // Sort by createdAt if available (client-side)
+        rows.sort((a, b) => {
+          const getTime = (date: any): number => {
+            if (!date) return 0
+            if (date instanceof Date) return date.getTime()
+            if (date?.toDate && typeof date.toDate === 'function') return date.toDate().getTime()
+            if (typeof date === 'string' || typeof date === 'number') return new Date(date).getTime()
+            return 0
+          }
+          const aDate = getTime(a.createdAt)
+          const bDate = getTime(b.createdAt)
+          return bDate - aDate
+        })
+        
         const convertedListings: Listing[] = rows.map(item => ({
           id: item.id,
           title: item.title,
           price: item.price,
           status: item.status || 'active',
           views: (item as any).views || 0,
-          images: item.imageUrls,
+          images: (item as any).imageUrls || item.images || [],
           description: item.description,
           category: item.category
         }))
+        
         setListings(convertedListings)
-        dlog('My Listings loaded', convertedListings.length)
+        if (import.meta.env.DEV) console.log('My Listings loaded', convertedListings.length)
       } catch (e: any) {
-        console.error(e)
-        toast.error(`Failed to load listings: ${e.code ?? 'error'}`)
+        console.error('Error fetching listings:', e)
+        toast.error(`Failed to load listings: ${e.code ?? e.message ?? 'error'}`)
         setListings([])
       } finally {
         setIsLoadingListings(false)
@@ -220,7 +283,7 @@ const Profile = () => {
           category: item.category
         }))
         setFavorites(convertedFavorites)
-        dlog('Favorites loaded', convertedFavorites.length)
+        if (import.meta.env.DEV) console.log('Favorites loaded', convertedFavorites.length)
       })
       .catch((e) => {
         console.error(e)
@@ -228,7 +291,6 @@ const Profile = () => {
         setFavorites([])
       })
       .finally(() => setIsLoadingFavorites(false))
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, user?.id])
 
   // Fetch cart items when cart tab is active
@@ -249,7 +311,7 @@ const Profile = () => {
           category: item.category
         }))
         setCartItems(convertedCart)
-        dlog('Cart loaded', convertedCart.length)
+        if (import.meta.env.DEV) console.log('Cart loaded', convertedCart.length)
       })
       .catch((e) => {
         console.error(e)
@@ -257,7 +319,6 @@ const Profile = () => {
         setCartItems([])
       })
       .finally(() => setIsLoadingCart(false))
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, user?.id])
 
   // Fallback user data
@@ -604,7 +665,7 @@ const Profile = () => {
                                 await removeFromCart(listing.id)
                                 setCartItems(prev => prev.filter(x => x.id !== listing.id))
                                 toast.success('Removed from cart')
-                              } catch (e: any) {
+                              } catch {
                                 toast.error('Failed to remove from cart')
                               }
                             }}

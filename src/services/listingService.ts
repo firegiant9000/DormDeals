@@ -9,6 +9,7 @@ const storage = getStorage();
 export async function createListing(input: {
   title: string; description: string; price: number;
   category: string; condition: string; images: File[];
+  isFeatured?: boolean;
 }): Promise<Listing> {
   const user = auth.currentUser;
   if (!user) throw new Error('not-authenticated');
@@ -51,7 +52,8 @@ export async function createListing(input: {
     ownerId: user.uid,
     status: 'active' as const,
     createdAt: serverTimestamp(),
-    imageUrls: uploadedUrls
+    imageUrls: uploadedUrls,
+    isFeatured: input.isFeatured || false
   };
 
   await setDoc(listRef, payload);

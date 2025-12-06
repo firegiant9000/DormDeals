@@ -179,6 +179,8 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
       addToWishlist,
       removeFromCart,
       removeFromWishlist,
+      openCart,
+      openWishlist,
     ]
   );
 

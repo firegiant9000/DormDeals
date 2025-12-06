@@ -74,7 +74,7 @@ export function useCartWishlist() {
         console.log('[COMMERCE] Cleaned up listeners');
       }
     };
-  }, [auth.currentUser?.uid]);
+  }, []);
 
   return {
     cart,

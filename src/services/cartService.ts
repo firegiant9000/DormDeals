@@ -26,7 +26,7 @@ export async function fetchCart(): Promise<Listing[]> {
       listingSnap.forEach(doc => {
         out.push(normalizeListing({ id: doc.id, ...doc.data() } as any));
       });
-    } catch (e) {
+    } catch {
       // Fallback to individual fetches if 'in' query fails
       for (const listingId of chunk) {
         try {
