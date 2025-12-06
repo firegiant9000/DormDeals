@@ -12,7 +12,6 @@ import { db } from '../config/firebase';
 import { UserType, UserProfile } from '../types/user';
 import { Item } from '../types';
 import { getListings } from './listingsService';
-import { normalizeListing } from '@/utils/normalizers';
 
 const USERS_COLLECTION = 'users';
 const LISTINGS_COLLECTION = 'listings';
@@ -66,27 +65,12 @@ export async function getAllUsers(): Promise<(UserProfile & { isBanned?: boolean
  */
 export async function getAllListings(): Promise<Item[]> {
   try {
-    // Get all listings without filters
-    const listingsRef = collection(db, LISTINGS_COLLECTION);
-    const q = query(listingsRef, orderBy('createdAt', 'desc'));
-    const querySnapshot = await getDocs(q);
-
-    const listings: Item[] = [];
-    querySnapshot.forEach((doc) => {
-      const listing = normalizeListing({ id: doc.id, ...doc.data() } as any);
-      listings.push(listing);
-    });
-
-    return listings;
+    // Use listingsService which handles proper type conversion
+    // Passing empty options returns all listings
+    return await getListings({});
   } catch (error) {
     console.error('Error fetching all listings:', error);
-    // Fallback to listingsService
-    try {
-      return await getListings({});
-    } catch (fallbackError) {
-      console.error('Fallback also failed:', fallbackError);
-      throw new Error('Failed to fetch listings');
-    }
+    throw new Error('Failed to fetch listings');
   }
 }
 

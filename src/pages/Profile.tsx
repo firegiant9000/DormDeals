@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { User, Settings, Heart, ShoppingBag, MessageSquare, Star, Edit3, BarChart3, Users, Crown, Loader2, ShoppingCart, Pencil, Shield, TrendingUp, DollarSign, Package, Eye, AlertCircle, CheckCircle, XCircle, Search } from 'lucide-react'
+import { User, Settings, Heart, ShoppingBag, MessageSquare, Star, Edit3, BarChart3, Users, Crown, Loader2, ShoppingCart, Pencil, Shield, TrendingUp, DollarSign, Package, AlertCircle, CheckCircle, XCircle, Search } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useAccessControl } from '../hooks/useAccessControl'
 import ProtectedFeature from '../components/ProtectedFeature'
