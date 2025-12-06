@@ -50,6 +50,7 @@ export async function removeFromCart(listingId: ListingID): Promise<CommerceResu
       if (!data.items?.[listingId]) {
         throw { code: 'not-found', message: 'Item not in cart' };
       }
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { [listingId]: _, ...rest } = data.items;
       tx.set(ref, { items: rest, updatedAt: serverTimestamp() }, { merge: true });
     });
@@ -107,6 +108,7 @@ export async function removeFromWishlist(listingId: ListingID): Promise<Commerce
       if (!data.items?.[listingId]) {
         throw { code: 'not-found', message: 'Item not in wishlist' };
       }
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { [listingId]: _, ...rest } = data.items;
       tx.set(ref, { items: rest, updatedAt: serverTimestamp() }, { merge: true });
     });

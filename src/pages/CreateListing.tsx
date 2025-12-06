@@ -8,6 +8,7 @@ import type { UserType } from '@/types/user'
 import { useAuth } from '@/context/AuthContext'
 import { auth, db } from '@/firebase'
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore'
+import { useAccessControl } from '@/hooks/useAccessControl'
 
 type DebugState = {
   lastStep?: string
@@ -20,6 +21,7 @@ const CreateListing = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const { isAuthenticated } = useAuth()
+  const { isPremium } = useAccessControl()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [debugState, setDebugState] = useState<DebugState>({})
   const [isAllowlisted, setIsAllowlisted] = useState(false)
@@ -35,6 +37,7 @@ const CreateListing = () => {
     condition: '',
     location: '',
     images: [] as File[],
+    isFeatured: false,
   })
 
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
@@ -83,7 +86,6 @@ const CreateListing = () => {
     } catch (e) {
       if (import.meta.env.DEV) console.error('[CREATE_LISTING] draft:recover:error', e)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const handleInputChange = (
@@ -154,6 +156,7 @@ const CreateListing = () => {
         condition: formData.condition,
         location: formData.location?.trim(),
         images: formData.images,
+        isFeatured: isPremium() && formData.isFeatured,
       }
 
       // Debug logging
@@ -182,7 +185,9 @@ const CreateListing = () => {
       // Clear draft on success
       try {
         localStorage.removeItem('dd-create-draft')
-      } catch {}
+      } catch {
+        // Ignore localStorage errors
+      }
       navigate(`/listing/${listing.id}`)
     } catch (err: any) {
       const code = String(err?.code || 'unknown')
@@ -375,6 +380,27 @@ const CreateListing = () => {
                   placeholder="e.g., UL Campus"
               />
             </div>
+
+            {/* Feature Item (Premium Only) */}
+            {isPremium() && (
+              <div>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    name="isFeatured"
+                    checked={formData.isFeatured}
+                    onChange={handleInputChange}
+                    className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                  />
+                  <span className="text-sm font-medium text-body">
+                    Feature this item (Premium Feature)
+                  </span>
+                </label>
+                <p className="text-xs text-gray-500 mt-1 ml-6">
+                  Featured items appear on the home page and get more visibility
+                </p>
+              </div>
+            )}
 
               {/* Actions */}
               <div className="flex gap-4 pt-4">

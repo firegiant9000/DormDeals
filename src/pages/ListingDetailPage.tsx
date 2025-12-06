@@ -25,17 +25,16 @@ const ListingDetailPage: React.FC = () => {
   const location = useLocation();
   
   const DEBUG = new URLSearchParams(location.search).has('debug');
-  const dlog = (...a: any[]) => { if (DEBUG) console.log('[LISTING_DETAIL]', ...a); };
   
   // Get listing data from location state or fetch from API
   const [listing, setListing] = useState<Item | null>(location.state?.listing || null);
   
   useEffect(() => {
-    if (listing) {
+    if (listing && DEBUG) {
       const listingData = listing as any
-      dlog('imageUrls', listingData?.imageUrls);
+      console.log('[LISTING_DETAIL] imageUrls', listingData?.imageUrls);
     }
-  }, [listing]);
+  }, [listing, DEBUG]);
   const [loading, setLoading] = useState(!listing);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const { addToCart, addToWishlist, removeFromCart, removeFromWishlist, openCart, openWishlist, isInCart, isInWishlist } = useShop();
@@ -159,21 +158,35 @@ const ListingDetailPage: React.FC = () => {
             <div className="w-full max-w-[900px]">
               <div className="relative w-full rounded-xl overflow-hidden bg-muted/20" style={{ aspectRatio: '16 / 9' }}>
                 {(() => {
-                  const src = (listing as any)?.imageUrls?.[0]
-                  if (src) {
+                  const listingData = listing as any
+                  const imageUrls = listingData?.imageUrls || listing?.images || []
+                  const currentImage = imageUrls[currentImageIndex] || imageUrls[0]
+                  
+                  if (currentImage) {
                     return (
                       <img
-                        src={src}
+                        src={currentImage}
                         alt={listing?.title ?? 'Listing image'}
                         className="h-full w-full object-cover rounded-xl"
                         loading="lazy"
                         referrerPolicy="no-referrer"
-                        onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+                        onError={(e) => { 
+                          (e.currentTarget as HTMLImageElement).style.display = 'none';
+                          const parent = (e.currentTarget as HTMLImageElement).parentElement;
+                          if (parent && !parent.querySelector('.no-image-fallback')) {
+                            const fallback = document.createElement('div');
+                            fallback.className = 'no-image-fallback text-sm text-muted-foreground flex items-center justify-center h-full';
+                            fallback.textContent = 'No image available';
+                            parent.appendChild(fallback);
+                          }
+                        }}
                       />
                     )
                   }
                   return (
-                    <div className="text-sm text-muted-foreground">No image</div>
+                    <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
+                      No image available
+                    </div>
                   )
                 })()}
               </div>
@@ -190,8 +203,8 @@ const ListingDetailPage: React.FC = () => {
                       <button
                         key={index}
                         onClick={() => setCurrentImageIndex(index)}
-                        className={`flex-shrink-0 h-16 w-20 overflow-hidden rounded-lg border border-surface bg-surface ${
-                          currentImageIndex === index ? 'border-primary-600' : ''
+                        className={`flex-shrink-0 h-16 w-20 overflow-hidden rounded-lg border-2 bg-surface transition-colors ${
+                          currentImageIndex === index ? 'border-primary-600' : 'border-surface'
                         }`}
                       >
                         <img
@@ -200,6 +213,14 @@ const ListingDetailPage: React.FC = () => {
                           className="w-full h-full object-cover"
                           loading="lazy"
                           referrerPolicy="no-referrer"
+                          onError={(e) => {
+                            (e.currentTarget as HTMLImageElement).style.display = 'none';
+                            const parent = (e.currentTarget as HTMLImageElement).parentElement;
+                            if (parent) {
+                              parent.className += ' flex items-center justify-center';
+                              parent.innerHTML = '<span class="text-xs text-gray-400">IMG</span>';
+                            }
+                          }}
                         />
                       </button>
                     ))}

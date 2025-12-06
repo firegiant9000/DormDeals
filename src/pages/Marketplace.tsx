@@ -4,12 +4,12 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { Item, SortOption } from '@/types'
 import SearchFiltersBar from '@/components/SearchFiltersBar'
 import { fetchMarketplace } from '@/data/listingsProvider'
+import ListingCard from '@/components/ListingCard'
 
 const Marketplace = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const DEBUG = new URLSearchParams(location.search).has('debug')
-  const dlog = (...a: any[]) => { if (DEBUG) console.log('[MARKET]', ...a); }
   
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [baseItems, setBaseItems] = useState<Item[]>([])
@@ -34,8 +34,10 @@ const Marketplace = () => {
     setSort(SORT)
     setMinPrice(MIN)
     setMaxPrice(MAX)
-    dlog('query params → state', { Q, CAT, SORT, MIN, MAX })
-  }, [])
+    if (DEBUG) {
+      console.log('[MARKET] query params → state', { Q, CAT, SORT, MIN, MAX })
+    }
+  }, [location.search, DEBUG])
 
   useEffect(() => {
     fetchMarketplace({ 
@@ -132,32 +134,9 @@ const Marketplace = () => {
       />
 
       <div className={viewMode === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6' : 'space-y-4 mt-6'}>
-        {filteredItems.map((listing: any) => {
-          const cover = listing.imageUrls?.[0]
-          return (
-            <div key={listing.id} className="bg-white rounded-xl shadow p-4">
-              <div className="aspect-video bg-gray-100 rounded mb-3 overflow-hidden">
-                {cover ? (
-                  <img 
-                    src={cover} 
-                    alt={listing.title} 
-                    className="h-full w-full object-cover rounded-xl" 
-                    loading="lazy" 
-                    referrerPolicy="no-referrer"
-                    onError={(e)=>{ (e.currentTarget as HTMLImageElement).style.visibility='hidden';}}
-                  />
-                ) : (
-                  <div className="text-sm text-muted-foreground">No image</div>
-                )}
-              </div>
-              <div className="font-medium">{listing.title}</div>
-              <div className="text-sm text-gray-500">{listing.price.toFixed(2)}</div>
-              <button className="btn-primary mt-3" onClick={() => navigate(`/listing/${listing.id}`)}>
-                View
-              </button>
-            </div>
-          )
-        })}
+        {filteredItems.map((listing: Item) => (
+          <ListingCard key={listing.id} listing={listing} />
+        ))}
       </div>
 
       {filteredItems.length === 0 && (
