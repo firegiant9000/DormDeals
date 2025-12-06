@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { User, Settings, Heart, ShoppingBag, MessageSquare, Star, Edit3, BarChart3, Users, Crown, Loader2, ShoppingCart, Pencil } from 'lucide-react'
+import { User, Settings, Heart, ShoppingBag, MessageSquare, Star, Edit3, BarChart3, Users, Crown, Loader2, ShoppingCart, Pencil, Shield, TrendingUp, DollarSign, Package, Eye, AlertCircle, CheckCircle, XCircle, Search } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useAccessControl } from '../hooks/useAccessControl'
 import ProtectedFeature from '../components/ProtectedFeature'
-import { UserType } from '../types/user'
+import { UserType, UserProfile as UserProfileType } from '../types/user'
 import { getUserProfileWithStats, updateUserProfile } from '../services/userService'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { db } from '@/firebase'
 import { collection, query, where, orderBy, getDocs } from 'firebase/firestore'
@@ -14,6 +14,7 @@ import { normalizeListing } from '@/utils/normalizers'
 import { fetchFavorites } from '@/services/favoriteService'
 import { fetchCart, removeFromCart } from '@/services/cartService'
 import { deleteListing } from '@/services/listingService'
+import { getAllUsers, getAllListings, updateUserType, updateUserVerification, updateUserBanStatus, adminDeleteListing, adminUpdateListingStatus, getPlatformStats, PlatformStats } from '../services/adminService'
 
 interface UserProfile {
   id: string
@@ -56,6 +57,7 @@ interface Listing {
 }
 
 const Profile = () => {
+  const location = useLocation()
   const [activeTab, setActiveTab] = useState('listings')
   const { user } = useAuth()
   const { isAdmin, isPremium, canAccess } = useAccessControl()
@@ -69,6 +71,33 @@ const Profile = () => {
   const [isLoadingListings, setIsLoadingListings] = useState(false)
   const [isLoadingFavorites, setIsLoadingFavorites] = useState(false)
   const [isLoadingCart, setIsLoadingCart] = useState(false)
+
+  // Admin state
+  const [allUsers, setAllUsers] = useState<(UserProfileType & { isBanned?: boolean; bannedAt?: Date | null })[]>([])
+  const [allListings, setAllListings] = useState<any[]>([])
+  const [platformStats, setPlatformStats] = useState<PlatformStats | null>(null)
+  const [isLoadingAdmin, setIsLoadingAdmin] = useState(false)
+  const [isLoadingAnalytics, setIsLoadingAnalytics] = useState(false)
+  const [userSearchQuery, setUserSearchQuery] = useState('')
+  const [listingSearchQuery, setListingSearchQuery] = useState('')
+
+  // Handle hash routing
+  useEffect(() => {
+    const hash = window.location.hash.replace('#', '')
+    if (hash && ['admin', 'analytics'].includes(hash)) {
+      setActiveTab(hash)
+    }
+  }, [location])
+
+  // Update URL hash when tab changes (for admin and analytics)
+  useEffect(() => {
+    if (activeTab === 'admin' || activeTab === 'analytics') {
+      window.location.hash = activeTab
+    } else if (window.location.hash) {
+      // Clear hash for other tabs
+      window.history.replaceState(null, '', window.location.pathname)
+    }
+  }, [activeTab])
 
   // Fetch user profile from Firestore
   useEffect(() => {
@@ -320,6 +349,51 @@ const Profile = () => {
       })
       .finally(() => setIsLoadingCart(false))
   }, [activeTab, user?.id])
+
+  // Fetch admin data when admin tab is active
+  useEffect(() => {
+    if (activeTab !== 'admin' || !isAdmin()) return
+
+    setIsLoadingAdmin(true)
+    Promise.all([getAllUsers(), getAllListings()])
+      .then(([users, listings]) => {
+        setAllUsers(users)
+        setAllListings(listings.map(l => ({
+          id: l.id,
+          title: l.title,
+          price: l.price,
+          status: l.status || 'active',
+          views: (l as any).views || 0,
+          images: l.images || (l as any).imageUrls || [],
+          description: l.description,
+          category: l.category,
+          ownerId: (l as any).ownerId || (l as any).sellerId,
+          createdAt: l.createdAt,
+          isFeatured: (l as any).isFeatured || false
+        })))
+      })
+      .catch((e) => {
+        console.error(e)
+        toast.error('Failed to load admin data')
+      })
+      .finally(() => setIsLoadingAdmin(false))
+  }, [activeTab, isAdmin])
+
+  // Fetch analytics data when analytics tab is active
+  useEffect(() => {
+    if (activeTab !== 'analytics' || !isAdmin()) return
+
+    setIsLoadingAnalytics(true)
+    getPlatformStats()
+      .then(stats => {
+        setPlatformStats(stats)
+      })
+      .catch((e) => {
+        console.error(e)
+        toast.error('Failed to load analytics')
+      })
+      .finally(() => setIsLoadingAnalytics(false))
+  }, [activeTab, isAdmin])
 
   // Fallback user data
   const displayUserData = userData || {
@@ -769,36 +843,174 @@ const Profile = () => {
             )}
 
             {activeTab === 'analytics' && (
-              <ProtectedFeature feature="advanced_analytics">
+              <ProtectedFeature requiredUserTypes={[UserType.ADMIN]}>
                 <div className="space-y-6">
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Advanced Analytics</h3>
-                    <p className="text-gray-600 mb-6">Track your listing performance, views, and engagement metrics.</p>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                      <div className="dd-card bg-surface border-surface p-4">
-                        <p className="text-sm text-gray-500 mb-1">Total Views</p>
-                        <p className="text-2xl font-bold text-gray-900">1,234</p>
-                        <p className="text-xs text-green-600 mt-1">+12% from last month</p>
-                      </div>
-                      <div className="dd-card bg-surface border-surface p-4">
-                        <p className="text-sm text-gray-500 mb-1">Engagement Rate</p>
-                        <p className="text-2xl font-bold text-gray-900">8.5%</p>
-                        <p className="text-xs text-green-600 mt-1">+2.1% from last month</p>
-                      </div>
-                      <div className="dd-card bg-surface border-surface p-4">
-                        <p className="text-sm text-gray-500 mb-1">Avg. Response Time</p>
-                        <p className="text-2xl font-bold text-gray-900">2.3h</p>
-                        <p className="text-xs text-gray-600 mt-1">Faster than average</p>
-                      </div>
+                    <div className="flex items-center gap-3 mb-4">
+                      <BarChart3 className="w-6 h-6 text-primary-600" />
+                      <h3 className="text-lg font-semibold text-gray-900">Platform Analytics</h3>
                     </div>
-                    
-                    <div className="dd-card bg-surface border-surface p-6">
-                      <h4 className="font-semibold text-gray-900 mb-4">Performance Chart</h4>
-                      <div className="h-64 bg-gray-100 rounded flex items-center justify-center text-gray-400">
-                        Chart visualization would go here
+                    <p className="text-gray-600 mb-6">Comprehensive platform statistics and insights.</p>
+
+                    {isLoadingAnalytics ? (
+                      <div className="flex items-center justify-center py-12">
+                        <Loader2 className="w-6 h-6 animate-spin text-primary-600" />
+                        <span className="ml-2 text-gray-600">Loading analytics...</span>
                       </div>
-                    </div>
+                    ) : platformStats ? (
+                      <div className="space-y-6">
+                        {/* Key Metrics */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                          <div className="dd-card bg-surface border-surface p-6">
+                            <div className="flex items-center justify-between mb-2">
+                              <Users className="w-8 h-8 text-blue-600" />
+                              <TrendingUp className="w-5 h-5 text-green-600" />
+                            </div>
+                            <p className="text-sm text-gray-500 mb-1">Total Users</p>
+                            <p className="text-3xl font-bold text-gray-900">{platformStats.totalUsers}</p>
+                            <p className="text-xs text-green-600 mt-2">+{platformStats.recentUsers} in last 30 days</p>
+                          </div>
+
+                          <div className="dd-card bg-surface border-surface p-6">
+                            <div className="flex items-center justify-between mb-2">
+                              <Package className="w-8 h-8 text-purple-600" />
+                              <TrendingUp className="w-5 h-5 text-green-600" />
+                            </div>
+                            <p className="text-sm text-gray-500 mb-1">Total Listings</p>
+                            <p className="text-3xl font-bold text-gray-900">{platformStats.totalListings}</p>
+                            <p className="text-xs text-green-600 mt-2">+{platformStats.recentListings} in last 30 days</p>
+                          </div>
+
+                          <div className="dd-card bg-surface border-surface p-6">
+                            <div className="flex items-center justify-between mb-2">
+                              <CheckCircle className="w-8 h-8 text-green-600" />
+                              <TrendingUp className="w-5 h-5 text-green-600" />
+                            </div>
+                            <p className="text-sm text-gray-500 mb-1">Active Listings</p>
+                            <p className="text-3xl font-bold text-gray-900">{platformStats.activeListings}</p>
+                            <p className="text-xs text-gray-600 mt-2">
+                              {platformStats.totalListings > 0 
+                                ? `${Math.round((platformStats.activeListings / platformStats.totalListings) * 100)}% of total`
+                                : '0%'}
+                            </p>
+                          </div>
+
+                          <div className="dd-card bg-surface border-surface p-6">
+                            <div className="flex items-center justify-between mb-2">
+                              <DollarSign className="w-8 h-8 text-green-600" />
+                              <TrendingUp className="w-5 h-5 text-green-600" />
+                            </div>
+                            <p className="text-sm text-gray-500 mb-1">Total Revenue</p>
+                            <p className="text-3xl font-bold text-gray-900">${platformStats.totalRevenue.toLocaleString()}</p>
+                            <p className="text-xs text-gray-600 mt-2">
+                              {platformStats.soldListings} items sold
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* User Type Distribution */}
+                        <div className="dd-card bg-surface border-surface p-6">
+                          <h4 className="font-semibold text-gray-900 mb-4">User Distribution</h4>
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="p-4 bg-blue-50 rounded-lg">
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="text-sm font-medium text-blue-900">Admins</span>
+                                <Users className="w-5 h-5 text-blue-600" />
+                              </div>
+                              <p className="text-2xl font-bold text-blue-900">{platformStats.usersByType.admin}</p>
+                              <p className="text-xs text-blue-700 mt-1">
+                                {platformStats.totalUsers > 0
+                                  ? `${Math.round((platformStats.usersByType.admin / platformStats.totalUsers) * 100)}%`
+                                  : '0%'}
+                              </p>
+                            </div>
+                            <div className="p-4 bg-purple-50 rounded-lg">
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="text-sm font-medium text-purple-900">Premium</span>
+                                <Crown className="w-5 h-5 text-purple-600" />
+                              </div>
+                              <p className="text-2xl font-bold text-purple-900">{platformStats.usersByType.premium}</p>
+                              <p className="text-xs text-purple-700 mt-1">
+                                {platformStats.totalUsers > 0
+                                  ? `${Math.round((platformStats.usersByType.premium / platformStats.totalUsers) * 100)}%`
+                                  : '0%'}
+                              </p>
+                            </div>
+                            <div className="p-4 bg-gray-50 rounded-lg">
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="text-sm font-medium text-gray-900">Regular</span>
+                                <User className="w-5 h-5 text-gray-600" />
+                              </div>
+                              <p className="text-2xl font-bold text-gray-900">{platformStats.usersByType.regular}</p>
+                              <p className="text-xs text-gray-700 mt-1">
+                                {platformStats.totalUsers > 0
+                                  ? `${Math.round((platformStats.usersByType.regular / platformStats.totalUsers) * 100)}%`
+                                  : '0%'}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Listings Statistics */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <div className="dd-card bg-surface border-surface p-6">
+                            <h4 className="font-semibold text-gray-900 mb-4">Listing Statistics</h4>
+                            <div className="space-y-4">
+                              <div className="flex justify-between items-center">
+                                <span className="text-sm text-gray-600">Active Listings</span>
+                                <span className="font-semibold text-gray-900">{platformStats.activeListings}</span>
+                              </div>
+                              <div className="flex justify-between items-center">
+                                <span className="text-sm text-gray-600">Sold Listings</span>
+                                <span className="font-semibold text-gray-900">{platformStats.soldListings}</span>
+                              </div>
+                              <div className="flex justify-between items-center">
+                                <span className="text-sm text-gray-600">Average Price</span>
+                                <span className="font-semibold text-gray-900">${platformStats.averageListingPrice.toFixed(2)}</span>
+                              </div>
+                              <div className="flex justify-between items-center">
+                                <span className="text-sm text-gray-600">Sold Rate</span>
+                                <span className="font-semibold text-gray-900">
+                                  {platformStats.totalListings > 0
+                                    ? `${Math.round((platformStats.soldListings / platformStats.totalListings) * 100)}%`
+                                    : '0%'}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="dd-card bg-surface border-surface p-6">
+                            <h4 className="font-semibold text-gray-900 mb-4">Listings by Category</h4>
+                            <div className="space-y-3 max-h-64 overflow-y-auto">
+                              {Object.entries(platformStats.listingsByCategory)
+                                .sort(([, a], [, b]) => b - a)
+                                .map(([category, count]) => (
+                                  <div key={category} className="flex justify-between items-center">
+                                    <span className="text-sm text-gray-600 capitalize">{category}</span>
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-24 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                        <div
+                                          className="h-full bg-primary-600"
+                                          style={{
+                                            width: `${platformStats.totalListings > 0 ? (count / platformStats.totalListings) * 100 : 0}%`
+                                          }}
+                                        />
+                                      </div>
+                                      <span className="font-semibold text-gray-900 w-8 text-right">{count}</span>
+                                    </div>
+                                  </div>
+                                ))}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center py-12">
+                        <AlertCircle className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                        <h3 className="text-lg font-medium text-gray-900 mb-2">No Analytics Data</h3>
+                        <p className="text-gray-500">Unable to load platform statistics.</p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </ProtectedFeature>
@@ -859,23 +1071,308 @@ const Profile = () => {
               <ProtectedFeature requiredUserTypes={[UserType.ADMIN]}>
                 <div className="space-y-6">
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Admin Panel</h3>
-                    <p className="text-gray-600 mb-6">Manage users, listings, and system settings.</p>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="dd-card bg-surface border-surface p-6">
-                        <Users className="w-8 h-8 text-primary-600 mb-3" />
-                        <h4 className="font-semibold text-gray-900 mb-2">User Management</h4>
-                        <p className="text-sm text-gray-600 mb-4">View and manage all users in the system.</p>
-                        <button className="btn-primary text-sm">Manage Users</button>
-                      </div>
-                      <div className="dd-card bg-surface border-surface p-6">
-                        <ShoppingBag className="w-8 h-8 text-primary-600 mb-3" />
-                        <h4 className="font-semibold text-gray-900 mb-2">Listing Management</h4>
-                        <p className="text-sm text-gray-600 mb-4">Review and moderate all listings.</p>
-                        <button className="btn-primary text-sm">Manage Listings</button>
-                      </div>
+                    <div className="flex items-center gap-3 mb-4">
+                      <Shield className="w-6 h-6 text-red-600" />
+                      <h3 className="text-lg font-semibold text-gray-900">Admin Panel</h3>
                     </div>
+                    <p className="text-gray-600 mb-6">Manage users, listings, and system settings.</p>
+
+                    {isLoadingAdmin ? (
+                      <div className="flex items-center justify-center py-12">
+                        <Loader2 className="w-6 h-6 animate-spin text-primary-600" />
+                        <span className="ml-2 text-gray-600">Loading admin data...</span>
+                      </div>
+                    ) : (
+                      <div className="space-y-8">
+                        {/* User Management Section */}
+                        <div className="dd-card bg-surface border-surface p-6">
+                          <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-2">
+                              <Users className="w-5 h-5 text-primary-600" />
+                              <h4 className="font-semibold text-gray-900">User Management</h4>
+                              <span className="text-sm text-gray-500">({allUsers.length} users</span>
+                              {allUsers.some(u => u.isBanned) && (
+                                <>
+                                  <span className="text-sm text-gray-400">•</span>
+                                  <span className="text-sm text-red-600 font-semibold">
+                                    {allUsers.filter(u => u.isBanned).length} banned
+                                  </span>
+                                </>
+                              )}
+                              <span className="text-sm text-gray-500">)</span>
+                            </div>
+                            <div className="relative">
+                              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                              <input
+                                type="text"
+                                placeholder="Search users..."
+                                value={userSearchQuery}
+                                onChange={(e) => setUserSearchQuery(e.target.value)}
+                                className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-sm">
+                              <thead>
+                                <tr className="border-b border-gray-200">
+                                  <th className="text-left py-3 px-4 font-semibold text-gray-700">User</th>
+                                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Email</th>
+                                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Type</th>
+                                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Status</th>
+                                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Joined</th>
+                                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Actions</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {allUsers
+                                  .filter(u => 
+                                    !userSearchQuery || 
+                                    u.displayName?.toLowerCase().includes(userSearchQuery.toLowerCase()) ||
+                                    u.email?.toLowerCase().includes(userSearchQuery.toLowerCase())
+                                  )
+                                  .slice(0, 50)
+                                  .map((userProfile) => (
+                                    <tr 
+                                      key={userProfile.id} 
+                                      className={`border-b border-gray-100 hover:bg-gray-50 ${
+                                        userProfile.isBanned ? 'bg-red-50' : ''
+                                      }`}
+                                    >
+                                      <td className="py-3 px-4">
+                                        <div className="flex items-center gap-2">
+                                          {userProfile.profileImage ? (
+                                            <img src={userProfile.profileImage} alt={userProfile.displayName} className="w-8 h-8 rounded-full" />
+                                          ) : (
+                                            <div className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center">
+                                              <User className="w-4 h-4 text-primary-600" />
+                                            </div>
+                                          )}
+                                          <div>
+                                            <span className={`font-medium ${userProfile.isBanned ? 'line-through text-gray-500' : ''}`}>
+                                              {userProfile.displayName || 'Unknown'}
+                                            </span>
+                                            {userProfile.isBanned && (
+                                              <span className="ml-2 text-xs text-red-600 font-semibold">BANNED</span>
+                                            )}
+                                          </div>
+                                        </div>
+                                      </td>
+                                      <td className="py-3 px-4 text-gray-600">{userProfile.email}</td>
+                                      <td className="py-3 px-4">
+                                        <select
+                                          value={userProfile.userType}
+                                          onChange={async (e) => {
+                                            try {
+                                              await updateUserType(userProfile.id, e.target.value as UserType)
+                                              toast.success('User type updated')
+                                              setAllUsers(prev => prev.map(u => 
+                                                u.id === userProfile.id ? { ...u, userType: e.target.value as UserType } : u
+                                              ))
+                                            } catch (error: any) {
+                                              toast.error(error.message || 'Failed to update user type')
+                                            }
+                                          }}
+                                          className="text-xs px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-primary-500"
+                                          disabled={userProfile.isBanned}
+                                        >
+                                          <option value={UserType.REGULAR}>Regular</option>
+                                          <option value={UserType.PREMIUM}>Premium</option>
+                                          <option value={UserType.ADMIN}>Admin</option>
+                                        </select>
+                                      </td>
+                                      <td className="py-3 px-4">
+                                        <div className="flex flex-col gap-1">
+                                          <button
+                                            onClick={async () => {
+                                              try {
+                                                await updateUserVerification(userProfile.id, !userProfile.isVerified)
+                                                toast.success(`User ${!userProfile.isVerified ? 'verified' : 'unverified'}`)
+                                                setAllUsers(prev => prev.map(u => 
+                                                  u.id === userProfile.id ? { ...u, isVerified: !u.isVerified } : u
+                                                ))
+                                              } catch (error: any) {
+                                                toast.error(error.message || 'Failed to update verification')
+                                              }
+                                            }}
+                                            className={`px-2 py-1 rounded text-xs font-medium ${
+                                              userProfile.isVerified
+                                                ? 'bg-green-100 text-green-800 hover:bg-green-200'
+                                                : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                                            }`}
+                                            disabled={userProfile.isBanned}
+                                          >
+                                            {userProfile.isVerified ? 'Verified' : 'Unverified'}
+                                          </button>
+                                          <button
+                                            onClick={async () => {
+                                              const action = userProfile.isBanned ? 'unban' : 'ban'
+                                              if (confirm(`Are you sure you want to ${action} this user?`)) {
+                                                try {
+                                                  await updateUserBanStatus(userProfile.id, !userProfile.isBanned)
+                                                  toast.success(`User ${action}ned successfully`)
+                                                  setAllUsers(prev => prev.map(u => 
+                                                    u.id === userProfile.id ? { 
+                                                      ...u, 
+                                                      isBanned: !u.isBanned,
+                                                      bannedAt: !u.isBanned ? new Date() : null
+                                                    } : u
+                                                  ))
+                                                } catch (error: any) {
+                                                  toast.error(error.message || `Failed to ${action} user`)
+                                                }
+                                              }
+                                            }}
+                                            className={`px-2 py-1 rounded text-xs font-medium ${
+                                              userProfile.isBanned
+                                                ? 'bg-green-100 text-green-800 hover:bg-green-200'
+                                                : 'bg-red-100 text-red-800 hover:bg-red-200'
+                                            }`}
+                                          >
+                                            {userProfile.isBanned ? 'Unban' : 'Ban'}
+                                          </button>
+                                        </div>
+                                      </td>
+                                      <td className="py-3 px-4 text-gray-600 text-xs">
+                                        {userProfile.createdAt instanceof Date
+                                          ? userProfile.createdAt.toLocaleDateString()
+                                          : new Date(userProfile.createdAt).toLocaleDateString()}
+                                      </td>
+                                      <td className="py-3 px-4">
+                                        <button
+                                          onClick={() => navigate(`/profile?userId=${userProfile.id}`)}
+                                          className="text-primary-600 hover:text-primary-700 text-xs font-medium"
+                                        >
+                                          View Profile
+                                        </button>
+                                      </td>
+                                    </tr>
+                                  ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+
+                        {/* Listing Management Section */}
+                        <div className="dd-card bg-surface border-surface p-6">
+                          <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-2">
+                              <ShoppingBag className="w-5 h-5 text-primary-600" />
+                              <h4 className="font-semibold text-gray-900">Listing Management</h4>
+                              <span className="text-sm text-gray-500">({allListings.length} listings)</span>
+                            </div>
+                            <div className="relative">
+                              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                              <input
+                                type="text"
+                                placeholder="Search listings..."
+                                value={listingSearchQuery}
+                                onChange={(e) => setListingSearchQuery(e.target.value)}
+                                className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-sm">
+                              <thead>
+                                <tr className="border-b border-gray-200">
+                                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Listing</th>
+                                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Price</th>
+                                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Status</th>
+                                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Views</th>
+                                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Created</th>
+                                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Actions</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {allListings
+                                  .filter(l => 
+                                    !listingSearchQuery || 
+                                    l.title?.toLowerCase().includes(listingSearchQuery.toLowerCase())
+                                  )
+                                  .slice(0, 50)
+                                  .map((listing) => (
+                                    <tr key={listing.id} className="border-b border-gray-100 hover:bg-gray-50">
+                                      <td className="py-3 px-4">
+                                        <div className="flex items-center gap-2">
+                                          {listing.images?.[0] ? (
+                                            <img src={listing.images[0]} alt={listing.title} className="w-10 h-10 rounded object-cover" />
+                                          ) : (
+                                            <div className="w-10 h-10 rounded bg-gray-200 flex items-center justify-center">
+                                              <Package className="w-5 h-5 text-gray-400" />
+                                            </div>
+                                          )}
+                                          <div>
+                                            <div className="font-medium text-gray-900">{listing.title}</div>
+                                            <div className="text-xs text-gray-500">{listing.category}</div>
+                                          </div>
+                                        </div>
+                                      </td>
+                                      <td className="py-3 px-4 font-semibold">${Number(listing.price || 0).toFixed(2)}</td>
+                                      <td className="py-3 px-4">
+                                        <select
+                                          value={listing.status === 'sold' ? 'sold' : listing.status === 'active' ? 'active' : 'inactive'}
+                                          onChange={async (e) => {
+                                            try {
+                                              await adminUpdateListingStatus(listing.id, e.target.value as 'active' | 'sold' | 'inactive')
+                                              toast.success('Listing status updated')
+                                              setAllListings(prev => prev.map(l => 
+                                                l.id === listing.id ? { ...l, status: e.target.value } : l
+                                              ))
+                                            } catch (error: any) {
+                                              toast.error(error.message || 'Failed to update listing status')
+                                            }
+                                          }}
+                                          className="text-xs px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-primary-500"
+                                        >
+                                          <option value="active">Active</option>
+                                          <option value="sold">Sold</option>
+                                          <option value="inactive">Inactive</option>
+                                        </select>
+                                      </td>
+                                      <td className="py-3 px-4 text-gray-600">{listing.views || 0}</td>
+                                      <td className="py-3 px-4 text-gray-600 text-xs">
+                                        {listing.createdAt instanceof Date
+                                          ? listing.createdAt.toLocaleDateString()
+                                          : new Date(listing.createdAt).toLocaleDateString()}
+                                      </td>
+                                      <td className="py-3 px-4">
+                                        <div className="flex flex-col gap-2">
+                                          <button
+                                            onClick={() => navigate(`/listing/${listing.id}`)}
+                                            className="text-primary-600 hover:text-primary-700 text-xs font-medium text-left"
+                                          >
+                                            View
+                                          </button>
+                                          <button
+                                            onClick={async () => {
+                                              if (confirm('Are you sure you want to permanently delete this listing? This action cannot be undone.')) {
+                                                try {
+                                                  await adminDeleteListing(listing.id)
+                                                  toast.success('Listing deleted successfully')
+                                                  setAllListings(prev => prev.filter(l => l.id !== listing.id))
+                                                } catch (error: any) {
+                                                  toast.error(error.message || 'Failed to delete listing')
+                                                }
+                                              }
+                                            }}
+                                            className="text-red-600 hover:text-red-700 text-xs font-medium text-left font-semibold"
+                                          >
+                                            <XCircle className="w-4 h-4 inline mr-1" />
+                                            Delete
+                                          </button>
+                                        </div>
+                                      </td>
+                                    </tr>
+                                  ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </ProtectedFeature>
