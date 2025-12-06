@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { User, Settings, Heart, ShoppingBag, MessageSquare, Star, Edit3, BarChart3, Users, Crown, Loader2, ShoppingCart } from 'lucide-react'
+import { User, Settings, Heart, ShoppingBag, MessageSquare, Star, Edit3, BarChart3, Users, Crown, Loader2, ShoppingCart, Pencil } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useAccessControl } from '../hooks/useAccessControl'
 import ProtectedFeature from '../components/ProtectedFeature'
@@ -573,23 +573,35 @@ const Profile = () => {
                             const uid = (user as any)?.uid || user?.id
                             const isOwner = uid && (listing as any).ownerId === uid
                             return isOwner ? (
-                              <button
-                                onClick={async (e) => {
-                                  e.stopPropagation()
-                                  if (confirm('Delete this listing? This cannot be undone.')) {
-                                    try {
-                                      await deleteListing(listing.id)
-                                      toast.success('Listing deleted')
-                                      setListings(prev => prev.filter(x => x.id !== listing.id))
-                                    } catch (e: any) {
-                                      toast.error(e.message ?? 'Failed to delete listing')
+                              <div className="flex gap-2 mt-2">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    navigate(`/create-listing?edit=${listing.id}`)
+                                  }}
+                                  className="flex-1 btn-secondary text-blue-600 hover:bg-blue-50 flex items-center justify-center gap-1"
+                                >
+                                  <Pencil size={14} />
+                                  Edit
+                                </button>
+                                <button
+                                  onClick={async (e) => {
+                                    e.stopPropagation()
+                                    if (confirm('Delete this listing? This cannot be undone.')) {
+                                      try {
+                                        await deleteListing(listing.id)
+                                        toast.success('Listing deleted')
+                                        setListings(prev => prev.filter(x => x.id !== listing.id))
+                                      } catch (e: any) {
+                                        toast.error(e.message ?? 'Failed to delete listing')
+                                      }
                                     }
-                                  }
-                                }}
-                                className="mt-2 btn-secondary text-red-600 hover:bg-red-50"
-                              >
-                                Delete
-                              </button>
+                                  }}
+                                  className="flex-1 btn-secondary text-red-600 hover:bg-red-50"
+                                >
+                                  Delete
+                                </button>
+                              </div>
                             ) : null
                           })()}
                         </div>

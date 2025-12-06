@@ -3,7 +3,8 @@ import { X, Camera } from 'lucide-react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import ProtectedFeature from '@/components/ProtectedFeature'
-import { createListing } from '@/services/listingService'
+import { createListing, updateListing } from '@/services/listingService'
+import { getListingById } from '@/services/listingsService'
 import type { UserType } from '@/types/user'
 import { useAuth } from '@/context/AuthContext'
 import { auth, db } from '@/firebase'
@@ -28,6 +29,11 @@ const CreateListing = () => {
   
   // Debug mode detection (DEV or ?debug=1)
   const debug = import.meta.env.DEV || (typeof window !== 'undefined' && new URLSearchParams(location.search).has('debug'))
+  
+  // Check if we're in edit mode
+  const editListingId = new URLSearchParams(location.search).get('edit')
+  const isEditMode = !!editListingId
+  const [isLoadingListing, setIsLoadingListing] = useState(!!editListingId)
 
   const [formData, setFormData] = useState({
     title: '',
@@ -59,8 +65,44 @@ const CreateListing = () => {
     }
   }, [])
 
-  // Recover local draft on mount (run once)
+  // Load listing data if in edit mode
   useEffect(() => {
+    if (editListingId) {
+      const loadListing = async () => {
+        setIsLoadingListing(true)
+        try {
+          const listing = await getListingById(editListingId)
+          if (listing) {
+            setFormData({
+              title: listing.title || '',
+              description: listing.description || '',
+              price: String(listing.price || ''),
+              category: listing.category || '',
+              condition: listing.condition || '',
+              location: listing.location || '',
+              images: [], // Images will be kept from existing listing
+              isFeatured: listing.isFeatured || false,
+            })
+          } else {
+            toast.error('Listing not found')
+            navigate('/profile')
+          }
+        } catch (err: any) {
+          console.error('Error loading listing:', err)
+          toast.error(err.message || 'Failed to load listing')
+          navigate('/profile')
+        } finally {
+          setIsLoadingListing(false)
+        }
+      }
+      loadListing()
+    }
+  }, [editListingId, navigate])
+
+  // Recover local draft on mount (run once) - only if not in edit mode
+  useEffect(() => {
+    if (isEditMode) return // Skip draft recovery in edit mode
+    
     try {
       const raw = localStorage.getItem('dd-create-draft')
       if (raw) {
@@ -86,7 +128,7 @@ const CreateListing = () => {
     } catch (e) {
       if (import.meta.env.DEV) console.error('[CREATE_LISTING] draft:recover:error', e)
     }
-  }, [])
+  }, [isEditMode])
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -114,7 +156,7 @@ const CreateListing = () => {
     }
     if (!formData.category) errors.category = 'Category is required'
     if (!formData.condition) errors.condition = 'Condition is required'
-    if (!formData.images.length) errors.images = 'Please upload at least one photo'
+    if (!isEditMode && !formData.images.length) errors.images = 'Please upload at least one photo'
     setValidationErrors(errors)
     return Object.keys(errors).length === 0
   }
@@ -133,8 +175,8 @@ const CreateListing = () => {
     e.preventDefault()
     if (isSubmitting) return
     
-    // Guard for empty images
-    if (formData.images.length === 0) {
+    // Guard for empty images (only for new listings, not edits)
+    if (!isEditMode && formData.images.length === 0) {
       toast.error('Please upload at least one photo')
       return
     }
@@ -176,26 +218,35 @@ const CreateListing = () => {
         }
       }
 
-      const listing = await watchdog(createListing(payload), 25000) // 25s UI watchdog
-
-      const dt = Math.round(performance.now() - t0)
-      if (debug || import.meta.env.DEV) console.log('[CREATE_LISTING] done', { listing, ms: dt })
-
-      toast.success(`Listing created in ${dt}ms`)
-      // Clear draft on success
-      try {
-        localStorage.removeItem('dd-create-draft')
-      } catch {
-        // Ignore localStorage errors
+      let listing
+      if (isEditMode && editListingId) {
+        // Update existing listing
+        listing = await watchdog(updateListing(editListingId, payload), 25000)
+        const dt = Math.round(performance.now() - t0)
+        if (debug || import.meta.env.DEV) console.log('[UPDATE_LISTING] done', { listing, ms: dt })
+        toast.success(`Listing updated in ${dt}ms`)
+        navigate(`/listing/${editListingId}`)
+      } else {
+        // Create new listing
+        listing = await watchdog(createListing(payload), 25000) // 25s UI watchdog
+        const dt = Math.round(performance.now() - t0)
+        if (debug || import.meta.env.DEV) console.log('[CREATE_LISTING] done', { listing, ms: dt })
+        toast.success(`Listing created in ${dt}ms`)
+        // Clear draft on success
+        try {
+          localStorage.removeItem('dd-create-draft')
+        } catch {
+          // Ignore localStorage errors
+        }
+        navigate(`/listing/${listing.id}`)
       }
-      navigate(`/listing/${listing.id}`)
     } catch (err: any) {
       const code = String(err?.code || 'unknown')
       const msg = err?.message || 'Unknown error'
       const dt = Math.round(performance.now() - t0)
       if (debug || import.meta.env.DEV) console.error('[CREATE_LISTING] watchdog/error', { code, msg, err })
       setDebugState({ lastStep: 'watchdog', code, message: msg, ms: dt })
-      toast.error(`Create failed [${code}]`)
+      toast.error(`${isEditMode ? 'Update' : 'Create'} failed [${code}]`)
     } finally {
       setIsSubmitting(false)
     }
@@ -262,7 +313,9 @@ const CreateListing = () => {
         <div className="container mx-auto px-4">
           <div className="max-w-3xl mx-auto rounded-2xl border border-surface bg-surface p-6 shadow">
             <div className="flex items-center justify-between mb-6">
-              <h1 className="text-2xl font-semibold text-body">Create Listing</h1>
+              <h1 className="text-2xl font-semibold text-body">
+                {isEditMode ? 'Edit Listing' : 'Create Listing'}
+              </h1>
                       <button
                 className="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-body"
                 onClick={() => navigate(-1)}
@@ -340,8 +393,9 @@ const CreateListing = () => {
               {/* Images */}
               <div>
                 <label className="block text-sm font-medium text-body mb-2">
-                  Photos<span className="text-red-500">*</span>
-                  </label>
+                  Photos{!isEditMode && <span className="text-red-500">*</span>}
+                  {isEditMode && <span className="text-gray-500 text-xs ml-2">(Optional - leave empty to keep existing images)</span>}
+                </label>
                 <input type="file" multiple accept="image/*" onChange={handleImageChange} className="dd-input" />
                 {validationErrors.images && <p className="text-red-500 text-sm mt-1">{validationErrors.images}</p>}
                 <div className="mt-2 flex gap-2 flex-wrap">
@@ -404,9 +458,9 @@ const CreateListing = () => {
 
               {/* Actions */}
               <div className="flex gap-4 pt-4">
-                <button type="submit" className="btn-primary" disabled={isSubmitting}>
-                  {isSubmitting ? 'Creating…' : 'List Item'}
-              </button>
+                <button type="submit" className="btn-primary" disabled={isSubmitting || isLoadingListing}>
+                  {isLoadingListing ? 'Loading...' : isSubmitting ? (isEditMode ? 'Updating...' : 'Creating...') : (isEditMode ? 'Update Listing' : 'List Item')}
+                </button>
                 <button type="button" className="btn-secondary" onClick={handleSaveDraft} disabled={isSubmitting}>
                 Save Draft
               </button>

@@ -70,6 +70,72 @@ export async function createListing(input: {
   return normalizeListing({ id: listingId, ...payload, createdAt: null } as any);
 }
 
+export async function updateListing(listingId: string, input: {
+  title?: string;
+  description?: string;
+  price?: number;
+  category?: string;
+  condition?: string;
+  location?: string;
+  images?: File[];
+  isFeatured?: boolean;
+}): Promise<Listing> {
+  const user = auth.currentUser;
+  if (!user) throw new Error('not-authenticated');
+
+  // Verify ownership
+  const listingRef = doc(db, 'listings', listingId);
+  const listingSnap = await getDoc(listingRef);
+  if (!listingSnap.exists()) {
+    throw new Error('Listing not found');
+  }
+  const listingData = listingSnap.data();
+  if (listingData.ownerId !== user.uid) {
+    throw new Error('permission-denied');
+  }
+
+  const debug = typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('debug');
+  const updateFields: any = {};
+
+  // Handle image uploads if new images are provided
+  if (input.images && input.images.length > 0) {
+    const uploadedUrls: string[] = [];
+    for (let i = 0; i < input.images.length; i++) {
+      const f = input.images[i];
+      const path = `listings/${user.uid}/${listingId}/${Date.now()}_${i}_${f.name}`;
+      const fileRef = ref(storage, path);
+      await uploadBytes(fileRef, f, { contentType: f.type || 'application/octet-stream' });
+      const url = await getDownloadURL(fileRef);
+      uploadedUrls.push(url);
+    }
+    updateFields.imageUrls = uploadedUrls;
+  }
+
+  // Update other fields
+  if (input.title !== undefined) updateFields.title = input.title;
+  if (input.description !== undefined) updateFields.description = input.description;
+  if (input.price !== undefined) updateFields.price = Number(input.price);
+  if (input.category !== undefined) updateFields.category = input.category;
+  if (input.condition !== undefined) updateFields.condition = input.condition;
+  if (input.location !== undefined) updateFields.location = input.location;
+  if (input.isFeatured !== undefined) updateFields.isFeatured = input.isFeatured;
+
+  updateFields.updatedAt = serverTimestamp();
+
+  await setDoc(listingRef, updateFields, { merge: true });
+
+  if (debug) {
+    console.log('[LISTING] update', { listingId, updateFields });
+  }
+
+  const updatedSnap = await getDoc(listingRef);
+  if (!updatedSnap.exists()) {
+    throw new Error('Listing not found after update');
+  }
+
+  return normalizeListing({ id: listingId, ...updatedSnap.data() } as any);
+}
+
 export async function deleteListing(listingId: string): Promise<void> {
   const user = auth.currentUser;
   if (!user) throw new Error('not-authenticated');

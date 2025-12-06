@@ -83,7 +83,7 @@ function firestoreListingToItem(docData: DocumentData, docId: string): Item {
     createdAt: data.createdAt?.toDate() || new Date(),
     updatedAt: data.updatedAt?.toDate() || new Date(),
     posted: data.createdAt?.toDate().toISOString() || new Date().toISOString(),
-    status: data.isSold ? ListingStatus.SOLD : (data.isActive ? ListingStatus.ACTIVE : ListingStatus.EXPIRED),
+    status: data.isSold ? ListingStatus.SOLD : (data.status === 'active' || data.isActive ? ListingStatus.ACTIVE : ListingStatus.EXPIRED),
     views: data.views || 0,
     likes: data.likes || 0,
     isLiked: false,
@@ -118,7 +118,14 @@ export async function getListings(options: {
       q = query(q, where('isFeatured', '==', true));
     }
     if (options.active !== undefined) {
-      q = query(q, where('isActive', '==', options.active));
+      if (options.active) {
+        // Query for active listings - try status field first (new listings use this)
+        // Note: We'll also filter client-side for listings with isActive === true
+        q = query(q, where('status', '==', 'active'));
+      } else {
+        // For inactive listings
+        q = query(q, where('status', '!=', 'active'));
+      }
     }
     if (options.category) {
       q = query(q, where('category', '==', options.category));
@@ -147,6 +154,41 @@ export async function getListings(options: {
       const listing = firestoreListingToItem(doc.data(), doc.id);
       listings.push(listing);
     });
+
+    // If querying for active listings, also check for listings with isActive === true
+    // (for backward compatibility with old listings)
+    if (options.active === true) {
+      try {
+        let q2 = query(listingsRef, where('isActive', '==', true));
+        if (options.featured === true) {
+          q2 = query(q2, where('isFeatured', '==', true));
+        }
+        if (options.category) {
+          q2 = query(q2, where('category', '==', options.category));
+        }
+        if (options.sellerId) {
+          q2 = query(q2, where('sellerId', '==', options.sellerId));
+        }
+        q2 = query(q2, orderBy('createdAt', 'desc'));
+        if (options.limitCount) {
+          q2 = query(q2, limit(options.limitCount * 2)); // Get more to account for duplicates
+        }
+        
+        const querySnapshot2 = await getDocs(q2);
+        const existingIds = new Set(listings.map(l => l.id));
+        querySnapshot2.forEach((doc) => {
+          const data = doc.data();
+          // Only add if it doesn't already exist and doesn't have status field (old format)
+          if (!existingIds.has(doc.id) && !data.status) {
+            const listing = firestoreListingToItem(data, doc.id);
+            listings.push(listing);
+          }
+        });
+      } catch (err) {
+        // If query fails (e.g., missing index), just use the results from status query
+        console.warn('Failed to fetch listings with isActive filter:', err);
+      }
+    }
 
     return listings;
   } catch (error: any) {

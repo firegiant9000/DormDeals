@@ -9,14 +9,11 @@ import {
   Calendar,
   User,
   MessageCircle,
-  Share2,
-  Trash2
+  Share2
 } from 'lucide-react';
 import { Item } from '../types';
 import { useShop } from '@/context/ShopContext';
-import { useAuth } from '@/context/AuthContext';
 import { formatCurrency, formatRelativeTime } from '../utils/helpers';
-import { deleteListing } from '@/services/listingService';
 import toast from 'react-hot-toast';
 
 const ListingDetailPage: React.FC = () => {
@@ -38,8 +35,6 @@ const ListingDetailPage: React.FC = () => {
   const [loading, setLoading] = useState(!listing);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const { addToCart, addToWishlist, removeFromCart, removeFromWishlist, openCart, openWishlist, isInCart, isInWishlist } = useShop();
-  const authContext = useAuth();
-  const user = authContext?.user || null;
 
   // Scroll to top when component mounts
   useEffect(() => {
@@ -159,7 +154,8 @@ const ListingDetailPage: React.FC = () => {
               <div className="relative w-full rounded-xl overflow-hidden bg-muted/20" style={{ aspectRatio: '16 / 9' }}>
                 {(() => {
                   const listingData = listing as any
-                  const imageUrls = listingData?.imageUrls || listing?.images || []
+                  // Try imageUrls first, then images array, then single imageUrl
+                  const imageUrls = listingData?.imageUrls || listing?.images || (listingData?.imageUrl ? [listingData.imageUrl] : [])
                   const currentImage = imageUrls[currentImageIndex] || imageUrls[0]
                   
                   if (currentImage) {
@@ -171,8 +167,9 @@ const ListingDetailPage: React.FC = () => {
                         loading="lazy"
                         referrerPolicy="no-referrer"
                         onError={(e) => { 
-                          (e.currentTarget as HTMLImageElement).style.display = 'none';
-                          const parent = (e.currentTarget as HTMLImageElement).parentElement;
+                          const img = e.currentTarget as HTMLImageElement
+                          img.style.display = 'none';
+                          const parent = img.parentElement;
                           if (parent && !parent.querySelector('.no-image-fallback')) {
                             const fallback = document.createElement('div');
                             fallback.className = 'no-image-fallback text-sm text-muted-foreground flex items-center justify-center h-full';
@@ -195,7 +192,7 @@ const ListingDetailPage: React.FC = () => {
             {/* Thumbnail Gallery */}
             {(() => {
               const listingData = listing as any
-              const imageUrls = listingData?.imageUrls || listing?.images || []
+              const imageUrls = listingData?.imageUrls || listing?.images || (listingData?.imageUrl ? [listingData.imageUrl] : [])
               if (imageUrls.length > 1) {
                 return (
                   <div className="flex space-x-2 overflow-x-auto">
@@ -235,7 +232,9 @@ const ListingDetailPage: React.FC = () => {
           <div className="space-y-6">
             {/* Title and Price */}
             <div>
-              <h1 className="text-3xl font-bold text-body mb-2">{listing.title}</h1>
+              <h1 className={`text-3xl font-bold mb-2 ${
+                listing.isFeatured ? 'text-yellow-600' : 'text-body'
+              }`}>{listing.title}</h1>
               <div className="flex items-center space-x-4 mb-4">
                 <span className="text-3xl font-bold text-primary-600">
                   {formatCurrency(listing.price)}
@@ -315,29 +314,6 @@ const ListingDetailPage: React.FC = () => {
                 <MessageCircle className="w-5 h-5" />
                 <span>Contact Seller</span>
               </button>
-              {user && (listing as any)?.ownerId === (user as any)?.uid ? (
-                <button
-                  onClick={async () => {
-                    if (confirm('Delete this listing? This cannot be undone.')) {
-                      try {
-                        await deleteListing(listing.id)
-                        toast.success('Listing deleted')
-                        navigate('/profile')
-                      } catch (e: any) {
-                        if (e.message === 'permission-denied') {
-                          toast.error('Only the owner can delete this listing.')
-                        } else {
-                          toast.error(`Delete failed: ${e.code || e.message}`)
-                        }
-                      }
-                    }
-                  }}
-                  className="mt-3 inline-flex w-full items-center justify-center rounded-xl px-4 py-2 font-semibold text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
-                >
-                  <Trash2 className="w-5 h-5" />
-                  <span>Delete listing</span>
-                </button>
-              ) : null}
             </div>
 
             {/* Listing Details */}
