@@ -9,6 +9,7 @@ export function useCartWishlist() {
   const [listenerStatus, setListenerStatus] = useState<'active' | 'inactive' | 'error'>('inactive');
 
   useEffect(() => {
+    console.log('[COMMERCE] useCartWishlist mount, currentUser =', auth.currentUser);
     const uid = auth.currentUser?.uid;
     if (!uid) {
       setCart({ items: {} });
