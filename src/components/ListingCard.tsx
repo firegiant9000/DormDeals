@@ -20,6 +20,9 @@ const ListingCard = ({ listing, onClick }: ListingCardProps) => {
       navigate(`/listing/${listing.id}`)
     }
   }
+  if (import.meta.env.DEV) {
+    console.log('[CARD] listing', listing.id, listing.title, 'isFeatured =', listing.isFeatured);
+  }
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -109,6 +112,7 @@ const ListingCard = ({ listing, onClick }: ListingCardProps) => {
       </div>
     </div>
   )
+  
 }
 
 export default ListingCard
