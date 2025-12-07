@@ -115,7 +115,7 @@ const CartDrawer: React.FC = () => {
               ) : (
                 <div className="space-y-4">
                   {cartItems.map((item) => {
-                    const imageUrl = item.images?.[0] || '/api/placeholder/200/200'
+                    const imageUrl = (item as any).imageUrls?.[0] || item.images?.[0] || '/api/placeholder/200/200'
                     return (
                       <div
                         key={item.id}

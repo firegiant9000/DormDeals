@@ -82,7 +82,11 @@ const Home = () => {
               <div className="md:w-2/3 p-6 flex flex-col justify-between">
                 <div>
                   <div className="flex items-start justify-between mb-3">
-                    <h3 className="text-2xl font-bold text-gray-900 pr-4">{featuredItem.title}</h3>
+                    <h3 className={`text-2xl font-bold pr-4 ${
+                      featuredItem.isFeatured 
+                        ? 'text-yellow-600 drop-shadow-[0_0_10px_rgba(217,119,6,0.7)]' 
+                        : 'text-gray-900'
+                    }`}>{featuredItem.title}</h3>
                     <span className="text-3xl font-bold text-primary-600 whitespace-nowrap">
                       {formatCurrency(featuredItem.price)}
                     </span>

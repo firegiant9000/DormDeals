@@ -16,7 +16,7 @@ import {
   addToWishlist as addToWishlistService,
   removeFromWishlist as removeFromWishlistService,
 } from '@/services/commerceService';
-import { fetchListings } from '@/data/listingsProvider';
+import { getListingById } from '@/services/listingsService';
 
 type ShopContextValue = {
   cartItems: Item[];
@@ -50,35 +50,45 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const { isInCart: isInCartHook, isInWishlist: isInWishlistHook, cart, wishlist, cartCount, wishlistCount } = useCartWishlist();
 
   // We need full Item[] for IDs we track in cart/wishlist
-  const [allListings, setAllListings] = useState<Item[]>([]);
   const [cartItems, setCartItems] = useState<Item[]>([]);
   const [wishlistItems, setWishlistItems] = useState<Item[]>([]);
 
-  // Initial listings (for ID → Item resolution)
+  // Resolve cart/wishlist item IDs into Item[] by fetching each listing
   useEffect(() => {
-    fetchListings({ limitN: 1000 })
-      .then(setAllListings)
-      .catch((err) => {
-        if (import.meta.env.DEV) console.error('[ShopContext] Failed to fetch listings', err);
-      });
-  }, []);
+    const fetchItems = async () => {
+      const cartIds = Object.keys(cart.items || {});
+      const wishlistIds = Object.keys(wishlist.items || {});
 
-  // Resolve cart/wishlist item IDs into Item[]
-  useEffect(() => {
-    const cartIds = Object.keys(cart.items || {});
-    const wishlistIds = Object.keys(wishlist.items || {});
+      // Fetch cart items
+      const cartPromises = cartIds.map((id) => 
+        getListingById(id).catch((err) => {
+          if (import.meta.env.DEV) console.error(`[ShopContext] Failed to fetch cart item ${id}`, err);
+          return null;
+        })
+      );
+      const cartResults = await Promise.all(cartPromises);
+      const resolvedCart = cartResults.filter((x): x is Item => !!x);
+      setCartItems(resolvedCart);
 
-    const resolvedCart = cartIds
-      .map((id) => allListings.find((x) => x.id === id))
-      .filter((x): x is Item => !!x);
+      // Fetch wishlist items
+      const wishlistPromises = wishlistIds.map((id) => 
+        getListingById(id).catch((err) => {
+          if (import.meta.env.DEV) console.error(`[ShopContext] Failed to fetch wishlist item ${id}`, err);
+          return null;
+        })
+      );
+      const wishlistResults = await Promise.all(wishlistPromises);
+      const resolvedWishlist = wishlistResults.filter((x): x is Item => !!x);
+      setWishlistItems(resolvedWishlist);
+    };
 
-    const resolvedWishlist = wishlistIds
-      .map((id) => allListings.find((x) => x.id === id))
-      .filter((x): x is Item => !!x);
-
-    setCartItems(resolvedCart);
-    setWishlistItems(resolvedWishlist);
-  }, [cart.items, wishlist.items, allListings]);
+    if (isAuthenticated) {
+      fetchItems();
+    } else {
+      setCartItems([]);
+      setWishlistItems([]);
+    }
+  }, [cart.items, wishlist.items, isAuthenticated]);
 
   const isInCart = useCallback((id: string) => isInCartHook(id), [isInCartHook]);
   const isInWishlist = useCallback((id: string) => isInWishlistHook(id), [isInWishlistHook]);

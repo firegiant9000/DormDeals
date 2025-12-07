@@ -410,7 +410,11 @@ const MainFeaturePage: React.FC = () => {
                 </div>
                 <div className="p-6 flex flex-col h-full">
                   <div className="flex justify-between items-start mb-3">
-                    <h4 className="font-semibold text-gray-900 line-clamp-2 text-lg">{item.title}</h4>
+                    <h4 className={`font-semibold line-clamp-2 text-lg ${
+                      item.isFeatured 
+                        ? 'text-yellow-600 drop-shadow-[0_0_8px_rgba(217,119,6,0.6)]' 
+                        : 'text-gray-900'
+                    }`}>{item.title}</h4>
                     <span className="text-xl font-bold text-primary-600 ml-2">{formatCurrency(item.price)}</span>
                   </div>
                   <p className="text-sm text-gray-600 mb-4 line-clamp-3 flex-grow">{item.description}</p>

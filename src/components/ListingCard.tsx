@@ -65,7 +65,9 @@ const ListingCard = ({ listing, onClick }: ListingCardProps) => {
       <div className="p-4 flex flex-col flex-grow">
         {/* Name */}
         <h3 className={`font-semibold text-lg mb-2 line-clamp-2 ${
-          listing.isFeatured ? 'text-yellow-600' : 'text-gray-900'
+          listing.isFeatured 
+            ? 'text-yellow-600 drop-shadow-[0_0_8px_rgba(217,119,6,0.6)]' 
+            : 'text-gray-900'
         }`}>
           {listing.title}
         </h3>

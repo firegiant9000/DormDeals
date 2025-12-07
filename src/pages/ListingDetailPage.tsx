@@ -233,7 +233,9 @@ const ListingDetailPage: React.FC = () => {
             {/* Title and Price */}
             <div>
               <h1 className={`text-3xl font-bold mb-2 ${
-                listing.isFeatured ? 'text-yellow-600' : 'text-body'
+                listing.isFeatured 
+                  ? 'text-yellow-600 drop-shadow-[0_0_12px_rgba(217,119,6,0.8)]' 
+                  : 'text-body'
               }`}>{listing.title}</h1>
               <div className="flex items-center space-x-4 mb-4">
                 <span className="text-3xl font-bold text-primary-600">

@@ -437,6 +437,30 @@ const Profile = () => {
     }
   }
 
+  // Require authentication to access profile page
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-transparent py-8">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <ProtectedFeature requiredUserTypes={[UserType.REGULAR]} fallback={
+            <div className="dd-card bg-surface border-surface p-8 text-center">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Please Sign In</h2>
+              <p className="text-gray-600 dark:text-gray-400 mb-6">You need to be signed in to view your profile.</p>
+              <button
+                onClick={() => navigate('/login')}
+                className="btn-primary"
+              >
+                Go to Login
+              </button>
+            </div>
+          }>
+            <div></div>
+          </ProtectedFeature>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-transparent py-8">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -629,7 +653,11 @@ const Profile = () => {
                           })()}
                         </div>
                         <div className="p-4">
-                          <h3 className="font-semibold text-gray-900 mb-1">{listing.title}</h3>
+                          <h3 className={`font-semibold mb-1 ${
+                            (listing as any).isFeatured 
+                              ? 'text-yellow-600 drop-shadow-[0_0_8px_rgba(217,119,6,0.6)]' 
+                              : 'text-gray-900'
+                          }`}>{listing.title}</h3>
                           <p className="text-lg font-bold text-primary-600 mb-2">${Number(listing.price).toFixed(2)}</p>
                           <div className="flex justify-between items-center text-sm text-gray-500">
                             <span className={`px-2 py-1 rounded text-xs ${
@@ -730,7 +758,11 @@ const Profile = () => {
                           })()}
                         </div>
                         <div className="p-4">
-                          <h3 className="font-semibold text-gray-900 mb-1">{listing.title}</h3>
+                          <h3 className={`font-semibold mb-1 ${
+                            (listing as any).isFeatured 
+                              ? 'text-yellow-600 drop-shadow-[0_0_8px_rgba(217,119,6,0.6)]' 
+                              : 'text-gray-900'
+                          }`}>{listing.title}</h3>
                           <p className="text-lg font-bold text-primary-600 mb-2">${Number(listing.price).toFixed(2)}</p>
                           <div className="flex justify-between items-center text-sm text-gray-500">
                             <span className={`px-2 py-1 rounded text-xs ${
@@ -812,7 +844,11 @@ const Profile = () => {
                           })()}
                         </div>
                         <div className="p-4">
-                          <h3 className="font-semibold text-gray-900 mb-1">{listing.title}</h3>
+                          <h3 className={`font-semibold mb-1 ${
+                            (listing as any).isFeatured 
+                              ? 'text-yellow-600 drop-shadow-[0_0_8px_rgba(217,119,6,0.6)]' 
+                              : 'text-gray-900'
+                          }`}>{listing.title}</h3>
                           <p className="text-lg font-bold text-primary-600 mb-2">${Number(listing.price).toFixed(2)}</p>
                           <div className="flex justify-between items-center text-sm text-gray-500">
                             <span className={`px-2 py-1 rounded text-xs ${
