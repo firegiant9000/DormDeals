@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { auth, db } from '@/firebase';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { collection, onSnapshot, query } from 'firebase/firestore';
 import type { CartDoc, WishlistDoc } from '@/types/commerce';
 
 export function useCartWishlist() {
@@ -25,14 +25,21 @@ export function useCartWishlist() {
     let wishlistUnsub: (() => void) | null = null;
 
     try {
+      // Listen to users/{uid}/cart collection
+      const cartRef = collection(db, 'users', uid, 'cart');
       cartUnsub = onSnapshot(
-        doc(db, `carts/${uid}`),
+        query(cartRef),
         (snap) => {
-          const data = snap.exists() ? (snap.data() as CartDoc) : { items: {} };
+          const items: Record<string, true> = {};
+          snap.forEach((doc) => {
+            const listingId = doc.id;
+            items[listingId] = true as const;
+          });
+          const data: CartDoc = { items };
           setCart(data);
           setListenerStatus('active');
           if (import.meta.env.DEV) {
-            console.log('[COMMERCE] Cart updated', { count: Object.keys(data.items || {}).length });
+            console.log('[COMMERCE] Cart updated', { count: Object.keys(items).length });
           }
         },
         (error) => {
@@ -43,14 +50,21 @@ export function useCartWishlist() {
         }
       );
 
+      // Listen to users/{uid}/favorites collection
+      const favoritesRef = collection(db, 'users', uid, 'favorites');
       wishlistUnsub = onSnapshot(
-        doc(db, `wishlists/${uid}`),
+        query(favoritesRef),
         (snap) => {
-          const data = snap.exists() ? (snap.data() as WishlistDoc) : { items: {} };
+          const items: Record<string, true> = {};
+          snap.forEach((doc) => {
+            const listingId = doc.id;
+            items[listingId] = true as const;
+          });
+          const data: WishlistDoc = { items };
           setWishlist(data);
           setListenerStatus('active');
           if (import.meta.env.DEV) {
-            console.log('[COMMERCE] Wishlist updated', { count: Object.keys(data.items || {}).length });
+            console.log('[COMMERCE] Wishlist updated', { count: Object.keys(items).length });
           }
         },
         (error) => {

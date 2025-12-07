@@ -274,7 +274,11 @@ const ResultsPage: React.FC = () => {
                 </div>
                 <div className="p-4 flex flex-col h-full">
                   <div className="flex justify-between items-start mb-2">
-                    <h3 className="font-semibold text-gray-900 line-clamp-2 mr-2">{item.title}</h3>
+                    <h3 className={`font-semibold line-clamp-2 mr-2 ${
+                      item.isFeatured 
+                        ? 'text-yellow-600 drop-shadow-[0_0_8px_rgba(217,119,6,0.6)]' 
+                        : 'text-gray-900'
+                    }`}>{item.title}</h3>
                     <span className="text-lg font-bold text-primary-600">{formatCurrency(item.price)}</span>
                   </div>
                   <p className="text-sm text-gray-600 mb-3 line-clamp-3 flex-grow">{item.description}</p>
@@ -322,7 +326,11 @@ const ResultsPage: React.FC = () => {
                 />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-4">
-                    <h3 className="font-semibold text-gray-900 truncate">{item.title}</h3>
+                    <h3 className={`font-semibold truncate ${
+                      item.isFeatured 
+                        ? 'text-yellow-600 drop-shadow-[0_0_8px_rgba(217,119,6,0.6)]' 
+                        : 'text-gray-900'
+                    }`}>{item.title}</h3>
                     <span className="text-primary-600 font-bold whitespace-nowrap">{formatCurrency(item.price)}</span>
                   </div>
                   <p className="text-sm text-gray-600 line-clamp-2">{item.description}</p>
