@@ -40,15 +40,21 @@ type ShopContextValue = {
 const ShopContext = createContext<ShopContextValue | null>(null);
 
 export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
 
   // Drawer visibility
   const [showCart, setShowCart] = useState(false);
   const [showWishlist, setShowWishlist] = useState(false);
 
-  // Real-time state via hooks
-  const { isInCart: isInCartHook, isInWishlist: isInWishlistHook, cart, wishlist, cartCount, wishlistCount } = useCartWishlist();
-
+  // Real-time state via hooks (now user-aware)
+  const {
+    cart,
+    wishlist,
+    isInCart: isInCartHook,
+    isInWishlist: isInWishlistHook,
+    cartCount,
+    wishlistCount,
+  } = useCartWishlist(user?.id);
   // We need full Item[] for IDs we track in cart/wishlist
   const [cartItems, setCartItems] = useState<Item[]>([]);
   const [wishlistItems, setWishlistItems] = useState<Item[]>([]);

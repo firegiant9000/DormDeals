@@ -1,33 +1,40 @@
 import { useEffect, useState } from 'react';
-import { auth, db } from '@/firebase';
+import { db } from '@/firebase';
 import { collection, onSnapshot, query } from 'firebase/firestore';
 import type { CartDoc, WishlistDoc } from '@/types/commerce';
 
-export function useCartWishlist() {
+export function useCartWishlist(userId?: string) {
   const [cart, setCart] = useState<CartDoc>({ items: {} });
   const [wishlist, setWishlist] = useState<WishlistDoc>({ items: {} });
-  const [listenerStatus, setListenerStatus] = useState<'active' | 'inactive' | 'error'>('inactive');
+  const [listenerStatus, setListenerStatus] =
+    useState<'active' | 'inactive' | 'error'>('inactive');
 
   useEffect(() => {
-    console.log('[COMMERCE] useCartWishlist mount, currentUser =', auth.currentUser);
-    const uid = auth.currentUser?.uid;
-    if (!uid) {
+    let cartUnsub: (() => void) | undefined;
+    let wishlistUnsub: (() => void) | undefined;
+
+    // No user: clear state and don't listen
+    if (!userId) {
+      if (import.meta.env.DEV) {
+        console.log('[COMMERCE] No userId, clearing cart/wishlist');
+      }
       setCart({ items: {} });
       setWishlist({ items: {} });
       setListenerStatus('inactive');
-      return;
+
+      return () => {
+        cartUnsub?.();
+        wishlistUnsub?.();
+      };
     }
 
     if (import.meta.env.DEV) {
-      console.log('[COMMERCE] Setting up listeners for uid:', uid);
+      console.log('[COMMERCE] Setting up listeners for uid:', userId);
     }
 
-    let cartUnsub: (() => void) | null = null;
-    let wishlistUnsub: (() => void) | null = null;
-
     try {
-      // Listen to users/{uid}/cart collection
-      const cartRef = collection(db, 'users', uid, 'cart');
+      // Listen to users/{uid}/cart
+      const cartRef = collection(db, 'users', userId, 'cart');
       cartUnsub = onSnapshot(
         query(cartRef),
         (snap) => {
@@ -36,11 +43,13 @@ export function useCartWishlist() {
             const listingId = doc.id;
             items[listingId] = true as const;
           });
-          const data: CartDoc = { items };
-          setCart(data);
+          setCart({ items });
           setListenerStatus('active');
+
           if (import.meta.env.DEV) {
-            console.log('[COMMERCE] Cart updated', { count: Object.keys(items).length });
+            console.log('[COMMERCE] Cart updated', {
+              count: Object.keys(items).length,
+            });
           }
         },
         (error) => {
@@ -51,8 +60,8 @@ export function useCartWishlist() {
         }
       );
 
-      // Listen to users/{uid}/favorites collection
-      const favoritesRef = collection(db, 'users', uid, 'favorites');
+      // Listen to users/{uid}/favorites (wishlist)
+      const favoritesRef = collection(db, 'users', userId, 'favorites');
       wishlistUnsub = onSnapshot(
         query(favoritesRef),
         (snap) => {
@@ -61,11 +70,13 @@ export function useCartWishlist() {
             const listingId = doc.id;
             items[listingId] = true as const;
           });
-          const data: WishlistDoc = { items };
-          setWishlist(data);
+          setWishlist({ items });
           setListenerStatus('active');
+
           if (import.meta.env.DEV) {
-            console.log('[COMMERCE] Wishlist updated', { count: Object.keys(items).length });
+            console.log('[COMMERCE] Wishlist updated', {
+              count: Object.keys(items).length,
+            });
           }
         },
         (error) => {
@@ -83,13 +94,13 @@ export function useCartWishlist() {
     }
 
     return () => {
-      if (cartUnsub) cartUnsub();
-      if (wishlistUnsub) wishlistUnsub();
+      cartUnsub?.();
+      wishlistUnsub?.();
       if (import.meta.env.DEV) {
-        console.log('[COMMERCE] Cleaned up listeners');
+        console.log('[COMMERCE] Cleaned up listeners for uid:', userId);
       }
     };
-  }, []);
+  }, [userId]);
 
   return {
     cart,
@@ -101,4 +112,3 @@ export function useCartWishlist() {
     listenerStatus,
   };
 }
-
