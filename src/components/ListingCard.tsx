@@ -21,7 +21,7 @@ const ListingCard = ({ listing, onClick }: ListingCardProps) => {
     }
   }
   if (import.meta.env.DEV) {
-    console.log('[CARD] listing', listing.id, listing.title, 'isFeatured =', listing.isFeatured);
+    console.log('[LISTING CARD]', listing.title, 'isFeatured =', listing.isFeatured);
   }
 
   const handleAddToCart = (e: React.MouseEvent) => {

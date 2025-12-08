@@ -102,6 +102,7 @@ export function normalizeListing<T extends Partial<Listing>>(raw: T): Listing {
     createdAt: (raw.createdAt as any) ?? null,
     imageUrls,
     images: raw.images,
-    imageUrl: raw.imageUrl
+    imageUrl: raw.imageUrl,
+    isFeatured: (raw as any).isFeatured ?? false
   };
 }

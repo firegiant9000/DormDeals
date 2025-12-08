@@ -111,6 +111,12 @@ const WishlistDrawer: React.FC = () => {
               ) : (
                 <div className="space-y-4">
                   {wishlistItems.map((item) => {
+                    if (import.meta.env.DEV) {
+                      console.log('[WISHLIST DRAWER ITEM]', item.id, item.title, {
+                        images: item.images,
+                        imageUrls: (item as any).imageUrls,
+                      });
+                    }
                     const imageUrl = (item as any).imageUrls?.[0] || item.images?.[0] || '/api/placeholder/200/200'
                     return (
                       <div

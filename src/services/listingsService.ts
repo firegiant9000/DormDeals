@@ -56,6 +56,14 @@ export interface UpdateListingData {
  */
 function firestoreListingToItem(docData: DocumentData, docId: string): Item {
   const data = docData;
+  // Support both imageUrls (new schema) and images (old schema)
+  const imageArray: string[] =
+    Array.isArray(data.imageUrls) && data.imageUrls.length > 0
+      ? data.imageUrls
+      : Array.isArray(data.images) && data.images.length > 0
+        ? data.images
+        : [];
+  
   return {
     id: docId,
     title: data.title || '',
@@ -63,7 +71,7 @@ function firestoreListingToItem(docData: DocumentData, docId: string): Item {
     price: parseFloat(data.price) || 0,
     category: data.category || 'Other',
     condition: data.condition || 'good',
-    images: data.images || [],
+    images: imageArray,
     location: data.location || 'UL Campus',
     seller: {
       id: data.sellerId || '',

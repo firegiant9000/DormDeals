@@ -53,5 +53,6 @@ export type Listing = {
   imageUrls: string[];                 // canonical
   /** @deprecated */ images?: string[]; 
   /** @deprecated */ imageUrl?: string;
+  isFeatured?: boolean;
 };
 
