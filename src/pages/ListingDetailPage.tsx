@@ -15,6 +15,7 @@ import { Item } from '../types';
 import { useShop } from '@/context/ShopContext';
 import { formatCurrency, formatRelativeTime } from '../utils/helpers';
 import toast from 'react-hot-toast';
+import { getUserProfileWithStats } from '@/services/userService';
 
 const ListingDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -34,36 +35,88 @@ const ListingDetailPage: React.FC = () => {
   }, [listing, DEBUG]);
   const [loading, setLoading] = useState(!listing);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [sellerProfile, setSellerProfile] = useState<any | null>(null);
   const { addToCart, addToWishlist, removeFromCart, removeFromWishlist, openCart, openWishlist, isInCart, isInWishlist } = useShop();
 
-  // Derive sellerInfo from listing with fallback to legacy fields
+  // Derive sellerInfo from sellerProfile, listing.seller, and legacy fields
   const sellerInfo = useMemo(() => {
     if (!listing) return null;
     
     const listingAny = listing as any;
-    const seller = listingAny.seller;
+    const profile = sellerProfile;
+    const seller = listingAny.seller || {};
     
-    // If seller exists and has a name, use it
-    if (seller && seller.name) {
-      return {
-        id: seller.id || listingAny.sellerId || listingAny.ownerId || '',
-        name: seller.name || listingAny.sellerName || listingAny.ownerName || listingAny.sellerEmail || listingAny.ownerEmail || 'DormDeals Seller',
-        rating: seller.rating ?? listingAny.sellerRating ?? 0,
-        totalSales: seller.totalSales ?? listingAny.sellerTotalSales ?? 0,
-        isVerified: seller.isVerified ?? listingAny.sellerIsVerified ?? false,
-        school: seller.school ?? listingAny.sellerSchool ?? 'UL Student'
-      };
-    }
+    const id =
+      profile?.id ||
+      seller.id ||
+      listingAny.sellerId ||
+      listingAny.ownerId ||
+      '';
     
-    // Otherwise, fall back to legacy fields
+    const name =
+      profile?.displayName ||
+      profile?.name ||
+      seller.name ||
+      listingAny.sellerName ||
+      listingAny.ownerName ||
+      listingAny.sellerEmail ||
+      listingAny.ownerEmail ||
+      'DormDeals Seller';
+    
     return {
-      id: listingAny.seller?.id || listingAny.sellerId || listingAny.ownerId || '',
-      name: listingAny.seller?.name || listingAny.sellerName || listingAny.ownerName || listingAny.sellerEmail || listingAny.ownerEmail || 'DormDeals Seller',
-      rating: listingAny.seller?.rating ?? listingAny.sellerRating ?? 0,
-      totalSales: listingAny.seller?.totalSales ?? listingAny.sellerTotalSales ?? 0,
-      isVerified: listingAny.seller?.isVerified ?? listingAny.sellerIsVerified ?? false,
-      school: listingAny.seller?.school ?? listingAny.sellerSchool ?? 'UL Student'
+      id,
+      name,
+      rating:
+        profile?.rating ??
+        profile?.averageRating ??
+        seller.rating ??
+        listingAny.sellerRating ??
+        0,
+      totalSales:
+        profile?.totalSales ??
+        seller.totalSales ??
+        listingAny.sellerTotalSales ??
+        0,
+      isVerified:
+        profile?.isVerified ??
+        seller.isVerified ??
+        listingAny.sellerIsVerified ??
+        false,
+      school:
+        profile?.school ??
+        seller.school ??
+        listingAny.sellerSchool ??
+        'UL Student',
     };
+  }, [listing, sellerProfile]);
+
+  // Load seller profile from Firestore
+  useEffect(() => {
+    const loadSeller = async () => {
+      if (!listing) return;
+
+      const anyListing = listing as any;
+      const sellerId =
+        anyListing.seller?.id ||
+        anyListing.ownerId ||
+        anyListing.sellerId ||
+        '';
+
+      if (!sellerId) return;
+
+      try {
+        const profile = await getUserProfileWithStats(sellerId);
+        if (profile) {
+          setSellerProfile(profile);
+        }
+      } catch (err) {
+        if (import.meta.env.DEV) {
+          console.error('[LISTING_DETAIL] failed to load seller profile', err);
+        }
+      }
+    };
+
+    loadSeller();
   }, [listing]);
 
   // Scroll to top when component mounts
@@ -113,8 +166,13 @@ const ListingDetailPage: React.FC = () => {
   const handleContactSeller = () => {
     if (!listing) return;
     
-    // Compute sellerId from sellerInfo or fallback fields
-    const sellerId = sellerInfo?.id || (listing as any).ownerId || (listing as any).sellerId || '';
+    // Compute sellerId from sellerInfo or fallback fields (same priority as sellerInfo)
+    const sellerId =
+      sellerInfo?.id ||
+      (listing as any).seller?.id ||
+      (listing as any).ownerId ||
+      (listing as any).sellerId ||
+      '';
     
     if (!sellerId) {
       toast.error('Unable to contact seller');
