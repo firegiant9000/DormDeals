@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { 
   ArrowLeft, 
@@ -35,6 +35,36 @@ const ListingDetailPage: React.FC = () => {
   const [loading, setLoading] = useState(!listing);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const { addToCart, addToWishlist, removeFromCart, removeFromWishlist, openCart, openWishlist, isInCart, isInWishlist } = useShop();
+
+  // Derive sellerInfo from listing with fallback to legacy fields
+  const sellerInfo = useMemo(() => {
+    if (!listing) return null;
+    
+    const listingAny = listing as any;
+    const seller = listingAny.seller;
+    
+    // If seller exists and has a name, use it
+    if (seller && seller.name) {
+      return {
+        id: seller.id || listingAny.sellerId || listingAny.ownerId || '',
+        name: seller.name || listingAny.sellerName || listingAny.ownerName || listingAny.sellerEmail || listingAny.ownerEmail || 'DormDeals Seller',
+        rating: seller.rating ?? listingAny.sellerRating ?? 0,
+        totalSales: seller.totalSales ?? listingAny.sellerTotalSales ?? 0,
+        isVerified: seller.isVerified ?? listingAny.sellerIsVerified ?? false,
+        school: seller.school ?? listingAny.sellerSchool ?? 'UL Student'
+      };
+    }
+    
+    // Otherwise, fall back to legacy fields
+    return {
+      id: listingAny.seller?.id || listingAny.sellerId || listingAny.ownerId || '',
+      name: listingAny.seller?.name || listingAny.sellerName || listingAny.ownerName || listingAny.sellerEmail || listingAny.ownerEmail || 'DormDeals Seller',
+      rating: listingAny.seller?.rating ?? listingAny.sellerRating ?? 0,
+      totalSales: listingAny.seller?.totalSales ?? listingAny.sellerTotalSales ?? 0,
+      isVerified: listingAny.seller?.isVerified ?? listingAny.sellerIsVerified ?? false,
+      school: listingAny.seller?.school ?? listingAny.sellerSchool ?? 'UL Student'
+    };
+  }, [listing]);
 
   // Scroll to top when component mounts
   useEffect(() => {
@@ -81,9 +111,66 @@ const ListingDetailPage: React.FC = () => {
   };
 
   const handleContactSeller = () => {
+    if (!listing) return;
+    
+    // Compute sellerId from sellerInfo or fallback fields
+    const sellerId = sellerInfo?.id || (listing as any).ownerId || (listing as any).sellerId || '';
+    
+    if (!sellerId) {
+      toast.error('Unable to contact seller');
+      return;
+    }
+    
     // Navigate to messages page with seller and listing info
-    const sellerId = listing?.seller?.id || (listing as any)?.ownerId
-    navigate('/messages', { state: { to: sellerId, listingId: listing?.id } });
+    navigate('/messages', { state: { to: sellerId, listingId: listing.id } });
+  };
+
+  const handleShare = async () => {
+    if (!listing) return;
+    
+    const shareUrl = window.location.href;
+    
+    try {
+      // Try Web Share API first (mobile devices)
+      if (navigator.share) {
+        await navigator.share({
+          title: listing.title,
+          text: `Check out this DormDeals listing: ${listing.title}`,
+          url: shareUrl
+        });
+        return;
+      }
+      
+      // Fallback to clipboard API
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(shareUrl);
+        toast.success('Link copied to clipboard');
+        return;
+      }
+      
+      // Last resort: show message
+      toast('Sharing not supported on this device');
+    } catch (error) {
+      // User cancelled share or error occurred
+      if (import.meta.env.DEV) {
+        console.error('Share error:', error);
+      }
+      
+      // If share failed, try clipboard as fallback
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        try {
+          await navigator.clipboard.writeText(shareUrl);
+          toast.success('Link copied to clipboard');
+        } catch (clipboardError) {
+          if (import.meta.env.DEV) {
+            console.error('Clipboard error:', clipboardError);
+          }
+          toast.error('Failed to share listing');
+        }
+      } else {
+        toast.error('Failed to share listing');
+      }
+    }
   };
 
   if (loading) {
@@ -286,37 +373,39 @@ const ListingDetailPage: React.FC = () => {
             )}
 
             {/* Seller Information */}
-            <div className="dd-card bg-surface border-surface p-6">
-              <h3 className="text-lg font-semibold text-body mb-4">Seller Information</h3>
-              <div className="flex items-center space-x-4 mb-4">
-                <div className="w-12 h-12 bg-surface-2 rounded-full flex items-center justify-center">
-                  <User className="w-6 h-6 text-muted" />
-                </div>
-                <div>
-                  <h4 className="font-semibold text-body">{listing.seller.name}</h4>
-                  <div className="flex items-center space-x-2">
-                    <div className="flex items-center">
-                      <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                      <span className="text-sm text-muted ml-1">
-                        {listing.seller.rating}
+            {sellerInfo && (
+              <div className="dd-card bg-surface border-surface p-6">
+                <h3 className="text-lg font-semibold text-body mb-4">Seller Information</h3>
+                <div className="flex items-center space-x-4 mb-4">
+                  <div className="w-12 h-12 bg-surface-2 rounded-full flex items-center justify-center">
+                    <User className="w-6 h-6 text-muted" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-body">{sellerInfo.name}</h4>
+                    <div className="flex items-center space-x-2">
+                      <div className="flex items-center">
+                        <Star className="w-4 h-4 text-yellow-400 fill-current" />
+                        <span className="text-sm text-muted ml-1">
+                          {sellerInfo.rating}
+                        </span>
+                      </div>
+                      <span className="text-sm text-muted">•</span>
+                      <span className="text-sm text-muted">
+                        {sellerInfo.totalSales} sales
                       </span>
                     </div>
-                    <span className="text-sm text-muted">•</span>
-                    <span className="text-sm text-muted">
-                      {listing.seller.totalSales} sales
-                    </span>
                   </div>
                 </div>
+                
+                <button
+                  onClick={handleContactSeller}
+                  className="inline-flex w-full items-center justify-center rounded-xl px-4 py-2 font-semibold text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900"
+                >
+                  <MessageCircle className="w-5 h-5" />
+                  <span>Contact Seller</span>
+                </button>
               </div>
-              
-              <button
-                onClick={handleContactSeller}
-                className="inline-flex w-full items-center justify-center rounded-xl px-4 py-2 font-semibold text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900"
-              >
-                <MessageCircle className="w-5 h-5" />
-                <span>Contact Seller</span>
-              </button>
-            </div>
+            )}
 
             {/* Listing Details */}
             <div className="dd-card bg-surface border-surface p-6">
@@ -369,7 +458,10 @@ const ListingDetailPage: React.FC = () => {
                   <span>{isInWishlist(listing.id) ? 'Remove from Wishlist' : 'Add to Wishlist'}</span>
                 </button>
                 
-                <button className="p-3 border border-surface text-body rounded-lg hover:bg-surface-2 transition-colors">
+                <button 
+                  onClick={handleShare}
+                  className="p-3 border border-surface text-body rounded-lg hover:bg-surface-2 transition-colors"
+                >
                   <Share2 className="w-5 h-5" />
                 </button>
               </div>
