@@ -1,6 +1,7 @@
 stages:
   - lint
   - build
+  - test
   - deploy
 
 variables:
@@ -8,6 +9,14 @@ variables:
   NPM_CONFIG_CACHE: ".npm"
   # ← ensure devDependencies are installed in CI
   NPM_CONFIG_PRODUCTION: "false"
+
+# Reusable dependency install (fresh container per job).
+# Using npm ci for faster, reproducible installs with package-lock.json.
+# The rollup step works around npm ci's optional-dependency bug on Alpine.
+.npm_install: &npm_install
+  - npm ci --cache .npm --prefer-offline --include=dev
+  - rm -rf node_modules/rollup node_modules/@rollup 2>/dev/null || true
+  - npm install --no-save rollup@4.52.4
 
 default:
   image: node:20-alpine
@@ -17,23 +26,15 @@ default:
       - .npm/
       - node_modules/
   before_script:
-    # fresh container per job → install deps in every job (including dev and optional)
-    # Using npm ci for faster, reproducible installs with package-lock.json
-    # Install optional dependencies separately to ensure platform-specific binaries are installed
-    # (npm ci has known issues with optional dependencies on Alpine Linux)
-    - npm ci --cache .npm --prefer-offline --include=dev
-    # Workaround for npm ci's optional dependency bug on Alpine Linux
-    # Remove rollup and reinstall to trigger optional dependency installation
-    - rm -rf node_modules/rollup node_modules/@rollup 2>/dev/null || true
-    - npm install --no-save rollup@4.52.4
+    - *npm_install
 
 lint:
   stage: lint
   script:
     - echo "Running ESLint (flat config)…"
     - npx eslint -v
-    - npx eslint . --report-unused-disable-directives --max-warnings 0 -f junit -o lint-results.xml || true
-  allow_failure: true
+    # Blocking (G10): a lint regression fails the pipeline. JUnit artifact still emitted.
+    - npx eslint . --report-unused-disable-directives --max-warnings 0 -f junit -o lint-results.xml
   artifacts:
     when: always
     paths:
@@ -52,15 +53,70 @@ build:
       - dist/
     expire_in: 1 week
 
+# Unit tests (Vitest, jsdom). Blocking: a failing unit test fails the pipeline,
+# which blocks merge when the project requires green pipelines on MRs.
+unit_test:
+  stage: test
+  needs:
+    - build
+  script:
+    - npx vitest run --reporter=default --reporter=junit --outputFile=junit-unit.xml
+  allow_failure: false
+  artifacts:
+    when: always
+    reports:
+      junit: junit-unit.xml
+    expire_in: 1 week
+
+# Firestore security-rules tests against the emulator (Month 1 #5).
+# Blocking: a rules regression should not reach production.
+# Needs a JRE for the Firestore emulator; tests seed their own data.
+rules_test:
+  stage: test
+  needs:
+    - build
+  before_script:
+    - apk add --no-cache openjdk17-jre-headless
+    - *npm_install
+  script:
+    - npm run test:rules
+  allow_failure: false
+
+# E2E smoke tests (Playwright) against the deployed site.
+# Non-blocking for one stabilization month (allow_failure + retry-once).
+# Pinned image must match the @playwright/test version in package-lock.json.
+e2e_test:
+  stage: test
+  image: mcr.microsoft.com/playwright:v1.56.1-jammy
+  needs:
+    - build
+  before_script:
+    - npm ci --cache .npm --prefer-offline --include=dev
+  script:
+    # Single browser keeps the non-blocking run fast; the config defines more projects.
+    - npx playwright test --project=chromium
+  allow_failure: true
+  retry: 1
+  artifacts:
+    when: always
+    paths:
+      - playwright-report/
+    expire_in: 1 week
+
 deploy_production:
   stage: deploy
   needs:
     - build
+    - unit_test
+    - rules_test
   dependencies:
     - build
   script:
     - npm install -g firebase-tools
-    - firebase deploy --only hosting --token "$FIREBASE_TOKEN"
+    # Deploy rules + indexes alongside hosting (G2) so prod can't drift from the repo.
+    # NOTE (G11): CI-token auth is deprecated by Firebase; prefer a service account
+    # (GOOGLE_APPLICATION_CREDENTIALS) as the GitHub Actions workflow does.
+    - firebase deploy --only hosting,firestore:rules,firestore:indexes --token "$FIREBASE_TOKEN"
   only:
     - main
   environment:

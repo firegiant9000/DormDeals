@@ -1,0 +1,79 @@
+# GitHub Actions CI — operative pipeline for this remote (github.com/firegiant9000/DormDeals).
+# Mirrors .gitlab-ci.yml, which does not run on GitHub (G1). Gates merges on tests
+# and deploys hosting + Firestore rules + indexes on main via a service account (G2, G11).
+#
+# Required repository secrets:
+#   FIREBASE_SERVICE_ACCOUNT  — JSON key for a service account with Firebase Hosting Admin
+#                               + Cloud Datastore Index Admin + Firebase Rules Admin roles.
+#   VITE_FIREBASE_API_KEY, VITE_FIREBASE_AUTH_DOMAIN, VITE_FIREBASE_PROJECT_ID,
+#   VITE_FIREBASE_STORAGE_BUCKET, VITE_FIREBASE_MESSAGING_SENDER_ID, VITE_FIREBASE_APP_ID,
+#   VITE_FIREBASE_MEASUREMENT_ID, VITE_SENTRY_DSN  — baked into the production build (Vite
+#                               reads import.meta.env at build time, so these must be present
+#                               when `npm run build:production` runs in the deploy job (G12).
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      # Firestore emulator (rules tests) needs a JRE.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - run: npm ci
+      - name: Lint (blocking)
+        run: npm run lint
+      - name: Type-check
+        run: npm run type-check
+      - name: Unit tests
+        run: npx vitest run
+      - name: Firestore rules tests (emulator)
+        run: npm run test:rules
+      - name: Build (compile check)
+        run: npm run build
+
+  deploy:
+    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://dormdeals-9cb29.web.app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - name: Build (production)
+        run: npm run build:production
+        env:
+          VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
+          VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
+          VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
+          VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
+          VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
+          VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
+          VITE_FIREBASE_MEASUREMENT_ID: ${{ secrets.VITE_FIREBASE_MEASUREMENT_ID }}
+          VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
+      - name: Write service account key
+        run: printf '%s' '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > "${{ runner.temp }}/sa.json"
+      - name: Deploy hosting + Firestore rules + indexes
+        run: |
+          npm install -g firebase-tools
+          firebase deploy --only hosting,firestore:rules,firestore:indexes --non-interactive
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/sa.json
