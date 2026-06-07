@@ -93,7 +93,7 @@ npm install
 
 1. Copy the environment example file:
 ```bash
-cp env.example .env
+cp .env.example .env
 ```
 
 2. Update the `.env` file with your database credentials and other configuration:
@@ -206,12 +206,13 @@ fa25team04/
 │   └── index.tsx              # Application entry point
 ├── index.js                   # Express server entry point
 ├── index.html                 # HTML template
+├── index.js                   # Production Express server (npm start → serves dist/)
 ├── package.json               # Dependencies and scripts
 ├── render.yaml                # Render deployment configuration
 ├── tailwind.config.js         # Tailwind CSS configuration
 ├── tsconfig.json              # TypeScript configuration
 ├── vite.config.ts             # Vite configuration
-├── env.example                # Environment variables template
+├── .env.example               # Environment variables template
 ├── DEPLOYMENT.md              # Render deployment guide
 └── README.md                  # This file
 ```
