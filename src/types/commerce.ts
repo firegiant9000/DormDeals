@@ -1,13 +1,15 @@
+import { Timestamp } from 'firebase/firestore';
+
 export type ListingID = string;
 
 export interface CartDoc {
   items: Record<ListingID, true>;
-  updatedAt?: any;
+  updatedAt?: Timestamp;
 }
 
 export interface WishlistDoc {
   items: Record<ListingID, true>;
-  updatedAt?: any;
+  updatedAt?: Timestamp;
 }
 
 export type CommerceOp =
@@ -38,8 +40,6 @@ export interface CommerceResultErr {
 export type CommerceResult = CommerceResultOk | CommerceResultErr;
 
 // Unified Listing type with imageUrls
-import { Timestamp } from 'firebase/firestore';
-
 export type Listing = {
   id: string;
   title: string;

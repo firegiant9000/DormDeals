@@ -11,7 +11,7 @@ import {
 import { db } from '../config/firebase';
 import { UserType, UserProfile } from '../types/user';
 import { Item } from '../types';
-import { getListings } from './listingsService';
+import { getListings } from './listingService';
 
 const USERS_COLLECTION = 'users';
 const LISTINGS_COLLECTION = 'listings';
@@ -65,7 +65,7 @@ export async function getAllUsers(): Promise<(UserProfile & { isBanned?: boolean
  */
 export async function getAllListings(): Promise<Item[]> {
   try {
-    // Use listingsService which handles proper type conversion
+    // Use the listing service which handles proper type conversion
     // Passing empty options returns all listings
     return await getListings({});
   } catch (error) {

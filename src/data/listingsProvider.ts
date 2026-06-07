@@ -25,8 +25,6 @@ export async function fetchMarketplace({
 
   if (category && category !== 'All Categories') q = query(q, where('category', '==', category));
   if (condition && condition !== 'Any Condition') q = query(q, where('condition', '==', condition));
-  if (typeof minPrice === 'number') q = query(q, where('price', '>=', Number(minPrice)));
-  if (typeof maxPrice === 'number') q = query(q, where('price', '<=', Number(maxPrice)));
 
   if (sort === 'newest') q = query(q, orderBy('createdAt', 'desc'));
   if (sort === 'priceLow') q = query(q, orderBy('price', 'asc'));
@@ -35,7 +33,12 @@ export async function fetchMarketplace({
   if (pageToken) q = query(q, startAfter(pageToken));
 
   const snap = await getDocs(q);
-  const items = snap.docs.map(d => normalizeListing({ id: d.id, ...d.data() } as any));
+  let items = snap.docs.map(d => normalizeListing({ id: d.id, ...d.data() } as any));
+  // Price-range filtering is applied client-side: a Firestore inequality on
+  // `price` requires `price` to be the first orderBy, which conflicts with the
+  // newest (createdAt) sort and has no valid index. See firestore_indexes_audit.md.
+  if (typeof minPrice === 'number') items = items.filter(i => i.price >= minPrice);
+  if (typeof maxPrice === 'number') items = items.filter(i => i.price <= maxPrice);
   return { items, nextPageToken: snap.docs[snap.docs.length - 1] ?? null };
 }
 

@@ -1,6 +1,8 @@
-// Format currency helper (without $ symbol)
+// Format currency helper (USD, with $ symbol)
 export const formatCurrency = (amount: number): string => {
   return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
   }).format(amount);
@@ -8,16 +10,13 @@ export const formatCurrency = (amount: number): string => {
 
 // Format relative time helper
 export function formatRelativeTime(input: Date | number | string): string {
-  const d = typeof input === 'string' ? new Date(input) : new Date(input)
+  const d = new Date(input)
   const diffMs = Date.now() - d.getTime()
-  const sec = Math.floor(diffMs / 1000)
-  const min = Math.floor(sec / 60)
-  const hr = Math.floor(min / 60)
-  const day = Math.floor(hr / 24)
-  if (day > 0) return `${day}d ago`
-  if (hr > 0) return `${hr}h ago`
-  if (min > 0) return `${min}m ago`
-  return `${sec}s ago`
+  const day = Math.floor(diffMs / 86400000)
+  if (day < 1) return 'just now'
+  if (day < 7) return day === 1 ? '1 day ago' : `${day} days ago`
+  if (day < 30) return `${Math.floor(day / 7)} weeks ago`
+  return `${Math.floor(day / 30)} months ago`
 }
 
 // Format date helper
@@ -32,6 +31,7 @@ export const formatDate = (date: Date | string): string => {
 
 // Truncate text helper
 export const truncateText = (text: string, maxLength: number): string => {
+  if (text == null) return '';
   if (text.length <= maxLength) return text;
   return text.substring(0, maxLength) + '...';
 };
@@ -49,8 +49,9 @@ export const isValidEmail = (email: string): boolean => {
 
 // Validate phone number helper
 export const isValidPhone = (phone: string): boolean => {
-  const phoneRegex = /^[+]?[1-9][\d]{0,15}$/;
-  return phoneRegex.test(phone.replace(/\s/g, ''));
+  if (!phone) return false;
+  const cleaned = phone.replace(/[\s\-()]/g, '');
+  return /^[+]?[1-9]\d{9,14}$/.test(cleaned);
 };
 
 // Debounce helper

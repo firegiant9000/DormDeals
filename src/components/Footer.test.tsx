@@ -59,7 +59,7 @@ describe('Footer', () => {
           <Footer />
         </BrowserRouter>
       );
-      expect(screen.getByText(/2024 DormDeals/i)).toBeInTheDocument();
+      expect(screen.getByText(/DormDeals\. Made by UL students/i)).toBeInTheDocument();
     });
   });
 

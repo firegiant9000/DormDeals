@@ -16,7 +16,8 @@ import {
   addToWishlist as addToWishlistService,
   removeFromWishlist as removeFromWishlistService,
 } from '@/services/commerceService';
-import { getListingById } from '@/services/listingsService';
+import { getListingById } from '@/services/listingService';
+import { trackEvent } from '@/services/analytics';
 
 type ShopContextValue = {
   cartItems: Item[];
@@ -109,6 +110,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (!result.ok) {
         toast.error(`[${result.code}] ${result.op}`);
       } else {
+        trackEvent('cart_add', { listing_id: item.id });
         toast.success('Added to cart');
         setShowCart(true);
       }

@@ -3,6 +3,9 @@ export const validateEmail = (email: string): boolean => {
   if (!email || email.trim() === '') {
     return false;
   }
+  if (email.includes('..')) {
+    return false;
+  }
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return emailRegex.test(email);
 };
@@ -82,8 +85,8 @@ export const validatePhoneNumber = (phone: string): FieldValidationResult => {
   // Remove spaces, dashes, and parentheses
   const cleaned = phone.replace(/[\s\-()]/g, '');
   
-  // Check for valid phone number format (10 digits or with country code)
-  const phoneRegex = /^[+]?[1-9][\d]{0,15}$/;
+  // Check for valid phone number format (10-15 digits, optional country code)
+  const phoneRegex = /^[+]?[1-9]\d{9,14}$/;
   
   if (!phoneRegex.test(cleaned)) {
     return { isValid: false, error: 'Please enter a valid phone number' };

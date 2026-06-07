@@ -11,7 +11,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { UserType, UserProfile, CreateUserProfileData, UpdateUserProfileData } from '../types/user';
-import { ItemStatus, ListingStatus } from '../types';
+import { ListingStatus } from '../types';
 
 const USERS_COLLECTION = 'users';
 
@@ -253,21 +253,20 @@ export async function getUserProfileWithStats(userId: string): Promise<(UserProf
     }
 
     // Import services dynamically to avoid circular dependencies
-    const { getListings } = await import('./listingsService');
-    const { getFavorites } = await import('./favoritesService');
+    const { getListings } = await import('./listingService');
+    const { countFavorites } = await import('./favoriteService');
 
     // Compute stats from Firestore
-    const [userListings, userFavorites] = await Promise.all([
-      getListings({ sellerId: userId }).catch(() => []),
-      getFavorites(userId).catch(() => [])
+    const [userListings, totalFavorites] = await Promise.all([
+      getListings({ ownerId: userId }).catch(() => []),
+      countFavorites(userId).catch(() => 0)
     ]);
 
     const totalListings = userListings.length;
     // Check for sold status using enum values
-    const totalSales = userListings.filter(listing => 
-      listing.status === ItemStatus.SOLD || listing.status === ListingStatus.SOLD
+    const totalSales = userListings.filter(listing =>
+      listing.status === ListingStatus.SOLD
     ).length;
-    const totalFavorites = userFavorites.length;
 
     return {
       ...profile,
