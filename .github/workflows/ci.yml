@@ -39,6 +39,10 @@ jobs:
         run: npm run type-check
       - name: Unit tests
         run: npx vitest run
+        env:
+          # Headroom for the jsdom suite; the forks pool (vitest.config.ts) keeps
+          # per-file heap low, this just guards against a cold runner.
+          NODE_OPTIONS: --max-old-space-size=4096
       - name: Firestore rules tests (emulator)
         run: npm run test:rules
       - name: Build (compile check)
