@@ -25,6 +25,7 @@ import { formatCurrency, formatRelativeTime } from '../utils/helpers';
 import { useShop } from '@/context/ShopContext';
 import { useAuth } from '@/context/AuthContext';
 import SearchFiltersBar from '../components/SearchFiltersBar';
+import { trackEvent } from '../services/analytics';
 
 const MainFeaturePage: React.FC = () => {
   const navigate = useNavigate();
@@ -180,13 +181,15 @@ const MainFeaturePage: React.FC = () => {
           break;
       }
 
+      trackEvent('search', { query: formData.query, results_count: items.length });
+
       // Navigate to results page with locally computed items and filters
-      navigate('/results', { 
-        state: { 
+      navigate('/results', {
+        state: {
           results: { items },
           filters: searchFilters,
-          searchQuery: formData.query 
-        } 
+          searchQuery: formData.query
+        }
       });
       
     } catch {
@@ -225,7 +228,7 @@ const MainFeaturePage: React.FC = () => {
           setTimeout(() => reject(new Error('Request timeout')), 5000)
         );
         
-        const { getListings } = await import('../services/listingsService');
+        const { getListings } = await import('../services/listingService');
         const fetchPromise = getListings({ featured: true, active: true, limitCount: 6 });
         
         const featured = await Promise.race([fetchPromise, timeoutPromise]) as Item[];

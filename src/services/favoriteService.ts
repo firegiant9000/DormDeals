@@ -46,6 +46,16 @@ export async function fetchFavorites(): Promise<Listing[]> {
   return out;
 }
 
+// Count favorites for a given user (reads the users/{uid}/favorites subcollection).
+// Used for profile stats; reading a foreign user's favorites may be denied by rules,
+// callers should treat a throw as "0".
+export async function countFavorites(uid: string): Promise<number> {
+  if (!uid) return 0;
+  const favsRef = collection(db, 'users', uid, 'favorites');
+  const snap = await getDocs(favsRef);
+  return snap.size;
+}
+
 export async function addFavorite(listingId: string): Promise<void> {
   const uid = auth.currentUser?.uid;
   if (!uid) throw new Error('Not authenticated');

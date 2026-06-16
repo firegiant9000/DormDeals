@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Star } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { Item } from '@/types'
-import { getListings } from '@/services/listingsService'
+import { getListings } from '@/services/listingService'
 import { formatCurrency, formatRelativeTime } from '@/utils/helpers'
 import ListingCard from '@/components/ListingCard'
 

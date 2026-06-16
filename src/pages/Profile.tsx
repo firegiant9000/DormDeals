@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { motion } from 'framer-motion'
-import { User, Settings, Heart, ShoppingBag, MessageSquare, Star, Edit3, BarChart3, Users, Crown, Loader2, ShoppingCart, Pencil, Shield, TrendingUp, DollarSign, Package, AlertCircle, CheckCircle, XCircle, Search } from 'lucide-react'
+import { User, Settings, Heart, ShoppingBag, MessageSquare, Star, Edit3, BarChart3, Users, Crown, Loader2, ShoppingCart, Pencil, Shield, TrendingUp, DollarSign, Package, AlertCircle, CheckCircle, XCircle, Search, Gauge, ExternalLink } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useAccessControl } from '../hooks/useAccessControl'
 import ProtectedFeature from '../components/ProtectedFeature'
@@ -10,11 +10,12 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { db } from '@/firebase'
 import { collection, query, where, orderBy, getDocs } from 'firebase/firestore'
-import { normalizeListing } from '@/utils/normalizers'
+import { normalizeListing } from '@/utils/helpers'
 import { fetchFavorites } from '@/services/favoriteService'
 import { fetchCart, removeFromCart } from '@/services/cartService'
 import { deleteListing } from '@/services/listingService'
 import { getAllUsers, getAllListings, updateUserType, updateUserVerification, updateUserBanStatus, adminDeleteListing, adminUpdateListingStatus, getPlatformStats, PlatformStats } from '../services/adminService'
+import { estimateUsage, DEFAULT_ASSUMPTIONS, FIRESTORE_FREE_TIER, BUDGET_ALERT_THRESHOLDS, type UsageAssumptions } from '../services/costService'
 
 interface UserProfile {
   id: string
@@ -81,17 +82,24 @@ const Profile = () => {
   const [userSearchQuery, setUserSearchQuery] = useState('')
   const [listingSearchQuery, setListingSearchQuery] = useState('')
 
+  // Cost dashboard state (#9). Listing count is read cheaply (public-read);
+  // assumptions are tunable so the estimate reflects real campus traffic.
+  const [costListingCount, setCostListingCount] = useState<number | null>(null)
+  const [isLoadingCosts, setIsLoadingCosts] = useState(false)
+  const [costAssumptions, setCostAssumptions] = useState<UsageAssumptions>(DEFAULT_ASSUMPTIONS)
+  const costEstimate = useMemo(() => estimateUsage(costAssumptions), [costAssumptions])
+
   // Handle hash routing
   useEffect(() => {
     const hash = window.location.hash.replace('#', '')
-    if (hash && ['admin', 'analytics'].includes(hash)) {
+    if (hash && ['admin', 'analytics', 'costs'].includes(hash)) {
       setActiveTab(hash)
     }
   }, [location])
 
-  // Update URL hash when tab changes (for admin and analytics)
+  // Update URL hash when tab changes (for admin, analytics, and costs)
   useEffect(() => {
-    if (activeTab === 'admin' || activeTab === 'analytics') {
+    if (activeTab === 'admin' || activeTab === 'analytics' || activeTab === 'costs') {
       window.location.hash = activeTab
     } else if (window.location.hash) {
       // Clear hash for other tabs
@@ -395,6 +403,29 @@ const Profile = () => {
       .finally(() => setIsLoadingAnalytics(false))
   }, [activeTab, isAdmin])
 
+  // Fetch cost-relevant data when the costs tab is active (#9). Uses listings
+  // only (public-read) so it works even though getAllUsers is locked to
+  // read-self by the #5 rules; seeds the stored-data estimate from the count.
+  useEffect(() => {
+    if (activeTab !== 'costs' || !isAdmin()) return
+
+    setIsLoadingCosts(true)
+    getAllListings()
+      .then(listings => {
+        setCostListingCount(listings.length)
+        // ~0.5 KB of Firestore metadata per listing doc (images live in Storage).
+        setCostAssumptions(prev => ({
+          ...prev,
+          storedGiB: Number((listings.length * 0.0000005).toFixed(6)) || prev.storedGiB
+        }))
+      })
+      .catch((e) => {
+        console.error(e)
+        toast.error('Failed to load cost data')
+      })
+      .finally(() => setIsLoadingCosts(false))
+  }, [activeTab, isAdmin])
+
   // Fallback user data
   const displayUserData = userData || {
     id: user?.id || '',
@@ -424,6 +455,7 @@ const Profile = () => {
     ...(canAccess('advanced_analytics') ? [{ id: 'analytics', label: 'Analytics', icon: BarChart3 }] : []),
     ...(isPremium() ? [{ id: 'premium', label: 'Premium', icon: Crown }] : []),
     ...(isAdmin() ? [{ id: 'admin', label: 'Admin Panel', icon: Users }] : []),
+    ...(isAdmin() ? [{ id: 'costs', label: 'Costs', icon: Gauge }] : []),
     { id: 'settings', label: 'Settings', icon: Settings }
   ]
 
@@ -661,9 +693,9 @@ const Profile = () => {
                           <p className="text-lg font-bold text-primary-600 mb-2">${Number(listing.price).toFixed(2)}</p>
                           <div className="flex justify-between items-center text-sm text-gray-500">
                             <span className={`px-2 py-1 rounded text-xs ${
-                              listing.status === 'Active' 
+                              listing.status === 'active'
                                 ? 'bg-green-100 text-green-800' 
-                                : listing.status === 'Sold'
+                                : listing.status === 'sold'
                                 ? 'bg-gray-100 text-gray-800'
                                 : 'bg-yellow-100 text-yellow-800'
                             }`}>
@@ -766,9 +798,9 @@ const Profile = () => {
                           <p className="text-lg font-bold text-primary-600 mb-2">${Number(listing.price).toFixed(2)}</p>
                           <div className="flex justify-between items-center text-sm text-gray-500">
                             <span className={`px-2 py-1 rounded text-xs ${
-                              listing.status === 'Active' 
+                              listing.status === 'active'
                                 ? 'bg-green-100 text-green-800' 
-                                : listing.status === 'Sold'
+                                : listing.status === 'sold'
                                 ? 'bg-gray-100 text-gray-800'
                                 : 'bg-yellow-100 text-yellow-800'
                             }`}>
@@ -852,9 +884,9 @@ const Profile = () => {
                           <p className="text-lg font-bold text-primary-600 mb-2">${Number(listing.price).toFixed(2)}</p>
                           <div className="flex justify-between items-center text-sm text-gray-500">
                             <span className={`px-2 py-1 rounded text-xs ${
-                              listing.status === 'Active' 
+                              listing.status === 'active'
                                 ? 'bg-green-100 text-green-800' 
-                                : listing.status === 'Sold'
+                                : listing.status === 'sold'
                                 ? 'bg-gray-100 text-gray-800'
                                 : 'bg-yellow-100 text-yellow-800'
                             }`}>
@@ -1101,6 +1133,138 @@ const Profile = () => {
                   </div>
                 </div>
               </div>
+            )}
+
+            {activeTab === 'costs' && (
+              <ProtectedFeature requiredUserTypes={[UserType.ADMIN]}>
+                <div className="space-y-6">
+                  <div>
+                    <div className="flex items-center gap-3 mb-2">
+                      <Gauge className="w-6 h-6 text-amber-600" />
+                      <h3 className="text-lg font-semibold text-gray-900">Cost &amp; Usage</h3>
+                    </div>
+                    <p className="text-gray-600 mb-2">
+                      Estimated Firestore usage against the free-tier daily quota. Figures are an
+                      <span className="font-medium"> estimate</span> derived from live listing volume
+                      and the assumptions below — authoritative spend lives in the Firebase console.
+                    </p>
+                    <a
+                      href={`https://console.firebase.google.com/project/${import.meta.env.VITE_FIREBASE_PROJECT_ID || '_'}/usage`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-sm text-primary-600 hover:underline mb-6"
+                    >
+                      Open Firebase usage &amp; billing <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+
+                    {isLoadingCosts ? (
+                      <div className="flex items-center justify-center py-12">
+                        <Loader2 className="w-6 h-6 animate-spin text-primary-600" />
+                        <span className="ml-2 text-gray-600">Loading cost data...</span>
+                      </div>
+                    ) : (
+                      <div className="space-y-6">
+                        {/* Estimate cards */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div className="dd-card bg-surface border-surface p-6">
+                            <p className="text-sm text-gray-500 mb-1">Est. reads / day</p>
+                            <p className="text-3xl font-bold text-gray-900">{costEstimate.daily.reads.toLocaleString()}</p>
+                            <div className="mt-3 h-2 w-full bg-gray-200 rounded-full overflow-hidden">
+                              <div
+                                className={`h-full ${costEstimate.freeTierPct.reads > 100 ? 'bg-red-500' : 'bg-green-500'}`}
+                                style={{ width: `${Math.min(100, costEstimate.freeTierPct.reads)}%` }}
+                              />
+                            </div>
+                            <p className="text-xs text-gray-600 mt-2">
+                              {Math.round(costEstimate.freeTierPct.reads)}% of {FIRESTORE_FREE_TIER.readsPerDay.toLocaleString()} free
+                            </p>
+                          </div>
+
+                          <div className="dd-card bg-surface border-surface p-6">
+                            <p className="text-sm text-gray-500 mb-1">Est. writes / day</p>
+                            <p className="text-3xl font-bold text-gray-900">{costEstimate.daily.writes.toLocaleString()}</p>
+                            <div className="mt-3 h-2 w-full bg-gray-200 rounded-full overflow-hidden">
+                              <div
+                                className={`h-full ${costEstimate.freeTierPct.writes > 100 ? 'bg-red-500' : 'bg-green-500'}`}
+                                style={{ width: `${Math.min(100, costEstimate.freeTierPct.writes)}%` }}
+                              />
+                            </div>
+                            <p className="text-xs text-gray-600 mt-2">
+                              {Math.round(costEstimate.freeTierPct.writes)}% of {FIRESTORE_FREE_TIER.writesPerDay.toLocaleString()} free
+                            </p>
+                          </div>
+
+                          <div className="dd-card bg-surface border-surface p-6">
+                            <div className="flex items-center justify-between mb-1">
+                              <p className="text-sm text-gray-500">Projected monthly cost</p>
+                              <DollarSign className="w-5 h-5 text-green-600" />
+                            </div>
+                            <p className="text-3xl font-bold text-gray-900">${costEstimate.projectedMonthlyCostUsd.toFixed(2)}</p>
+                            <p className={`text-xs mt-2 ${costEstimate.exceedsFreeTier ? 'text-red-600' : 'text-green-600'}`}>
+                              {costEstimate.exceedsFreeTier ? 'Projected to exceed free tier' : 'Within free tier'}
+                              {costListingCount !== null && ` · ${costListingCount} listings stored`}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Tunable assumptions */}
+                        <div className="dd-card bg-surface border-surface p-6">
+                          <h4 className="font-semibold text-gray-900 mb-4">Usage assumptions</h4>
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <label className="block">
+                              <span className="text-sm text-gray-600">Daily sessions</span>
+                              <input
+                                type="number"
+                                min={0}
+                                value={costAssumptions.dailySessions}
+                                onChange={(e) => setCostAssumptions(prev => ({ ...prev, dailySessions: Math.max(0, Number(e.target.value) || 0) }))}
+                                className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                              />
+                            </label>
+                            <label className="block">
+                              <span className="text-sm text-gray-600">Signed-in fraction (0–1)</span>
+                              <input
+                                type="number"
+                                min={0}
+                                max={1}
+                                step={0.1}
+                                value={costAssumptions.authedFraction}
+                                onChange={(e) => setCostAssumptions(prev => ({ ...prev, authedFraction: Math.min(1, Math.max(0, Number(e.target.value) || 0)) }))}
+                                className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                              />
+                            </label>
+                            <label className="block">
+                              <span className="text-sm text-gray-600">Listings created / day</span>
+                              <input
+                                type="number"
+                                min={0}
+                                value={costAssumptions.listingsCreatedPerDay}
+                                onChange={(e) => setCostAssumptions(prev => ({ ...prev, listingsCreatedPerDay: Math.max(0, Number(e.target.value) || 0) }))}
+                                className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                              />
+                            </label>
+                          </div>
+                        </div>
+
+                        {/* Budget alert thresholds */}
+                        <div className="dd-card bg-surface border-surface p-6">
+                          <h4 className="font-semibold text-gray-900 mb-2">Budget alerts</h4>
+                          <p className="text-sm text-gray-600 mb-4">
+                            Configured in the GCP billing console (see <span className="font-mono">docs/firestore_costs.md</span>). Email fires at each threshold of actual spend.
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            {BUDGET_ALERT_THRESHOLDS.map(t => (
+                              <span key={t} className="px-3 py-1 rounded-full text-sm font-medium bg-amber-50 text-amber-800 border border-amber-200">
+                                ${t}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </ProtectedFeature>
             )}
 
             {activeTab === 'admin' && (

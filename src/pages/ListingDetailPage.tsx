@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { 
   ArrowLeft, 
@@ -16,6 +16,7 @@ import { useShop } from '@/context/ShopContext';
 import { formatCurrency, formatRelativeTime } from '../utils/helpers';
 import toast from 'react-hot-toast';
 import { getUserProfileWithStats } from '@/services/userService';
+import { trackEvent } from '@/services/analytics';
 
 const ListingDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -124,19 +125,30 @@ const ListingDetailPage: React.FC = () => {
     window.scrollTo(0, 0);
   }, []);
 
+  // Emit a funnel `listing_view` event once per listing, whether the listing
+  // arrived via route state or was fetched below.
+  const viewedRef = useRef<string | null>(null);
+  useEffect(() => {
+    const lid = (listing as any)?.id;
+    if (lid && viewedRef.current !== lid) {
+      viewedRef.current = lid;
+      trackEvent('listing_view', { listing_id: lid, category: (listing as any)?.category });
+    }
+  }, [listing]);
+
   // Load listing data if not provided in state
   useEffect(() => {
     const fetchListing = async () => {
       if (!listing && id) {
         try {
           setLoading(true);
-          const { getListingById } = await import('../services/listingsService');
+          const { getListingById } = await import('../services/listingService');
           const fetchedListing = await getListingById(id);
           
           if (fetchedListing) {
             setListing(fetchedListing);
             // Increment view count
-            const { incrementListingViews } = await import('../services/listingsService');
+            const { incrementListingViews } = await import('../services/listingService');
             incrementListingViews(id).catch(console.error);
           } else {
             throw new Error('Listing not found');

@@ -2,28 +2,103 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isSelf(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    // Interim server-side admin check (Month 1 #5 / pulled forward from Month 2 #13).
+    // Admin status lives in a non-self-writable `admins/{uid}` doc, NOT a flag on the
+    // user's own profile — otherwise a user could self-promote, since they can write
+    // their own /users doc. Admin docs are created out-of-band (Firebase console or
+    // Admin SDK); see docs/issues/meta-and-month1.md (G5).
+    function isAdmin() {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    // Admin registry. Readable only by the subject (so the client can learn its own
+    // status); never client-writable.
+    match /admins/{uid} {
+      allow read: if isSelf(uid);
+      allow write: if false;
+    }
+
+    // User profile (private). Read/write self; admins may read and update for
+    // moderation (ban / role changes). Public fields are mirrored to publicProfile.
+    match /users/{uid} {
+      allow read: if isSelf(uid) || isAdmin();
+      allow create: if isSelf(uid);
+      allow update: if isSelf(uid) || isAdmin();
+      allow delete: if false;
+
+      // Whitelisted public subset. World-readable; only the owner writes it.
+      // Month 2 wires the mirror that populates this from the private doc.
+      match /publicProfile/{docId} {
+        allow read: if true;
+        allow write: if isSelf(uid);
+      }
+
+      // Per-user cart
+      match /cart/{itemId} {
+        allow read, write: if isSelf(uid);
+      }
+
+      // Per-user favorites (wishlists)
+      match /favorites/{listingId} {
+        allow read, write: if isSelf(uid);
+      }
+    }
+
     // Public listings
     match /listings/{listingId} {
       allow read: if true;
 
-      allow create: if request.auth != null
+      // Block field injection on create via hasOnly(), and pin createdAt to the
+      // server clock (request.time) to mitigate timestamp spoofing.
+      allow create: if isSignedIn()
         && request.resource.data.ownerId == request.auth.uid
         && request.resource.data.status in ['active', 'draft']
-        && request.resource.data.createdAt is timestamp;
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.keys().hasOnly([
+             'title', 'description', 'price', 'category', 'condition',
+             'ownerId', 'status', 'createdAt', 'imageUrls', 'isFeatured'
+           ]);
 
-      // only owner can update/delete
-      allow update, delete: if request.auth != null
+      // ownerId and createdAt are always immutable. Two legitimate updaters:
+      //   1. the owner editing a bounded set of fields (no arbitrary injection);
+      //   2. any signed-in viewer incrementing the view counter by exactly one
+      //      (G4 — the old owner-only rule silently denied all view counts).
+      allow update: if isSignedIn()
+        && request.resource.data.ownerId == resource.data.ownerId
+        && request.resource.data.createdAt == resource.data.createdAt
+        && (
+          (
+            resource.data.ownerId == request.auth.uid
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+                 'title', 'description', 'price', 'category', 'condition',
+                 'location', 'imageUrls', 'isFeatured', 'status', 'updatedAt', 'views'
+               ])
+          ) || (
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['views', 'updatedAt'])
+            && request.resource.data.views == resource.data.get('views', 0) + 1
+          )
+        );
+
+      allow delete: if isSignedIn()
         && resource.data.ownerId == request.auth.uid;
     }
 
-    // Per-user cart
-    match /users/{uid}/cart/{itemId} {
-      allow read, write: if request.auth != null && uid == request.auth.uid;
-    }
-
-    // Per-user favorites (wishlists)
-    match /users/{uid}/favorites/{listingId} {
-      allow read, write: if request.auth != null && uid == request.auth.uid;
-    }
+    // Reject-by-default stubs for collections built in Month 2+. Declared now so
+    // they fail closed until each is explicitly opened in its own issue.
+    match /reviews/{document=**}       { allow read, write: if false; }
+    match /conversations/{document=**} { allow read, write: if false; }
+    match /reports/{document=**}       { allow read, write: if false; }
+    match /transactions/{document=**}  { allow read, write: if false; }
+    match /auditLog/{document=**}      { allow read, write: if false; }
+    match /campusMeta/{document=**}    { allow read, write: if false; }
   }
 }

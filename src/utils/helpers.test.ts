@@ -163,7 +163,7 @@ describe('helpers', () => {
       const text = 'This is a very long text that should be truncated';
       const result = truncateText(text, 20);
       expect(result).toBe('This is a very long ...');
-      expect(result.length).toBe(24); // 20 chars + '...'
+      expect(result.length).toBe(23); // 20 chars + '...'
     });
 
     it('handles empty string', () => {
@@ -177,7 +177,7 @@ describe('helpers', () => {
 
     it('handles maxLength of 1', () => {
       const text = 'Test';
-      expect(truncateText(text, 1)).toBe('...');
+      expect(truncateText(text, 1)).toBe('T...');
     });
 
     it('handles text with special characters', () => {
@@ -457,6 +457,7 @@ describe('helpers', () => {
     });
 
     it('debounce handles function that throws', () => {
+      vi.useFakeTimers();
       const throwingFn = () => {
         throw new Error('Test error');
       };
@@ -466,6 +467,7 @@ describe('helpers', () => {
         debouncedFn();
         vi.advanceTimersByTime(100);
       }).toThrow('Test error');
+      vi.useRealTimers();
     });
 
     it('throttle handles function that throws', () => {

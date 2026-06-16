@@ -65,7 +65,7 @@ export interface Item {
   createdAt: Date;
   updatedAt: Date;
   posted: string;
-  status: ItemStatus | ListingStatus;
+  status: ListingStatus;
   views: number;
   likes: number;
   isLiked?: boolean;
@@ -76,9 +76,9 @@ export interface Item {
   isFeatured?: boolean;
 }
 
-export type Listing = Item;
-
-export interface ItemDetail extends Listing {
+// `Listing` is NOT an alias here — import it from `@/types/commerce` (the persisted doc).
+// `Item` is the canonical UI/view-model type.
+export interface ItemDetail extends Item {
   specifications?: Record<string, string>;
   tags: string[];
   availability: string;
@@ -91,7 +91,7 @@ export interface ItemDetail extends Listing {
 // Cart and Wishlist Types
 export interface CartItem {
   id: string;
-  listing?: Listing;
+  listing?: Item;
   item?: Item;
   quantity: number;
   addedAt: Date | string;
@@ -99,14 +99,14 @@ export interface CartItem {
 
 export interface WishlistItem {
   id: string;
-  listing?: Listing;
+  listing?: Item;
   item?: Item;
   addedAt: Date | string;
 }
 
 // Search Results Types
 export interface SearchResults {
-  listings: Listing[];
+  listings: Item[];
   totalCount: number;
   currentPage: number;
   totalPages: number;
@@ -160,7 +160,7 @@ export interface Message {
 export interface Chat {
   id: string;
   participants: User[];
-  listing?: Listing;
+  listing?: Item;
   lastMessage?: Message;
   unreadCount: number;
   createdAt: Date;
@@ -238,13 +238,6 @@ export enum ListingStatus {
   PENDING = 'pending',
   DRAFT = 'draft',
   EXPIRED = 'expired'
-}
-
-export enum ItemStatus {
-  ACTIVE = 'Active',
-  SOLD = 'Sold',
-  PENDING = 'Pending',
-  DRAFT = 'Draft'
 }
 
 export enum PickupMethod {

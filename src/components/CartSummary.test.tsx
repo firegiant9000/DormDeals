@@ -128,8 +128,8 @@ describe('CartSummary', () => {
       render(<CartSummary />);
       
       expect(screen.getByText('Test Item 1')).toBeInTheDocument();
-      expect(screen.getByText('$10.99')).toBeInTheDocument();
-      expect(screen.getByText('$10.99')).toBeInTheDocument(); // Subtotal
+      // $10.99 appears twice: the item price and the subtotal
+      expect(screen.getAllByText('$10.99').length).toBeGreaterThanOrEqual(2);
     });
   });
 });

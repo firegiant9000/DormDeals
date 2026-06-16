@@ -4,7 +4,8 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import ProtectedFeature from '@/components/ProtectedFeature'
 import { createListing, updateListing } from '@/services/listingService'
-import { getListingById } from '@/services/listingsService'
+import { getListingById } from '@/services/listingService'
+import { trackEvent } from '@/services/analytics'
 import type { UserType } from '@/types/user'
 import { useAuth } from '@/context/AuthContext'
 import { auth, db } from '@/firebase'
@@ -231,6 +232,11 @@ const CreateListing = () => {
         listing = await watchdog(createListing(payload), 25000) // 25s UI watchdog
         const dt = Math.round(performance.now() - t0)
         if (debug || import.meta.env.DEV) console.log('[CREATE_LISTING] done', { listing, ms: dt })
+        trackEvent('listing_create', {
+          listing_id: listing.id,
+          category: formData.category,
+          price: Number(formData.price),
+        })
         toast.success(`Listing created in ${dt}ms`)
         // Clear draft on success
         try {

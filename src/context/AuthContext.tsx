@@ -8,10 +8,11 @@ import {
 } from 'firebase/auth'
 import { auth } from '../config/firebase'
 import { User, UserType } from '../types'
-import { 
-  getUserProfile, 
+import {
+  getUserProfile,
   createUserProfile
 } from '../services/userService'
+import { trackEvent, setAnalyticsUser } from '../services/analytics'
 import toast from 'react-hot-toast'
 
 type AuthContextValue = {
@@ -63,6 +64,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         setIsLoading(true)
         setError(null)
+        setAnalyticsUser(firebaseUser?.uid ?? null)
 
         if (firebaseUser) {
           // User is signed in, fetch their profile
@@ -226,6 +228,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         const mappedUser = mapFirebaseUserToUser(firebaseUser, profile)
         setUser(mappedUser)
+        trackEvent('signup_complete', { method: 'email' })
         toast.success('Account created successfully!')
         return true
       } catch (profileError: any) {

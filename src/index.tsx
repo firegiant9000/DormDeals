@@ -6,15 +6,22 @@ import App from './App.tsx'
 import { ThemeProvider } from './context/ThemeContext'
 import { ShopProvider } from './context/ShopContext'
 import { AuthProvider } from './context/AuthContext'
+import ErrorBoundary from './components/ErrorBoundary'
+import { initSentry } from './lib/sentry'
+import { initAnalytics } from './services/analytics'
 import './index.css'
+
+initSentry()
+void initAnalytics()
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <BrowserRouter>
-      <ThemeProvider>
-        <AuthProvider>
-          <ShopProvider>
-            <App />
+    <ErrorBoundary>
+      <BrowserRouter>
+        <ThemeProvider>
+          <AuthProvider>
+            <ShopProvider>
+              <App />
             <Toaster
             position="top-right"
             toastOptions={{
@@ -39,9 +46,10 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
               },
             }}
           />
-          </ShopProvider>
-        </AuthProvider>
-      </ThemeProvider>
-    </BrowserRouter>
+            </ShopProvider>
+          </AuthProvider>
+        </ThemeProvider>
+      </BrowserRouter>
+    </ErrorBoundary>
   </React.StrictMode>,
 )
