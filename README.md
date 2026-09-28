@@ -38,8 +38,8 @@ flowchart LR
 [ARCHITECTURE.md](ARCHITECTURE.md) covers the layering, data model, security
 rules and trade-offs in detail. [docs/adr/ADR-002.md](docs/adr/ADR-002.md)
 records the move from the original Express + SQL plan (ADR-001, superseded)
-to Firebase; `api/`, `database/`, `render.yaml` and `Dockerfile` are leftovers
-of that plan and are not used by the deployed app.
+to Firebase. The Express server, SQL schema and Render config from that plan
+were removed in September 2026; the app has no server of its own.
 
 ## Engineering notes
 
@@ -77,7 +77,7 @@ Firestore enabled, and a JRE for the rules emulator.
 git clone https://github.com/firegiant9000/DormDeals.git
 cd DormDeals
 npm ci
-cp env.example .env        # paste your Firebase web config
+cp .env.example .env        # paste your Firebase web config
 npm run dev                # http://localhost:5173
 ```
 
@@ -115,7 +115,13 @@ test documentation. Olivia Deshotel wrote component unit tests and page e2e
 tests alongside the UI design. `ARCHITECTURE.md` was written mainly by
 Clarence and Hans.
 
+## Deploying
+
+CI deploys `main` to Firebase Hosting (with Firestore rules and indexes)
+using the `FIREBASE_SERVICE_ACCOUNT` repository secret; see
+[.github/workflows/ci.yml](.github/workflows/ci.yml). To deploy your own
+copy: `npm run build:production` then `firebase deploy` against your project.
+
 ## License
 
-No license file is present, so the code is all rights reserved by its four
-authors. Adding one needs their agreement.
+[MIT](LICENSE).
