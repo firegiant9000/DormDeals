@@ -186,8 +186,18 @@ const Checkout: React.FC = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100 mb-8">Checkout</h1>
-          
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100 mb-4">Checkout</h1>
+
+          {/* This page is a course-project facade: nothing is charged, stored or sent. */}
+          <div
+            role="alert"
+            className="mb-8 rounded-lg border border-amber-300 bg-amber-50 p-4 text-amber-900 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-100"
+          >
+            <strong>Demo only.</strong> DormDeals is an archived student project. No
+            payment is processed and nothing on this form leaves your browser. Do not
+            enter real card details.
+          </div>
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Left Column - Forms */}
             <div className="space-y-8">
