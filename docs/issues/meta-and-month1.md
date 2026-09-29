@@ -3,6 +3,11 @@
 **Source:** [ROADMAP.md](../../ROADMAP.md)
 **Branch:** `docs/roadmap-meta-month1-issues`
 **Scope of this doc:** the META tracking umbrella issue (#1) and Month 1 (#2–#9). Months 2–6 and the Phase 2 backlog are indexed at the end but not yet expanded.
+> **ARCHIVED (2026-09-29).** This is a point-in-time snapshot. The GitLab pipeline
+> it discusses was replaced by `.github/workflows/ci.yml`, the Express server was
+> removed, and the roadmap was frozen after Month 1 (see the notice at the top of
+> [ROADMAP.md](../../ROADMAP.md)).
+
 **Status (2026-06-05):** Month 1 is ~85–90% implemented. Completed issues are collapsed to a line below; outstanding work and cross-cutting gaps are in **Open Gaps & Remediation**.
 
 ---
