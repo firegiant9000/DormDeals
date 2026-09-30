@@ -2,10 +2,21 @@
 
 **Author:** Arlo Kharod
 **Drafted:** 2026-05-12
-**Status:** Proposal — adopt or revise after Week 1 review
-**Horizon:** 2026-05 through 2026-11
+**Status:** ARCHIVED — not pursued. The project was frozen on 2026-09-29 (see below).
+**Horizon:** 2026-05 through 2026-11 (as originally proposed)
 
 ---
+
+> **Freeze notice (2026-09-29).** DormDeals is a completed team course project,
+> kept public as an archived portfolio piece. This roadmap was a proposal for a
+> solo continuation. Only the Month 1 foundation work shipped: GitHub Actions CI,
+> Firestore rules hardening with emulator tests, the admin registry, Sentry and
+> analytics wiring, and the cost and index audits. Everything from Month 2 onward
+> is **CANCELLED**, including .edu verification, messaging, the transaction
+> lifecycle, PWA/push, the soft launch and growth playbook, the monetization
+> experiment and every Phase 2 branch. The Month 6 go/pivot/wind-down decision is
+> made: **wind down**. The plan is kept as written, as a record of what was
+> proposed.
 
 ## TL;DR
 

@@ -102,6 +102,39 @@ describe('users/{uid} profile', () => {
     await assertFails(setDoc(doc(alice, 'admins', ALICE), { since: serverTimestamp() }));
   });
 
+  it('allows the default profile shape userService.createUserProfile writes', async () => {
+    const alice = testEnv.authenticatedContext(ALICE).firestore();
+    await assertSucceeds(setDoc(doc(alice, 'users', ALICE), {
+      email: 'alice@x.edu', displayName: 'Alice', userType: 'regular',
+      isVerified: false, rating: 0, reviewCount: 0, totalSales: 0
+    }));
+  });
+
+  it('blocks creating a self profile with privileged values', async () => {
+    const alice = testEnv.authenticatedContext(ALICE).firestore();
+    await assertFails(setDoc(doc(alice, 'users', ALICE), { displayName: 'Alice', userType: 'admin' }));
+    await assertFails(setDoc(doc(alice, 'users', ALICE), { displayName: 'Alice', isVerified: true }));
+    await assertFails(setDoc(doc(alice, 'users', ALICE), { displayName: 'Alice', rating: 5 }));
+    await assertFails(setDoc(doc(alice, 'users', ALICE), { displayName: 'Alice', isBanned: false }));
+  });
+
+  it('blocks a user from changing their own role, ban or reputation fields', async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'users', ALICE), {
+        displayName: 'Alice', userType: 'regular', isBanned: true, rating: 0
+      });
+    });
+    const alice = testEnv.authenticatedContext(ALICE).firestore();
+    await assertFails(updateDoc(doc(alice, 'users', ALICE), { userType: 'admin' }));
+    await assertFails(updateDoc(doc(alice, 'users', ALICE), { userType: 'premium' }));
+    await assertFails(updateDoc(doc(alice, 'users', ALICE), { isBanned: false }));
+    await assertFails(updateDoc(doc(alice, 'users', ALICE), { rating: 5 }));
+    // Ordinary profile edits (what Profile.tsx sends) still go through.
+    await assertSucceeds(updateDoc(doc(alice, 'users', ALICE), {
+      displayName: 'Alice K', school: 'UL', updatedAt: serverTimestamp()
+    }));
+  });
+
   it('exposes the publicProfile subdoc to anyone but only the owner writes it', async () => {
     await testEnv.withSecurityRulesDisabled(async (ctx) => {
       await setDoc(doc(ctx.firestore(), 'users', ALICE, 'publicProfile', 'card'), {

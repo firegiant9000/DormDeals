@@ -6,15 +6,19 @@ Firebase (Auth, Firestore, Storage, Hosting).
 
 [![CI](https://github.com/firegiant9000/DormDeals/actions/workflows/ci.yml/badge.svg)](https://github.com/firegiant9000/DormDeals/actions/workflows/ci.yml)
 
-**Live:** https://dormdeals-9cb29.web.app (deployed by CI from `main`)
+> **Status: completed team project, archived.** Built by four students for a
+> Fall 2025 course at the University of Louisiana at Lafayette. It reached a
+> working MVP: auth, listings, search, cart, favourites, profiles and an admin
+> view. Checkout and messaging are UI facades, there is no .edu verification,
+> and there are no real users. In June and September 2026 Arlo Kharod added CI,
+> Firestore rules hardening with emulator tests, and observability. A solo
+> continuation roadmap was drafted and then cancelled
+> ([ROADMAP.md](ROADMAP.md)). The project is not under development.
 
-> **Status:** four-person course project (Fall 2025, University of Louisiana at
-> Lafayette) that reached a working MVP: auth, listings, search, cart,
-> favourites, profiles and an admin view. Checkout and messaging are UI
-> facades, there is no .edu verification, and there are no real users. Arlo
-> Kharod added CI, Firestore rules hardening, observability and a solo
-> continuation roadmap in June 2026 ([ROADMAP.md](ROADMAP.md)); that roadmap
-> has not been executed.
+**Demo:** https://dormdeals-9cb29.web.app is the course-era build, deployed
+in December 2025. It predates the 2026 rules and CI work in this repository.
+The GitHub deploy job skips until repository secrets are configured. Checkout
+is a facade: nothing is charged or sent.
 
 <!-- Screenshots: none captured yet. Marketplace grid, listing detail,
      create-listing form and profile would be the four to add. -->
@@ -41,22 +45,32 @@ records the move from the original Express + SQL plan (ADR-001, superseded)
 to Firebase. The Express server, SQL schema and Render config from that plan
 were removed in September 2026; the app has no server of its own.
 
-## Engineering notes
+## Technical highlights
 
 - **Access control lives in Firestore rules, and the rules are tested.**
-  `firestore.rules` scopes users to their own profile, cart and favourites,
-  gates listing writes to the owner or an admin, and denies collections that
-  are not ready (`reviews`). `tests/firestore.rules.test.ts` runs against the
-  Firestore emulator (`npm run test:rules`) and is a blocking CI step.
-- **Components never call Firebase.** All reads and writes go through
-  `src/services`, which map Firestore documents to TypeScript types.
+  Users are scoped to their own profile, cart and favourites. Listing writes
+  are owner-only. Collections that were never built (`reviews`,
+  `conversations`, `reports`, `transactions`, `auditLog`) are denied outright.
+  `tests/firestore.rules.test.ts` runs 27 cases against the Firestore emulator
+  (`npm run test:rules`) and is a blocking CI step.
+- **Field allowlists and server time.** A listing create must match an exact
+  key set (`keys().hasOnly`) and pin `createdAt` to `request.time`. Updates
+  are limited by `affectedKeys()`. `ownerId` and `createdAt` are immutable.
+  Non-owners may only increment `views` by exactly one.
+- **No self-granted privilege.** Admin status is a document in `admins/{uid}`
+  that no client can write, not a flag on the user's own profile. A user
+  cannot change their own `userType`, ban status, verification flag or
+  reputation counters.
 - **CI gates the deploy.** Lint with zero warnings, `tsc`, Vitest unit tests,
-  rules tests and a build must pass before the deploy job publishes hosting,
-  rules and indexes to Firebase.
-- **Observability is opt-in.** Sentry initialises only when a DSN is present;
-  analytics events are inert without a measurement ID
+  rules tests and a production build must all pass before the deploy job runs.
+  The deploy job checks for its secrets first and skips with a notice instead
+  of failing.
+- **Observability is opt-in.** Sentry initialises only when a DSN is present,
+  and analytics events are inert without a measurement ID
   ([docs/analytics.md](docs/analytics.md)). Firestore read costs are tracked
   in [docs/firestore_costs.md](docs/firestore_costs.md).
+- **Components never call Firebase.** All reads and writes go through
+  `src/services`, which map Firestore documents to TypeScript types.
 
 ## Tech stack
 
@@ -94,33 +108,52 @@ npm run test:rules         # Firestore rules on the emulator
 npm run test:e2e           # Playwright (needs the dev server)
 ```
 
-28 unit/component test files and 12 Playwright specs are in the tree. The
-Playwright report and results directories are generated and gitignored.
+The tree has 15 unit/component test files, the emulator rules suite, and 12
+Playwright specs. CI runs the unit and rules tests. The Playwright specs run
+locally only. The Playwright report and results directories are generated
+and gitignored.
 
-## Team and contributions
+## Team
 
 Built by four students: **Arlo Kharod** (tech lead), **Clarence Chong**
-(feature developer), **Hans Trosclair** (QA and documentation), **Olivia
+(feature developer), **Hans Trosclair** (QA and documentation) and **Olivia
 Deshotel** (UI/UX design). The GitHub repository mirrors the original GitLab
-course repository.
+course repository, and `.gitlab-ci.yml` is that course pipeline, kept for
+reference.
 
-By `git log` on `main`, Clarence Chong wrote the largest share of the
-application code (most of `src/`, the Firebase migration and service layer,
-and the original Express/SQL backend). Arlo Kharod wrote about a third of
-`src/`, and owns the Firestore security rules, the rules test suite, the
-GitHub Actions CI and deploy pipeline, Sentry and analytics wiring, and the
-June 2026 roadmap and cost/audit docs. Hans Trosclair wrote the admin
-features, navigation and routing, authentication e2e tests and the Phase 3
-test documentation. Olivia Deshotel wrote component unit tests and page e2e
-tests alongside the UI design. `ARCHITECTURE.md` was written mainly by
-Clarence and Hans.
+By `git log`, Clarence Chong wrote the largest share of the application code:
+most of `src/`, the Firebase migration and service layer, the original
+Express/SQL backend, and much of `ARCHITECTURE.md`. Hans Trosclair wrote
+access control, navigation and routing, the authentication e2e tests and the
+Phase 3 test documentation. Olivia Deshotel wrote component unit tests and
+page e2e tests alongside the UI design.
+
+## My contributions (Arlo Kharod)
+
+- **Tech lead during the course.** I contributed pages and contexts in
+  `src/` and added the first Firebase config, rules and indexes
+  (November–December 2025).
+- **Security rules and their tests (2026).** I wrote the hardened
+  `firestore.rules`, the admin registry and the emulator suite in
+  `tests/firestore.rules.test.ts`.
+- **CI/CD.** I wrote `.github/workflows/ci.yml` with its lint, type-check,
+  unit, rules and build gates, and the deploy job with a secrets guard.
+- **Observability and cost.** Sentry, the error boundary, analytics, the
+  Firestore cost dashboard, and the index and cost audits in `docs/`.
+- **Post-course maintenance.** The README and ADR corrections, removing the
+  dead Express/SQL/Render code, the license, Dependabot, and this archive pass.
+
+I did not write most of the marketplace UI or the service layer. Those were
+Clarence's.
 
 ## Deploying
 
-CI deploys `main` to Firebase Hosting (with Firestore rules and indexes)
-using the `FIREBASE_SERVICE_ACCOUNT` repository secret; see
+When its repository secrets are set, CI deploys `main` to Firebase Hosting,
+along with Firestore rules and indexes. Without them the deploy job skips with
+a notice, which is the current state; see
 [.github/workflows/ci.yml](.github/workflows/ci.yml). To deploy your own
-copy: `npm run build:production` then `firebase deploy` against your project.
+copy, run `npm run build:production` and then `firebase deploy` against your
+project.
 
 ## License
 

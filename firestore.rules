@@ -27,12 +27,33 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // Fields only an admin (or the server) may set. A user writing their own
+    // profile cannot promote themselves, clear a ban, or inflate reputation.
+    function privilegedUserFields() {
+      return ['userType', 'isBanned', 'bannedAt', 'isVerified',
+              'rating', 'reviewCount', 'totalSales'];
+    }
+
+    // A self-created profile may carry the privileged fields only at their
+    // defaults (userService.createUserProfile writes exactly these).
+    function isDefaultNewProfile(data) {
+      return data.get('userType', 'regular') == 'regular'
+        && data.get('isVerified', false) == false
+        && data.get('rating', 0) == 0
+        && data.get('reviewCount', 0) == 0
+        && data.get('totalSales', 0) == 0
+        && !data.keys().hasAny(['isBanned', 'bannedAt']);
+    }
+
     // User profile (private). Read/write self; admins may read and update for
     // moderation (ban / role changes). Public fields are mirrored to publicProfile.
     match /users/{uid} {
       allow read: if isSelf(uid) || isAdmin();
-      allow create: if isSelf(uid);
-      allow update: if isSelf(uid) || isAdmin();
+      allow create: if isSelf(uid) && isDefaultNewProfile(request.resource.data);
+      allow update: if isAdmin()
+        || (isSelf(uid)
+            && !request.resource.data.diff(resource.data).affectedKeys()
+                 .hasAny(privilegedUserFields()));
       allow delete: if false;
 
       // Whitelisted public subset. World-readable; only the owner writes it.
